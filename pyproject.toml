@@ -98,8 +98,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["F401", "F811"]  # allow unused imports / redefinitions in tests
+"tests/**" = ["F401", "F811", "F722"]  # tests use jaxtyping shape strings (F722) too
 "scripts/**" = ["E402"]  # allow late imports for path manipulation
+# jaxtyping uses string-literal shape annotations like Float[Array, " 3"] which
+# trip ruff's F722 "syntax error in forward annotation" check. The annotations
+# are valid jaxtyping; we silence F722 in modules that use it.
+"src/stl_seed/tasks/**" = ["F722", "N815"]  # protein/gene names use mixed case (n_AB, K_IPTG, etc.)
+"src/stl_seed/specs/**" = ["F722"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
