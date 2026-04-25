@@ -401,6 +401,38 @@ def _synthetic_for(spec: STLSpec) -> _TrajStub:
         states = states.at[:, 0].set(100.0).at[:, 2].set(I_traj)
         return _TrajStub(states=states, times=times)
 
+    if spec.name == "cardiac.depolarize.easy":
+        # F_[0,50] (V > 1.0): need V > 1.0 somewhere in the first half.
+        # Build a brief square pulse near t = 25 where V = +1.5; resting
+        # value V = -1.2 elsewhere. signal_dim = 2; channel 0 is V.
+        V_traj = jnp.where((times >= 20.0) & (times <= 30.0), 1.5, -1.2)
+        states = jnp.zeros((T, n))
+        states = states.at[:, 0].set(V_traj)
+        return _TrajStub(states=states, times=times)
+
+    if spec.name == "cardiac.train.medium":
+        # F_[0,30] (V > 1.0) AND F_[40,70] (V > 1.0): two spikes, one in
+        # each window. Square pulses near t = 15 and t = 55.
+        spike_1 = (times >= 10.0) & (times <= 20.0)
+        spike_2 = (times >= 50.0) & (times <= 60.0)
+        V_traj = jnp.where(spike_1 | spike_2, 1.5, -1.2)
+        states = jnp.zeros((T, n))
+        states = states.at[:, 0].set(V_traj)
+        return _TrajStub(states=states, times=times)
+
+    if spec.name == "cardiac.suppress_after_two.hard":
+        # F_[0,30] (V > 1.0) AND F_[40,60] (V > 1.0) AND G_[70,100] (V < 0.5):
+        # two spikes (in [10, 20] and [45, 55]) then sustained subthreshold
+        # (V = -1.2 < 0.5) over [70, 100]. The last clause's guard window
+        # extends to t = 100 but the trajectory's t_max is spec.horizon_minutes
+        # = 100, so the guard hits all samples in [70, 100].
+        spike_1 = (times >= 10.0) & (times <= 20.0)
+        spike_2 = (times >= 45.0) & (times <= 55.0)
+        V_traj = jnp.where(spike_1 | spike_2, 1.5, -1.2)
+        states = jnp.zeros((T, n))
+        states = states.at[:, 0].set(V_traj)
+        return _TrajStub(states=states, times=times)
+
     raise ValueError(f"No synthetic trajectory builder for {spec.name}")
 
 

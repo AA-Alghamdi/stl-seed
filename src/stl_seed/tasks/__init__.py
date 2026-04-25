@@ -33,6 +33,11 @@ from stl_seed.tasks.bio_ode_params import (
     RepressilatorParams,
     ToggleParams,
 )
+from stl_seed.tasks.cardiac_ap import (
+    CardiacAPSimulator,
+    FitzHughNagumoParams,
+    default_cardiac_initial_state,
+)
 from stl_seed.tasks.glucose_insulin import (
     U_INSULIN_MAX_U_PER_H,
     U_INSULIN_MIN_U_PER_H,
@@ -45,6 +50,8 @@ from stl_seed.tasks.glucose_insulin import (
 
 __all__ = [
     "BergmanParams",
+    "CardiacAPSimulator",
+    "FitzHughNagumoParams",
     "GlucoseInsulinSimulator",
     "MAPKParams",
     "MAPKSimulator",
@@ -58,6 +65,7 @@ __all__ = [
     "TrajectoryMeta",
     "U_INSULIN_MAX_U_PER_H",
     "U_INSULIN_MIN_U_PER_H",
+    "default_cardiac_initial_state",
     "default_mapk_initial_state",
     "default_normal_subject_initial_state",
     "default_repressilator_initial_state",

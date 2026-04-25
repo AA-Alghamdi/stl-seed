@@ -174,6 +174,7 @@ def register(spec: STLSpec) -> STLSpec:
 # Import the per-family modules to populate the registry. Done at the bottom
 # so that AST symbols above are available to the spec modules.
 from stl_seed.specs import bio_ode_specs as bio_ode_specs  # noqa: E402,F401
+from stl_seed.specs import cardiac_specs as cardiac_specs  # noqa: E402,F401
 from stl_seed.specs import glucose_insulin_specs as glucose_insulin_specs  # noqa: E402,F401
 
 __all__ = [
@@ -188,5 +189,6 @@ __all__ = [
     "REGISTRY",
     "register",
     "bio_ode_specs",
+    "cardiac_specs",
     "glucose_insulin_specs",
 ]

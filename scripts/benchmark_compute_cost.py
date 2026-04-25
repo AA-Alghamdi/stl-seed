@@ -116,6 +116,12 @@ from stl_seed.tasks.bio_ode_params import (
     RepressilatorParams,
     ToggleParams,
 )
+from stl_seed.tasks.cardiac_ap import (
+    CARDIAC_ACTION_DIM,
+    CardiacAPSimulator,
+    FitzHughNagumoParams,
+    default_cardiac_initial_state,
+)
 from stl_seed.tasks.glucose_insulin import (
     BergmanParams,
     GlucoseInsulinSimulator,
@@ -148,6 +154,7 @@ _DEFAULT_TASKS: tuple[str, ...] = (
     "bio_ode.repressilator",
     "bio_ode.toggle",
     "bio_ode.mapk",
+    "cardiac_ap",
 )
 
 # Targets the "near-saturating" rho on glucose_insulin (the legacy single-
@@ -177,6 +184,12 @@ _PER_TASK_TARGET_RHO: dict[str, float] = {
     "bio_ode.repressilator": 0.0,
     "bio_ode.toggle": 0.0,
     "bio_ode.mapk": 0.0,
+    # cardiac_ap on the easy spec saturates rho ~ +1.16 under sustained
+    # suprathreshold drive (the spec's Eventually clause has bounded
+    # margin once V exceeds the firing threshold V = +1, since the
+    # predicate is V - 1 and V_max ~ 2.16). 0.0 is the natural Donzé-
+    # Maler satisfaction threshold and matches the bio_ode-task convention.
+    "cardiac_ap": 0.0,
 }
 
 # Same nine samplers as the unified comparison harness.
@@ -437,11 +450,46 @@ def _bio_ode_mapk_setup() -> TaskSetup:
     )
 
 
+def _cardiac_ap_setup() -> TaskSetup:
+    """FitzHugh-Nagumo cardiac action potential task on the easy spec.
+
+    Spec: ``cardiac.depolarize.easy`` (single Eventually clause -- fire at
+    least once in [0, 50] dimensionless time units). The 1-D action box
+    uses a 5-level uniform grid on [0, 1] for ALL samplers (no beam-
+    search override needed on a 1-D action box; mirrors
+    bio_ode.mapk). Adds the millisecond-time-scale cardiac task to the
+    benchmark, demonstrating the methodology generalises across orders
+    of magnitude of physical time-scale and stiffness. Mirrors
+    ``scripts/run_unified_comparison._cardiac_ap_setup``.
+    """
+    sim = CardiacAPSimulator()
+    params = FitzHughNagumoParams()
+    spec = REGISTRY["cardiac.depolarize.easy"]
+    V = make_uniform_action_vocabulary(
+        [0.0] * CARDIAC_ACTION_DIM,
+        [1.0] * CARDIAC_ACTION_DIM,
+        k_per_dim=5,
+    )
+    x0 = default_cardiac_initial_state(params)
+    return TaskSetup(
+        name="cardiac_ap",
+        spec_key=spec.name,
+        simulator=sim,
+        params=params,
+        spec=spec,
+        vocabulary=V,
+        initial_state=x0,
+        horizon=int(sim.n_control_points),
+        aux=None,
+    )
+
+
 _TASK_BUILDERS: dict[str, callable] = {
     "glucose_insulin": _glucose_insulin_setup,
     "bio_ode.repressilator": _bio_ode_repressilator_setup,
     "bio_ode.toggle": _bio_ode_toggle_setup,
     "bio_ode.mapk": _bio_ode_mapk_setup,
+    "cardiac_ap": _cardiac_ap_setup,
 }
 
 
@@ -842,6 +890,12 @@ def _grid_shape(n_tasks: int) -> tuple[int, int]:
         return (1, 3)
     if n_tasks == 4:
         return (2, 2)
+    if n_tasks == 5:
+        # 5 tasks fit cleanly in a 2x3 grid (one panel is hidden via the
+        # "Hide any unused axes" loop downstream). 2x3 keeps the panel
+        # aspect ratio close to the 4-task headline figure so the cardiac
+        # addition does not visually distort the existing layout.
+        return (2, 3)
     import math
 
     ncols = int(math.ceil(math.sqrt(n_tasks)))
@@ -1043,7 +1097,7 @@ def _classify_task(task: str) -> str:
     repressilator and toggle have measure-near-zero satisfying
     attractors in vocabulary space.
     """
-    if task in ("glucose_insulin", "bio_ode.mapk"):
+    if task in ("glucose_insulin", "bio_ode.mapk", "cardiac_ap"):
         return "smooth-dynamics"
     if task in ("bio_ode.repressilator", "bio_ode.toggle"):
         return "narrow-attractor"
@@ -1160,20 +1214,64 @@ def _write_markdown_report(
     lines.append("")
     lines.append("## 1. Headline")
     lines.append("")
+    # Build the headline narrative *from the data* so it cannot drift
+    # out of sync with the per-task table on rerun. We summarise:
+    #   (a) which samplers are the cheapest *useful* frontier point per
+    #       task (the "Pareto winners" table just below);
+    #   (b) which samplers reach ρ > 0 (Donzé-Maler satisfaction) on
+    #       each task -- the more discriminative metric on the
+    #       narrow-attractor tasks where most samplers fail entirely.
+    sat_per_task: dict[str, list[BenchmarkResult]] = {}
+    for task in tasks:
+        sat_per_task[task] = [r for r in cells.get(task, {}).values() if r.sat_frac > 0.5]
+    winner_names: list[str] = []
+    for task in tasks:
+        w = winners.get(task)
+        if w is not None:
+            winner_names.append(f"`{task}` -> {_SAMPLER_DISPLAY.get(w.sampler, w.sampler)}")
+    winners_phrase = "; ".join(winner_names) if winner_names else "(no winners identified)"
+
     lines.append(
         "**The compute-cost Pareto frontier is task-dependent.** Across the "
         f"{len(tasks)} task families benchmarked here, no single sampler "
-        "dominates the frontier on every task; instead, *which* sampler is "
-        "Pareto-dominant is set by the structural class of the task. On "
-        "smooth-dynamics tasks (locally-informative gradients, dense satisfying "
-        "regions), structural lookahead samplers (rollout-tree, gradient-guided, "
-        "hybrid) win at low wall-clock. On narrow-attractor tasks (measure-near-"
-        "zero satisfying regions in vocabulary space), only beam-search "
-        "warmstart consistently reaches the satisfying region; continuous-"
-        "gradient methods fail entirely. This is the same finding as the "
-        "binary satisfaction analysis in `paper/cross_task_validation.md`, now "
-        "refined with the cost axis."
+        "dominates the frontier on every task; the cheapest Pareto-frontier "
+        f"sampler that meets the per-task target ρ is: {winners_phrase}. "
+        "The structural class of the task predicts which sampler wins: on "
+        "smooth-dynamics tasks (locally-informative gradients, dense "
+        "satisfying regions) the cheap structural-lookahead samplers "
+        "(rollout-tree in particular) dominate at sub-second wall-clock. "
+        "On narrow-attractor tasks (measure-near-zero satisfying regions in "
+        "vocabulary space) most samplers fail entirely; beam-search "
+        "warmstart is consistently the rho ceiling, but the cheapest "
+        "*satisfying* frontier point is sometimes a different sampler whose "
+        "joint-control gradient happens to align with the satisfying corner "
+        "(e.g. horizon-folded gradient on the toggle reaches ρ > 0 at much "
+        "lower wall-clock than beam-search there). The honest takeaway is "
+        "that the *Pareto-dominant sampler is task-dependent*; the same "
+        "qualitative finding as the binary satisfaction analysis in "
+        "`paper/cross_task_validation.md`, now refined with the cost axis."
     )
+    lines.append("")
+    # Per-task satisfaction summary -- which samplers reach rho > 0,
+    # not just which is cheapest. Crucial for the narrow-attractor
+    # tasks where most samplers fail by tens to hundreds of rho units.
+    lines.append("Samplers reaching ρ > 0 (Donzé-Maler satisfaction) on each task, in cost order:")
+    lines.append("")
+    for task in tasks:
+        sat_samps = sat_per_task.get(task, [])
+        if not sat_samps:
+            lines.append(f"- `{task}`: none.")
+            continue
+        ordered = sorted(
+            sat_samps,
+            key=lambda r: _wall(r) if np.isfinite(_wall(r)) else float("inf"),
+        )
+        names = ", ".join(
+            f"{_SAMPLER_DISPLAY.get(r.sampler, r.sampler)} "
+            f"(ρ={r.mean_rho:+.3f}, sat={r.sat_frac:.0%}, wall={_wall(r):.2f}s)"
+            for r in ordered
+        )
+        lines.append(f"- `{task}`: {names}.")
     lines.append("")
     if total_wall_clock_s is not None and np.isfinite(total_wall_clock_s):
         lines.append(
@@ -1434,6 +1532,17 @@ def _write_markdown_report(
                     f"(ρ={w.mean_rho:+.2f} at {_wall(w):.2f}s)"
                 )
         if narrow_winners:
+            # Compute the actual beam-search costs from the data so the
+            # interpretation paragraph cannot lie about them.
+            beam_phrases: list[str] = []
+            for t in narrow:
+                beam = cells.get(t, {}).get("beam_search_warmstart")
+                if beam is not None:
+                    beam_phrases.append(
+                        f"{_wall(beam):.2f}s on `{t}` "
+                        f"(ρ={beam.mean_rho:+.2f}, sat={beam.sat_frac:.0%})"
+                    )
+            beam_cost_str = "; ".join(beam_phrases) if beam_phrases else "(no measurement)"
             lines.append(
                 "**Narrow-attractor tasks** ("
                 + ", ".join(f"`{t}`" for t in narrow)
@@ -1441,15 +1550,21 @@ def _write_markdown_report(
                 + "; ".join(narrow_winners)
                 + ". The satisfying region is a measure-near-zero "
                 "corner of the action box (silence-3 on the repressilator, "
-                "silence-B on the toggle); continuous-gradient methods cannot "
-                "find it because the partial-trajectory gradient at any single "
-                "intermediate step does not point coherently toward it. Beam-"
-                "search warmstart resolves this by enumerating the satisfying "
-                "corner directly from a denser action vocabulary "
-                "(k_per_dim=5), and a model-predictive constant-extrapolation "
-                "lookahead score selects it deterministically. The cost is "
-                "moderate (a few hundred ms per sample) but it is the only "
-                "sampler that consistently reaches ρ > 0 on these tasks."
+                "silence-B on the toggle); continuous-gradient methods "
+                "trained against the full-horizon rho fail almost entirely. "
+                "Beam-search warmstart is the rho ceiling on both tasks "
+                "(measured wall: " + beam_cost_str + ") because it "
+                "enumerates the satisfying corner directly from a denser "
+                "action vocabulary (k_per_dim=5) and scores each candidate "
+                "under a model-predictive constant-extrapolation lookahead. "
+                "On the toggle the joint-control horizon-folded gradient "
+                "*also* finds the satisfying region (with its 100 gradient "
+                "steps over the joint control vector, the global rho gradient "
+                "is informative enough to silence gene B even though no "
+                "myopic per-step probe is); on the repressilator it does "
+                "not. The cheapest *satisfying* frontier point on each "
+                "narrow-attractor task is therefore the per-task Pareto "
+                "winner above, not unconditionally beam-search."
             )
             lines.append("")
     lines.append(

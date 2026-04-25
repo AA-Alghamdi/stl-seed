@@ -112,6 +112,12 @@ from stl_seed.tasks.bio_ode_params import (
     RepressilatorParams,
     ToggleParams,
 )
+from stl_seed.tasks.cardiac_ap import (
+    CARDIAC_ACTION_DIM,
+    CardiacAPSimulator,
+    FitzHughNagumoParams,
+    default_cardiac_initial_state,
+)
 from stl_seed.tasks.glucose_insulin import (
     BergmanParams,
     GlucoseInsulinSimulator,
@@ -132,6 +138,7 @@ _DEFAULT_TASKS: tuple[str, ...] = (
     "bio_ode.repressilator",
     "bio_ode.toggle",
     "bio_ode.mapk",
+    "cardiac_ap",
 )
 _DEFAULT_SAMPLERS: tuple[str, ...] = (
     "standard",
@@ -438,11 +445,51 @@ def _vocabulary_for(sampler_name: str, setup: TaskSetup):
     return setup.vocabulary
 
 
+def _cardiac_ap_setup() -> TaskSetup:
+    """FitzHugh-Nagumo cardiac action potential task on the easy spec.
+
+    Spec: ``cardiac.depolarize.easy`` (single Eventually clause -- fire at
+    least once in the first half of the 100-time-unit horizon). The
+    satisfying region is reachable by any constant-positive-current
+    policy, since the FHN cell has firing threshold V = +1 (FitzHugh
+    1961 §III) and a sustained ``I_ext`` saturation drives V well above
+    that. The 1-D action box uses a 5-level uniform grid on [0, 1]
+    (k_per_dim=5, K=5) for ALL samplers (no beam-search override needed
+    on a 1-D action box, mirroring the bio_ode.mapk convention).
+
+    The cardiac task adds a fifth task family on a millisecond time-scale
+    (vs minutes for the other four), demonstrating the methodology
+    generalises across orders of magnitude of physical time-scale and
+    stiffness.
+    """
+    sim = CardiacAPSimulator()
+    params = FitzHughNagumoParams()
+    spec = REGISTRY["cardiac.depolarize.easy"]
+    V = make_uniform_action_vocabulary(
+        [0.0] * CARDIAC_ACTION_DIM,
+        [1.0] * CARDIAC_ACTION_DIM,
+        k_per_dim=5,
+    )
+    x0 = default_cardiac_initial_state(params)
+    return TaskSetup(
+        name="cardiac_ap",
+        spec_key=spec.name,
+        simulator=sim,
+        params=params,
+        spec=spec,
+        vocabulary=V,
+        initial_state=x0,
+        horizon=int(sim.n_control_points),
+        aux=None,
+    )
+
+
 _TASK_BUILDERS: dict[str, callable] = {
     "glucose_insulin": _glucose_insulin_setup,
     "bio_ode.repressilator": _bio_ode_repressilator_setup,
     "bio_ode.toggle": _bio_ode_toggle_setup,
     "bio_ode.mapk": _bio_ode_mapk_setup,
+    "cardiac_ap": _cardiac_ap_setup,
 }
 
 
