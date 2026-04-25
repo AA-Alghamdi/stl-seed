@@ -48,6 +48,15 @@ jobs:
         run: uv run pyright src
         continue-on-error: true
 
+      - name: Markdown format check (mdformat)
+        run: uv run pre-commit run mdformat --all-files
+
+      - name: Spell check (codespell)
+        run: uv run pre-commit run codespell --all-files
+
+      - name: Security scan (bandit)
+        run: uv run pre-commit run bandit --all-files
+
       - name: REDACTED firewall (forbidden imports + vocabulary)
         run: bash scripts/REDACTED.sh
 

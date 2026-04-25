@@ -1,9 +1,6 @@
 # stl-seed
 
-[![CI](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml)
-[![Lint](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml)
-[![codecov](https://codecov.io/gh/AA-Alghamdi/stl-seed/branch/main/graph/badge.svg)](https://codecov.io/gh/AA-Alghamdi/stl-seed)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml) [![Lint](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml) [![codecov](https://codecov.io/gh/AA-Alghamdi/stl-seed/branch/main/graph/badge.svg)](https://codecov.io/gh/AA-Alghamdi/stl-seed) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 Differentiable STL robustness as inference-time guidance for small open-weights LLM agents on biomolecular control.
 
@@ -11,8 +8,8 @@ Differentiable STL robustness as inference-time guidance for small open-weights 
 
 **Different samplers dominate different task structures**, and the artifact characterises which sampler wins which class of task with reproducible per-seed evidence.
 
-* On `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients), gradient-guided STL decoding lifts mean ρ from +0.16 (standard sampling) to +19.91 — saturating the spec at matched compute. The hybrid sampler hits the +20.0 ceiling on every seed.
-* On `bio_ode.repressilator.easy` (narrow vocabulary attractor: a single corner of the action box satisfies the spec, every other corner fails by ~275 ρ units), the gradient-guided sampler floors at ρ ≈ −250 — the satisfying region is measure-near-zero in the continuous action space. **Beam-search warmstart** resolves this: discrete enumeration over the dense action lattice scored under a model-predictive constant-extrapolation lookahead reaches ρ ≈ +25 on 3/3 seeds (vs gradient-guided's 0/3) on the same canonical IC. The xfail for the gradient-guided sampler stays in place — it is still a true statement about that sampler — and a positive resolution test now stands beside it.
+- On `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients), gradient-guided STL decoding lifts mean ρ from +0.16 (standard sampling) to +19.91 — saturating the spec at matched compute. The hybrid sampler hits the +20.0 ceiling on every seed.
+- On `bio_ode.repressilator.easy` (narrow vocabulary attractor: a single corner of the action box satisfies the spec, every other corner fails by ~275 ρ units), the gradient-guided sampler floors at ρ ≈ −250 — the satisfying region is measure-near-zero in the continuous action space. **Beam-search warmstart** resolves this: discrete enumeration over the dense action lattice scored under a model-predictive constant-extrapolation lookahead reaches ρ ≈ +25 on 3/3 seeds (vs gradient-guided's 0/3) on the same canonical IC. The xfail for the gradient-guided sampler stays in place — it is still a true statement about that sampler — and a positive resolution test now stands beside it.
 
 The headline is therefore not "one sampler that wins everywhere" but "continuous-gradient methods for smooth, locally-informative landscapes; discrete enumeration for narrow vocabulary attractors." Resolution analysis: [`paper/cross_task_validation.md`](paper/cross_task_validation.md), Resolution (2026-04-25) section.
 

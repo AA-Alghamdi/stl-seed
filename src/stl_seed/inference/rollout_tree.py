@@ -468,7 +468,7 @@ class RolloutTreeSampler:
         self._branch_rhos = jax.jit(_branch_rhos)
 
         # If refine_iters > 0, build the inner gradient-guided sampler that
-        # we delegate to for the refinement step. We re-use the existing
+        # we delegate to for the refinement step. We reuse the existing
         # implementation rather than reimplementing the gradient logic here:
         # the inner sampler is the canonical reference and any changes to
         # the gradient path automatically propagate to the refinement.

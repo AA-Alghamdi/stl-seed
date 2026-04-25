@@ -321,7 +321,7 @@ def parse_action_sequence(text: str) -> np.ndarray:
     Robustness contract
     -------------------
 
-    * Tolerates extraneous whitespace, newlines, and unparseable trailing
+    * Tolerates extraneous whitespace, newlines, and unparsable trailing
       text after the last valid block.
     * Raises ``ValueError`` if zero ``<action>`` blocks are found, so the
       eval harness's exception path (catch + record NaN) fires cleanly.

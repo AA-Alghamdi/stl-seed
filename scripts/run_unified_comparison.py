@@ -510,7 +510,7 @@ def _run_all_cells(
     total = len(tasks) * len(samplers) * int(n_seeds)
     counter = 0
     for task in tasks:
-        # Build samplers once and re-use across seeds. This is a real
+        # Build samplers once and reuse across seeds. This is a real
         # wall-clock optimisation for the gradient-based samplers
         # (which have a ~5s JIT warmup the first time the
         # value_and_grad closure is traced); for the baselines it is

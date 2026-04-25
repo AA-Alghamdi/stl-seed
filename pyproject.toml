@@ -128,3 +128,19 @@ pythonVersion = "3.11"
 typeCheckingMode = "standard"
 reportMissingImports = "warning"
 reportPrivateUsage = false
+
+[tool.bandit]
+# Security scanner config; consumed by pre-commit hook + ad-hoc bandit runs.
+# Skips justified inline; revisit if any of these become genuine concerns.
+# NOTE: pre-commit hook is pinned at bandit 1.7.10 (no B615/huggingface check).
+# Newer bandit versions add B615 (HF from_pretrained without revision pin); when
+# we bump the hook, add "B615" to this list — model IDs come from pinned configs
+# and reproducibility is enforced via uv.lock, not per-call revision args.
+exclude_dirs = ["tests", ".venv", "data", "runs"]
+skips = [
+    "B101",   # assert_used — we use assert in scientific code (sanity checks, not security)
+    "B311",   # standard pseudo-random — used for shuffles/seeds, not crypto
+    "B701",   # jinja2 autoescape=False — prompts.py renders LLM training prompts to
+              # plain text fed into a tokenizer; never returned to a browser, so XSS
+              # does not apply. Autoescape would corrupt the prompt characters.
+]

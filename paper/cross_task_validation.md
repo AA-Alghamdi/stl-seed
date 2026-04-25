@@ -4,7 +4,7 @@ The headline ρ improvement on glucose-insulin (`paper/inference_method.md`: 19.
 
 ## Pre-registered protocol
 
-Spec: `bio_ode.repressilator.easy` = $G_{[120,200]}$ (m1 ≥ 250 nM) ∧ $F_{[0,60]}$ (p2 < 25 nM) — post-transient sustained-high band on the first repressor and a transient silencing of the second. IC: the canonical pilot `[0, 0, 0, 15, 5, 25]` (zero mRNAs, low-amplitude unequal proteins to break the symmetric unstable fixed point — the Elowitz-Leibler 2000 convention). Vocabulary: $V \in \mathbb{R}^{8 \times 3}$, the corners of $[0,1]^3$, including the action $u = (0, 0, 1)$ that the topology-aware heuristic in `tests/test_topology_aware.py::test_topology_aware_repressilator_satisfies` shows reaches ρ ≈ +25 when held constant. Flat (uniform) LLM, $\lambda \in \{0, 2\}$, $T = 0.5$, six seeds. Acceptance criterion: paired wins ≥ 4/6 OR mean improvement strictly positive.
+Spec: `bio_ode.repressilator.easy` = $G\_{\[120,200\]}$ (m1 ≥ 250 nM) ∧ $F\_{\[0,60\]}$ (p2 \< 25 nM) — post-transient sustained-high band on the first repressor and a transient silencing of the second. IC: the canonical pilot `[0, 0, 0, 15, 5, 25]` (zero mRNAs, low-amplitude unequal proteins to break the symmetric unstable fixed point — the Elowitz-Leibler 2000 convention). Vocabulary: $V \\in \\mathbb{R}^{8 \\times 3}$, the corners of $\[0,1\]^3$, including the action $u = (0, 0, 1)$ that the topology-aware heuristic in `tests/test_topology_aware.py::test_topology_aware_repressilator_satisfies` shows reaches ρ ≈ +25 when held constant. Flat (uniform) LLM, $\\lambda \\in {0, 2}$, $T = 0.5$, six seeds. Acceptance criterion: paired wins ≥ 4/6 OR mean improvement strictly positive.
 
 ## Result: transfer fails
 
@@ -21,37 +21,37 @@ mean baseline = -249.296,  mean guided = -249.792,  paired wins = 1/6.
 
 `tests/test_inference.py::test_gradient_guided_improves_rho_repressilator` is marked `xfail(strict=False)` with the documented reason.
 
-To rule out hyperparameter blame, we swept three default-action choices and three $\lambda$ values, six seeds each:
+To rule out hyperparameter blame, we swept three default-action choices and three $\\lambda$ values, six seeds each:
 
-| default-action | $\lambda$ | mean ρ over 6 seeds |
-|---|---|---|
-| center (0.5, 0.5, 0.5) | 0.0 | -250.000 |
-| center (0.5, 0.5, 0.5) | 5.0 | -250.000 |
-| center (0.5, 0.5, 0.5) | 50.0 | -250.000 |
-| zeros (0, 0, 0) | 0.0 | -250.000 |
-| zeros (0, 0, 0) | 5.0 | -250.000 |
-| zeros (0, 0, 0) | 50.0 | -250.000 |
-| silence-3 (0, 0, 1) | 0.0 | -250.000 |
-| silence-3 (0, 0, 1) | 5.0 | -250.000 |
-| silence-3 (0, 0, 1) | 50.0 | -248.111 (1/6 escapes) |
+| default-action         | $\\lambda$ | mean ρ over 6 seeds    |
+| ---------------------- | ---------- | ---------------------- |
+| center (0.5, 0.5, 0.5) | 0.0        | -250.000               |
+| center (0.5, 0.5, 0.5) | 5.0        | -250.000               |
+| center (0.5, 0.5, 0.5) | 50.0       | -250.000               |
+| zeros (0, 0, 0)        | 0.0        | -250.000               |
+| zeros (0, 0, 0)        | 5.0        | -250.000               |
+| zeros (0, 0, 0)        | 50.0       | -250.000               |
+| silence-3 (0, 0, 1)    | 0.0        | -250.000               |
+| silence-3 (0, 0, 1)    | 5.0        | -250.000               |
+| silence-3 (0, 0, 1)    | 50.0       | -248.111 (1/6 escapes) |
 
-Even with the *known-satisfying* default action and a 25× larger $\lambda$, only one of six seeds budges off the −250 floor, and only by ~11 ρ units of a ~275-unit gap. The signal is essentially absent.
+Even with the *known-satisfying* default action and a 25× larger $\\lambda$, only one of six seeds budges off the −250 floor, and only by ~11 ρ units of a ~275-unit gap. The signal is essentially absent.
 
 ## Why the gradient probe fails here
 
-The structure is a cliff. Constant-action sweeps show ρ ≈ +25 for the constant `(0, 0, 1)` policy and ρ ≈ −250 for almost every other constant policy. The satisfying region is a measure-near-zero attractor in $[0, 1]^{30}$ (3 actions × 10 control steps).
+The structure is a cliff. Constant-action sweeps show ρ ≈ +25 for the constant `(0, 0, 1)` policy and ρ ≈ −250 for almost every other constant policy. The satisfying region is a measure-near-zero attractor in $\[0, 1\]^{30}$ (3 actions × 10 control steps).
 
-The G-clause is conjunctive over a 30-point window: $G_{[120,200]}$ on a 1-min save grid is `min` over 81 grid points of `m1[t] - 250`. A single dip of m1 below 250 in that window kills the ρ. The gradient at any single control step $u_t$ informs only the immediate vicinity (~20 min downstream), not the 80-minute G-window.
+The G-clause is conjunctive over a 30-point window: $G\_{\[120,200\]}$ on a 1-min save grid is `min` over 81 grid points of `m1[t] - 250`. A single dip of m1 below 250 in that window kills the ρ. The gradient at any single control step $u_t$ informs only the immediate vicinity (~20 min downstream), not the 80-minute G-window.
 
-The probe assumes the future is the default action. $\nabla_{\bar{u}_t} \rho$ holds $u_{t+1}, \ldots, u_H$ fixed at $u_{\mathrm{def}}$. Glucose-insulin tolerates this because a single bolus mostly determines local glucose dynamics. The repressilator does not: $u_{t+1}, \ldots, u_H$ jointly determine whether m1 stays high through the back of the horizon, and freezing them at $u_{\mathrm{def}} = (0.5, 0.5, 0.5)$ creates a mid-amplitude oscillating regime with no informative gradient toward `silence-3`.
+The probe assumes the future is the default action. $\\nabla\_{\\bar{u}_t} \\rho$ holds $u_{t+1}, \\ldots, u_H$ fixed at $u\_{\\mathrm{def}}$. Glucose-insulin tolerates this because a single bolus mostly determines local glucose dynamics. The repressilator does not: $u\_{t+1}, \\ldots, u_H$ jointly determine whether m1 stays high through the back of the horizon, and freezing them at $u\_{\\mathrm{def}} = (0.5, 0.5, 0.5)$ creates a mid-amplitude oscillating regime with no informative gradient toward `silence-3`.
 
-The action box also has near-equivalent satisfying corners. `silence-3` $= (0, 0, 1)$ silences gene 3; under the cyclic topology this de-represses gene 1 (m1 up). But `silence-3` is adjacent to `silence-3-and-1` $= (1, 0, 1)$, which silences m1 itself and *fails* the spec. The vocabulary geometry puts a sharp ridge between satisfying and failing corners, and the linear projection $\langle V_k - \bar{u}, g \rangle$ cannot disambiguate them when $\bar{u}_t$ sits at the box center far from any corner.
+The action box also has near-equivalent satisfying corners. `silence-3` $= (0, 0, 1)$ silences gene 3; under the cyclic topology this de-represses gene 1 (m1 up). But `silence-3` is adjacent to `silence-3-and-1` $= (1, 0, 1)$, which silences m1 itself and *fails* the spec. The vocabulary geometry puts a sharp ridge between satisfying and failing corners, and the linear projection $\\langle V_k - \\bar{u}, g \\rangle$ cannot disambiguate them when $\\bar{u}\_t$ sits at the box center far from any corner.
 
-The cleanest fix is a multi-step rollout-tree gradient probe: at each step $t$, average $\nabla_{u_t} \rho$ over a small set of *future-action samples* drawn from the LLM prior, instead of the single default extrapolation. That removes the myopic assumption and softens the discrete-corner geometry. Pre-registered as future work.
+The cleanest fix is a multi-step rollout-tree gradient probe: at each step $t$, average $\\nabla\_{u_t} \\rho$ over a small set of *future-action samples* drawn from the LLM prior, instead of the single default extrapolation. That removes the myopic assumption and softens the discrete-corner geometry. Pre-registered as future work.
 
 ## Hybrid sampler on harder glucose
 
-The hybrid sampler runs $n$ independent gradient-guided draws and selects argmax-ρ. On `glucose_insulin.dawn.hard` — a harder spec where ρ hovers in $[-33, -19]$ rather than saturating near $+20$ — hybrid strictly beats pure guidance:
+The hybrid sampler runs $n$ independent gradient-guided draws and selects argmax-ρ. On `glucose_insulin.dawn.hard` — a harder spec where ρ hovers in $\[-33, -19\]$ rather than saturating near $+20$ — hybrid strictly beats pure guidance:
 
 ```
 guided                : per-seed = [-33.0, -33.0, -33.0, -18.69, -33.0, -33.0],  mean = -30.616
@@ -60,7 +60,7 @@ hybrid (n=3)          : per-seed = [-33.0, -33.0, -33.0, -19.15, -18.69, -33.0],
 hybrid (n=4)          : per-seed = [-33.0, -33.0, -33.0, -19.15, -18.69, -33.0], mean = -28.307
 ```
 
-Hybrid($n=4$) is +2.3 ρ units better than pure guidance on this spec, with 5/6 hybrid $\ge$ guided per seed and one strict win. Compute is $4\times$ pure guidance; the matched-compute baseline is ContinuousBoNSampler($n=8$), which belongs in the Phase-2 sweep, not in this single-shot note. `tests/test_inference.py::test_hybrid_beats_pure_guidance` codifies the finding with a `tol = 2.0` ρ-unit margin so harmless RNG drift doesn't flip the test red.
+Hybrid($n=4$) is +2.3 ρ units better than pure guidance on this spec, with 5/6 hybrid $\\ge$ guided per seed and one strict win. Compute is $4\\times$ pure guidance; the matched-compute baseline is ContinuousBoNSampler($n=8$), which belongs in the Phase-2 sweep, not in this single-shot note. `tests/test_inference.py::test_hybrid_beats_pure_guidance` codifies the finding with a `tol = 2.0` ρ-unit margin so harmless RNG drift doesn't flip the test red.
 
 ## Where this sits in the test-time-compute story
 
@@ -76,20 +76,20 @@ The post-hoc result confirmed this. We have not edited the framing to make it ti
 
 The negative result documented above stands as a true statement about the *gradient-guided* sampler on this configuration, but it no longer represents the artifact's overall position on the repressilator task. Four candidate fixes were implemented and benchmarked against the same canonical pilot IC. Three were partial; one resolves the failure deterministically.
 
-**A1 — Horizon-folded gradient.** `src/stl_seed/inference/horizon_folded.py`. Differentiate ρ with respect to the *entire* control sequence $u_{1:H}$ end-to-end and run K Adam steps on the joint 30-D action vector, instead of decomposing into H per-step gradient probes. Removes the myopic-default-action assumption. Result on the canonical IC: still cliff-trapped — full-horizon ∇ρ inherits the same near-zero local gradient norm at the box centre that defeated the per-step probe, because the cliff geometry is a property of ρ on this configuration, not of the decomposition. Partial fix (helps on some seeds; mean ρ remains negative).
+**A1 — Horizon-folded gradient.** `src/stl_seed/inference/horizon_folded.py`. Differentiate ρ with respect to the *entire* control sequence $u\_{1:H}$ end-to-end and run K Adam steps on the joint 30-D action vector, instead of decomposing into H per-step gradient probes. Removes the myopic-default-action assumption. Result on the canonical IC: still cliff-trapped — full-horizon ∇ρ inherits the same near-zero local gradient norm at the box centre that defeated the per-step probe, because the cliff geometry is a property of ρ on this configuration, not of the decomposition. Partial fix (helps on some seeds; mean ρ remains negative).
 
 **A2 — Rollout-tree probing.** `src/stl_seed/inference/rollout_tree.py`. At each step branch over the top-`branch_k` LLM candidates, simulate `lookahead_h` steps under a fixed continuation policy, score the leaf ρ, and pick argmax. AlphaGo-style finite-depth tree search with continuous STL leaves. Result on the canonical IC with default `continuation_policy="zero"`: no improvement — the leaf ρ on the partial+continuation trajectory is dominated by the spec's saturated −250 floor, so the branch ranking is uninformative. The `"heuristic"` continuation policy with the silence-3 default action does help, but only because the heuristic *is* the answer; that is not a fix, that is the tester telling the algorithm the answer.
 
 **A3 — CMA-ES + gradient refinement.** `src/stl_seed/inference/cmaes_gradient.py`. Population search (Hansen 2016) over the joint 30-D action box with covariance adaptation, then gradient-ascent polishing of the best survivor. Escapes basins that local methods cannot. Result on the canonical IC: partial fix — CMA-ES does occasionally find seeds whose mean migrates toward a satisfying corner, but the population variance has to be high enough that the box-reflection clamp dominates the dynamics, and the gradient refinement in the cliff regime is again uninformative. Per-seed it sometimes hits ρ > 0; on aggregate it is not robust.
 
-**C1 — Beam-search warmstart.** `src/stl_seed/inference/beam_search_warmstart.py`. **Resolves the failure.** The mechanism is qualitatively different from A1/A2/A3: instead of trying to find the satisfying region via a continuous descent on ρ, beam search *enumerates* the discrete vocabulary V ∈ ℝ^{125 × 3} (k_per_dim = 5 on the [0, 1]^3 action box, which contains the silence-3 corner u = (0, 0, 1) by construction). At each step t, every (beam-member, vocabulary-item) pair is evaluated under a model-predictive `tail_strategy="repeat_candidate"` lookahead — score = ρ on "do prefix, then hold the candidate constant for the rest of the horizon." The constant silence-3 policy gives ρ ≈ +25, so this score is finite and differentiating from the sea of −250 candidates from step 0. The top-B candidates survive; B = 8 is enough to keep silence-3 in the active beam through every step. After the discrete pass, an optional 30-step gradient refinement polishes the continuous control around the discrete winner. Result on the canonical IC: ρ ≈ +25 on 3/3 seeds in `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution` and on the `n=8`-seed cross-sampler harness; the negative result for gradient-guided at ρ ≈ −250 is unchanged.
+**C1 — Beam-search warmstart.** `src/stl_seed/inference/beam_search_warmstart.py`. **Resolves the failure.** The mechanism is qualitatively different from A1/A2/A3: instead of trying to find the satisfying region via a continuous descent on ρ, beam search *enumerates* the discrete vocabulary V ∈ ℝ^{125 × 3} (k_per_dim = 5 on the \[0, 1\]^3 action box, which contains the silence-3 corner u = (0, 0, 1) by construction). At each step t, every (beam-member, vocabulary-item) pair is evaluated under a model-predictive `tail_strategy="repeat_candidate"` lookahead — score = ρ on "do prefix, then hold the candidate constant for the rest of the horizon." The constant silence-3 policy gives ρ ≈ +25, so this score is finite and differentiating from the sea of −250 candidates from step 0. The top-B candidates survive; B = 8 is enough to keep silence-3 in the active beam through every step. After the discrete pass, an optional 30-step gradient refinement polishes the continuous control around the discrete winner. Result on the canonical IC: ρ ≈ +25 on 3/3 seeds in `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution` and on the `n=8`-seed cross-sampler harness; the negative result for gradient-guided at ρ ≈ −250 is unchanged.
 
 ### Why C1 succeeds where A1/A2/A3 do not
 
-The repressilator's ρ landscape on $[0, 1]^{30}$ has *one* satisfying basin (the constant silence-3 corner) embedded in a sea of saturated −250. The basin's measure under any continuous distribution is near zero; the basin's *vocabulary measure* under the k_per_dim = 5 lattice is 1 / 125 — small but enumerable. The four strategies map onto two qualitatively different fixes for the original myopic-gradient diagnosis:
+The repressilator's ρ landscape on $\[0, 1\]^{30}$ has *one* satisfying basin (the constant silence-3 corner) embedded in a sea of saturated −250. The basin's measure under any continuous distribution is near zero; the basin's *vocabulary measure* under the k_per_dim = 5 lattice is 1 / 125 — small but enumerable. The four strategies map onto two qualitatively different fixes for the original myopic-gradient diagnosis:
 
-* A1/A2/A3 try to *find the basin via continuous search*. They differ in how they search (joint gradient, lookahead tree, population evolution + gradient) but share the assumption that ρ's gradient or finite differences carry useful directional information. On this configuration that assumption fails: the cliff is sharp and the floor is flat.
-* C1 *bypasses continuous search entirely*. The vocabulary is a finite set; iterate over it. The model-predictive constant-extrapolation lookahead converts each vocabulary item into a finite-ρ scalar, the top-B selection is a trivial sort, and the satisfying corner survives the beam from step 0 because its lookahead-ρ is +25 while every other candidate's is ≈ −250.
+- A1/A2/A3 try to *find the basin via continuous search*. They differ in how they search (joint gradient, lookahead tree, population evolution + gradient) but share the assumption that ρ's gradient or finite differences carry useful directional information. On this configuration that assumption fails: the cliff is sharp and the floor is flat.
+- C1 *bypasses continuous search entirely*. The vocabulary is a finite set; iterate over it. The model-predictive constant-extrapolation lookahead converts each vocabulary item into a finite-ρ scalar, the top-B selection is a trivial sort, and the satisfying corner survives the beam from step 0 because its lookahead-ρ is +25 while every other candidate's is ≈ −250.
 
 The distinction is structural-search vs. continuous-search, not "better hyperparameters." The pre-registered diagnosis ("the partial-then-extrapolated probe is the bottleneck") was correct in identifying *the* bottleneck as the partial-extrapolation, but the right fix was not a smarter extrapolation — it was to stop using a continuous gradient and start using a discrete enumeration.
 
@@ -103,20 +103,11 @@ This is the honest version. There is no claim of universal dominance; there is a
 
 ### Provenance and reproducibility
 
-* C1 implementation: `src/stl_seed/inference/beam_search_warmstart.py`.
-* C1 unit tests (3-seed pilot): `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution`, plus the new explicit `tests/test_inference.py::test_beam_search_solves_repressilator`.
-* Cross-sampler harness with all four extended samplers (A1, A2, A3, C1) on both task families: `scripts/run_unified_comparison.py`; results in `runs/unified_comparison/results.parquet`, headline figure in `paper/figures/unified_comparison.png`, summary in `paper/unified_comparison_results.md`.
-* `tests/test_inference.py::test_gradient_guided_improves_rho_repressilator` remains marked `xfail(strict=False)` — it is still a true statement about the gradient-guided sampler on this configuration.
+- C1 implementation: `src/stl_seed/inference/beam_search_warmstart.py`.
+- C1 unit tests (3-seed pilot): `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution`, plus the new explicit `tests/test_inference.py::test_beam_search_solves_repressilator`.
+- Cross-sampler harness with all four extended samplers (A1, A2, A3, C1) on both task families: `scripts/run_unified_comparison.py`; results in `runs/unified_comparison/results.parquet`, headline figure in `paper/figures/unified_comparison.png`, summary in `paper/unified_comparison_results.md`.
+- `tests/test_inference.py::test_gradient_guided_improves_rho_repressilator` remains marked `xfail(strict=False)` — it is still a true statement about the gradient-guided sampler on this configuration.
 
 ## References
 
-Aksaray et al. "Q-learning for robust satisfaction of signal temporal logic specifications." CDC 2016.
-Amos & Kolter. "OptNet: Differentiable Optimization as a Layer in Neural Networks." NeurIPS 2017, arXiv:1703.00443.
-Brown et al. "Large Language Monkeys: scaling inference compute with repeated sampling." arXiv:2407.21787, 2024.
-Donzé & Maler. "Robust satisfaction of temporal logic over real-valued signals." FORMATS 2010, DOI 10.1007/978-3-642-15297-9_9.
-Elowitz & Leibler. "A synthetic oscillatory network of transcriptional regulators." Nature 403, 335–338 (2000), DOI 10.1038/35002125.
-Hansen. "The CMA Evolution Strategy: A Tutorial." arXiv:1604.00772, 2016.
-Reddy. "Speech Recognition by Machine: A Review." Proc. IEEE 64:4, 1977.
-Silver et al. "Mastering the game of Go with deep neural networks and tree search." Nature 529:484–489, 2016, DOI 10.1038/nature16961.
-Snell et al. "Scaling LLM test-time compute optimally." arXiv:2408.03314, 2024.
-Vijayakumar et al. "Diverse Beam Search." arXiv:1610.02424, 2018.
+Aksaray et al. "Q-learning for robust satisfaction of signal temporal logic specifications." CDC 2016. Amos & Kolter. "OptNet: Differentiable Optimization as a Layer in Neural Networks." NeurIPS 2017, arXiv:1703.00443. Brown et al. "Large Language Monkeys: scaling inference compute with repeated sampling." arXiv:2407.21787, 2024. Donzé & Maler. "Robust satisfaction of temporal logic over real-valued signals." FORMATS 2010, DOI 10.1007/978-3-642-15297-9_9. Elowitz & Leibler. "A synthetic oscillatory network of transcriptional regulators." Nature 403, 335–338 (2000), DOI 10.1038/35002125. Hansen. "The CMA Evolution Strategy: A Tutorial." arXiv:1604.00772, 2016. Reddy. "Speech Recognition by Machine: A Review." Proc. IEEE 64:4, 1977. Silver et al. "Mastering the game of Go with deep neural networks and tree search." Nature 529:484–489, 2016, DOI 10.1038/nature16961. Snell et al. "Scaling LLM test-time compute optimally." arXiv:2408.03314, 2024. Vijayakumar et al. "Diverse Beam Search." arXiv:1610.02424, 2018.
