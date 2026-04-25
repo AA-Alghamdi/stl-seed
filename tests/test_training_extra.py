@@ -32,12 +32,12 @@ from stl_seed.training.loop import _load_filtered_dataset
 # ---------------------------------------------------------------------------
 
 
-def test_load_filtered_dataset_raises_clear_import_error() -> None:
-    """``stl_seed.filter.dataset.load_filtered_dataset`` is intentionally
-    NOT implemented in subphase 1.3 — the loader must surface a clear
-    ImportError pointing at A8."""
-    with pytest.raises(ImportError, match="A8|filter.dataset"):
-        _load_filtered_dataset("hard", "glucose_insulin")
+def test_load_filtered_dataset_raises_filenotfound_when_no_data() -> None:
+    """``stl_seed.filter.dataset.load_filtered_dataset`` is implemented (Tier 9
+    closing fix) but raises FileNotFoundError when the data manifest is
+    missing for the requested (task, filter) pair."""
+    with pytest.raises(FileNotFoundError, match="No filtered manifest"):
+        _load_filtered_dataset("hard", "this_task_does_not_exist_12345")
 
 
 def test_train_with_filter_warns_when_model_overrides_config(tmp_path, caplog) -> None:
@@ -62,13 +62,14 @@ def test_train_with_filter_warns_when_model_overrides_config(tmp_path, caplog) -
 
 
 def test_train_with_filter_loads_dataset_when_none_passed(tmp_path) -> None:
-    """When ``dataset=None`` and the loader is unavailable, train_with_filter
-    must surface ImportError from _load_filtered_dataset."""
+    """When ``dataset=None`` and no manifest exists for the requested cell,
+    train_with_filter must surface FileNotFoundError from
+    load_filtered_dataset (post-Tier-9 — the loader is now implemented)."""
     cfg = TrainingConfig(output_dir=tmp_path)
-    with pytest.raises(ImportError, match="A8|filter.dataset"):
+    with pytest.raises(FileNotFoundError, match="No filtered manifest"):
         train_with_filter(
             filter_condition="hard",
-            task="glucose_insulin",
+            task="this_task_does_not_exist_12345",
             model="Qwen/Qwen3-0.6B-Instruct",
             backend="mlx",
             config=cfg,

@@ -126,9 +126,7 @@ def _report_filter(
     table.add_row("worst-kept rho", f"{worst_kept:+.4e}")
     table.add_row(
         "best-dropped rho",
-        "N/A (continuous keeps all)"
-        if filter_name == "continuous"
-        else f"{best_dropped:+.4e}",
+        "N/A (continuous keeps all)" if filter_name == "continuous" else f"{best_dropped:+.4e}",
     )
     console.print(table)
 
@@ -202,14 +200,10 @@ def main() -> int:
 
                 if isinstance(e, FilterError):
                     console.print(
-                        f"  [yellow]{filter_name} INAPPLICABLE[/]: "
-                        f"{type(e).__name__}: {e}"
+                        f"  [yellow]{filter_name} INAPPLICABLE[/]: {type(e).__name__}: {e}"
                     )
                 else:
-                    console.print(
-                        f"  [red]{filter_name} FAILED[/]: "
-                        f"{type(e).__name__}: {e}"
-                    )
+                    console.print(f"  [red]{filter_name} FAILED[/]: {type(e).__name__}: {e}")
                     overall_ok = False
                 continue
             _report_filter(

@@ -162,4 +162,68 @@ def build_sft_dataset(
     return Dataset.from_dict(rows)
 
 
-__all__ = ["build_sft_dataset"]
+def load_filtered_dataset(
+    task: str,
+    filter_condition: str,
+    *,
+    data_root: Any | None = None,
+) -> Any:
+    """Load a filtered SFT dataset for a given (task, filter_condition).
+
+    Discovers the filtered manifest under one of:
+      data_root/<dotted_task>/<task>_<filter>.parquet
+      data/canonical/<task>_<filter>.parquet
+      data/pilot/filtered_<task>_<filter>.parquet
+      data/pilot/<task>/<task>_<filter>.parquet
+
+    Returns a HuggingFace `Dataset` with columns prompt / completion / weight /
+    trajectory_id / spec_key. The function is referenced by Phase-2 paths
+    (eval harness, sweep runner) and by the mock backend short-circuit.
+
+    Args:
+        task: e.g. "bio_ode.repressilator", "glucose_insulin"
+        filter_condition: one of {"hard", "quantile", "continuous"}
+        data_root: optional override for the data directory (Path or str).
+
+    Raises:
+        FileNotFoundError if no matching manifest is found.
+
+    REDACTED firewall: pure file-system + HuggingFace Datasets, no REDACTED.
+    """
+    from pathlib import Path
+
+    from datasets import Dataset  # type: ignore[import-not-found]
+
+    # Build candidate search paths in priority order.
+    repo_root = Path(__file__).resolve().parents[3]
+    roots: list[Path] = []
+    if data_root is not None:
+        roots.append(Path(data_root))
+    roots.extend(
+        [
+            repo_root / "data" / "canonical",
+            repo_root / "data" / "pilot",
+        ]
+    )
+
+    candidates: list[Path] = []
+    for root in roots:
+        candidates.extend(
+            [
+                root / task / f"{task}_{filter_condition}.parquet",
+                root / f"{task}_{filter_condition}.parquet",
+                root / f"filtered_{task}_{filter_condition}.parquet",
+            ]
+        )
+
+    found = next((p for p in candidates if p.exists()), None)
+    if found is None:
+        raise FileNotFoundError(
+            f"No filtered manifest for task={task!r}, filter={filter_condition!r}.\n"
+            f"Searched:\n  " + "\n  ".join(str(p) for p in candidates)
+        )
+
+    return Dataset.from_parquet(str(found))
+
+
+__all__ = ["build_sft_dataset", "load_filtered_dataset"]

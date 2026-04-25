@@ -118,17 +118,9 @@ def _load_filtered_dataset(filter_condition: str, task: str) -> Any:
             for _ in range(16)
         ]
 
-    try:
-        from stl_seed.filter.dataset import load_filtered_dataset  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise ImportError(
-            "stl_seed.filter.dataset.load_filtered_dataset is not yet "
-            "available; this is provided by subphase 1.3 A8. For a unit "
-            "test, pass an explicit dataset to BNBBackend.train / "
-            "MLXBackend.train directly."
-        ) from exc
+    from stl_seed.filter.dataset import load_filtered_dataset
 
-    return load_filtered_dataset(condition=filter_condition, task=task)
+    return load_filtered_dataset(task=task, filter_condition=filter_condition)
 
 
 # ---------------------------------------------------------------------------
