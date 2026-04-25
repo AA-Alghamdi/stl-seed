@@ -62,6 +62,8 @@ import jax.numpy as jnp
 from diffrax._custom_types import RealScalarLike
 from jaxtyping import Array, Float, PRNGKeyArray
 
+from stl_seed.tasks._trajectory import TrajectoryMeta
+
 # -----------------------------------------------------------------------------
 # Unit conventions (read carefully — mismatched units are the #1 source of
 # bugs in this model class).
@@ -325,25 +327,6 @@ def _u_at_time(
 # -----------------------------------------------------------------------------
 # Simulator.
 # -----------------------------------------------------------------------------
-
-
-class TrajectoryMeta(eqx.Module):
-    """Diagnostic metadata returned alongside the trajectory.
-
-    All fields are JAX arrays (not Python scalars) so that the dataclass is
-    a valid pytree and `simulate` is jit-compatible. To get plain-Python
-    values for logging, do `int(meta.n_nan_replacements)` etc. AFTER the
-    jitted call returns.
-    """
-
-    # count of NaN/Inf state values replaced by sentinels (int32 scalar)
-    n_nan_replacements: Float[Array, ""]
-    # diffrax RESULTS code at the end of integration (int32 scalar)
-    final_solver_result: Float[Array, ""]
-    # True if Kvaerno5 was used (currently always False; reserved for future
-    # stiff-detection branch). Encoded as a 0/1 int32 scalar to remain
-    # jit-friendly.
-    used_stiff_fallback: Float[Array, ""]
 
 
 class GlucoseInsulinSimulator(eqx.Module):

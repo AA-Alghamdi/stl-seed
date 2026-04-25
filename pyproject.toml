@@ -24,8 +24,8 @@ dependencies = [
     "matplotlib>=3.8",
     "pandas>=2.2",
     # ODE simulation (JAX-native, runs on Apple Silicon Metal + CUDA)
-    "jax>=0.4.30",
-    "jaxlib>=0.4.30",
+    "jax>=0.4.30,<0.7",
+    "jaxlib>=0.4.30,<0.7",
     "diffrax>=0.6,<0.8",
     "equinox>=0.11",
     "jaxtyping>=0.2.30",
@@ -36,7 +36,7 @@ dependencies = [
     "peft>=0.13",
     "tokenizers>=0.20",
     # Statistics / Bayesian inference
-    "numpyro>=0.16",
+    "numpyro>=0.16,<0.20",
     "arviz>=0.20",
     # Configuration + CLI
     "hydra-core>=1.3",
@@ -105,6 +105,9 @@ ignore = [
 # are valid jaxtyping; we silence F722 in modules that use it.
 "src/stl_seed/tasks/**" = ["F722", "N815"]  # protein/gene names use mixed case (n_AB, K_IPTG, etc.)
 "src/stl_seed/specs/**" = ["F722"]
+"src/stl_seed/stl/**" = ["F722"]  # STL evaluator uses jaxtyping shape strings throughout
+"src/stl_seed/generation/**" = ["F722"]  # policies/runner/store use jaxtyping shape strings
+"src/stl_seed/filter/**" = ["F722"]  # filter conditions use jaxtyping shape strings
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
