@@ -231,9 +231,11 @@ def _build_configs() -> list[_SpecConfig]:
     )
 
     # ------------------------------------------------------------------
-    # bio_ode.mapk.hard — sweep MAPK_PEAK (channel 2 in current spec).
-    # Huang & Ferrell 1996 Fig. 4: EC50 fraction 0.5; sweeping 0.2..0.8
-    # spans the Hill-curve sigmoid. Hand-set 0.5.
+    # bio_ode.mapk.hard — sweep MAPK_PEAK in absolute microM.
+    # As of 2026-04-25 the spec reads state index 4 (MAPK_PP) using
+    # absolute microM thresholds (peak=0.5, settle=0.05). Sweeping
+    # 0.2..0.8 microM spans the simulator's MAPK_PP saturation band
+    # of [0, ~1.24] microM (Markevich 2004 Table 1 calibration).
     # ------------------------------------------------------------------
     mapk_params = MAPKParams()
     mapk_init = np.asarray(default_mapk_initial_state(mapk_params))

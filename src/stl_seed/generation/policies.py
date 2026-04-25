@@ -640,26 +640,25 @@ _HEURISTIC_DEFAULTS: dict[str, dict[str, Any]] = {
     # (gene 0 repressed by gene 1, and vice versa). The bio_ode.toggle.medium
     # spec asks the controller to drive x_1 HIGH; the topology-aware policy
     # therefore silences x_1's upstream repressor (gene 1) by emitting u_1 = 1
-    # (full IPTG/aTc on the repressor of gene 0). Threshold is the textbook
-    # midpoint between LOW=30 nM and HIGH=200 nM (specs/bio_ode_specs.py).
+    # (full IPTG/aTc on the repressor of gene 0). Threshold is set just above
+    # the spec's HIGH=100 nM bound (specs/bio_ode_specs.py).
     #
-    # CALIBRATION NOTE (2026-04-24). The simulator's dimensionless dynamics
-    # cap x_1 at alpha_1 = 160 (ToggleParams), strictly below the spec's
-    # HIGH=200 nM threshold; the controller drives x_1 toward 160 (the
-    # asymptote with B fully silenced) but cannot satisfy
-    # ``G_[60,100] (x1 >= 200)`` under this parameterization. This is a
-    # pre-existing spec/simulator unit mismatch (the spec was written for
-    # the dimensional Gardner 2000 ~200 nM stable state, but the simulator
-    # follows the dimensionless Box 1 form scaled by alpha_1 = 160). Fixing
-    # the spec or the simulator is a separate work item; the controller
-    # itself is structurally correct against either.
+    # CALIBRATION NOTE (2026-04-25). The bio_ode.toggle.medium spec was
+    # corrected on 2026-04-25: HIGH lowered from 200 nM to 100 nM (the
+    # simulator's x_1 saturates at alpha_1 = 160, so the previous 200 nM
+    # threshold was structurally unreachable). With HIGH=100, the
+    # topology-aware controller's u=(0,1) constant policy drives x_1 to
+    # ~160 nM and the spec is satisfied with rho ~ +30. The "threshold"
+    # below is the controller's *internal switching* threshold (when to
+    # back off IPTG); 100 nM is now both the spec's HIGH and the
+    # controller's switching point.
     "bio_ode.toggle": {
         "controller": "topology_aware",
         "kwargs": {
             "topology": {0: 1, 1: 0},  # mutual repression: i repressed by 1-i
             "target_gene": 0,  # spec drives x_1 (gene 0) high
             "target_direction": "high",
-            "threshold": 100.0,  # nM, midway between LOW=30 and HIGH=200
+            "threshold": 100.0,  # nM, matches the spec's HIGH band post-fix
             "observation_indices": [0, 1],  # proteins live in state[0:2]
         },
     },
@@ -684,13 +683,12 @@ _HEURISTIC_DEFAULTS: dict[str, dict[str, Any]] = {
     # bottleneck — see the calibration note in the toggle entry above
     # for the broader spec/simulator mismatch context.
     #
-    # CALIBRATION NOTE (2026-04-24). The bio_ode.mapk.hard spec accesses
-    # state index 2 expecting "mapk_pp" but the simulator's index 2 is
-    # MKK-PP, not MAPK-PP (MAPK-PP is at index 4). The spec also uses
-    # normalized [0, 1] thresholds while the simulator returns absolute
-    # microM concentrations. The controller defined here observes the
-    # *correct* MAPK-PP signal (index 4) regardless of the spec issue;
-    # the spec mismatch is a separate work item.
+    # CALIBRATION NOTE (2026-04-25). The bio_ode.mapk.hard spec was
+    # corrected on 2026-04-25 to read state index 4 (MAPK_PP) using
+    # absolute microM thresholds (peak >= 0.5, settle < 0.05, MKKK
+    # safety < 0.002975). This controller already observed the correct
+    # MAPK_PP signal (index 4) at the spec-mismatch microM setpoint of
+    # 0.5, so no controller change was required.
     "bio_ode.mapk": {
         "controller": "pid",
         "kwargs": {

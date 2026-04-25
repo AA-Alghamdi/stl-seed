@@ -363,17 +363,22 @@ def _synthetic_for(spec: STLSpec) -> _TrajStub:
         return _TrajStub(states=states, times=times)
 
     if spec.name == "bio_ode.toggle.medium":
-        # x1 = 250 (>= HIGH=200), x2 = 20 (< LOW=30), both << UNSAFE=600. SAT.
+        # x1 = 150 (>= HIGH=100), x2 = 20 (< LOW=30), both << UNSAFE=600. SAT.
+        # Threshold lowered from 200 to 100 nM on 2026-04-25 (alpha_1 = 160
+        # caps x_1 in steady state, making the old HIGH=200 unreachable).
         states = jnp.zeros((T, n))
-        states = states.at[:, 0].set(250.0).at[:, 1].set(20.0)
+        states = states.at[:, 0].set(150.0).at[:, 1].set(20.0)
         return _TrajStub(states=states, times=times)
 
     if spec.name == "bio_ode.mapk.hard":
-        # MAPK_PP (channel 2): rises to 0.7 in [0, 30], drops to 0.05 in [45, 60].
-        # MKKK (channel 0): stays at 0.3 (< 0.85). MKK (channel 1) irrelevant.
-        ramp_up = jnp.where(times <= 30.0, 0.7, 0.05)
+        # Spec was corrected on 2026-04-25 to read state index 4 (MAPK_PP)
+        # in absolute microM. signal_dim is now 6 (matches the simulator).
+        # MAPK_PP (channel 4): rises to 0.7 microM in [0, 30], drops to
+        # 0.02 microM in [45, 60].
+        # MKKK_P (channel 0): stays at 0.001 microM (< MKKK_SAFE = 0.002975).
+        ramp_up = jnp.where(times <= 30.0, 0.7, 0.02)
         states = jnp.zeros((T, n))
-        states = states.at[:, 0].set(0.3).at[:, 2].set(ramp_up)
+        states = states.at[:, 0].set(0.001).at[:, 4].set(ramp_up)
         return _TrajStub(states=states, times=times)
 
     if spec.name == "glucose_insulin.tir.easy":

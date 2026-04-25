@@ -74,7 +74,7 @@ The post-hoc result confirmed this. We have not edited the framing to make it ti
 
 ## Resolution (2026-04-25)
 
-The negative result documented above stands as a true statement about the *gradient-guided* sampler on this configuration, but it no longer represents the artifact's overall position on the repressilator task. Four candidate fixes were implemented and benchmarked against the same canonical pilot IC. Three were partial; one resolves the failure deterministically.
+The negative result documented above stands as a true statement about the *gradient-guided* sampler on this configuration, but it no longer represents the artifact's overall position on the repressilator task. Four candidate fixes were implemented and benchmarked against the same canonical pilot IC; the same four candidates were re-benchmarked on the (post-spec-fix) toggle and MAPK task families later that day. Three were partial; one resolves the failure deterministically across **all three bio_ode subtasks**.
 
 **A1 — Horizon-folded gradient.** `src/stl_seed/inference/horizon_folded.py`. Differentiate ρ with respect to the *entire* control sequence $u\_{1:H}$ end-to-end and run K Adam steps on the joint 30-D action vector, instead of decomposing into H per-step gradient probes. Removes the myopic-default-action assumption. Result on the canonical IC: still cliff-trapped — full-horizon ∇ρ inherits the same near-zero local gradient norm at the box centre that defeated the per-step probe, because the cliff geometry is a property of ρ on this configuration, not of the decomposition. Partial fix (helps on some seeds; mean ρ remains negative).
 
@@ -93,19 +93,30 @@ The repressilator's ρ landscape on $\[0, 1\]^{30}$ has *one* satisfying basin (
 
 The distinction is structural-search vs. continuous-search, not "better hyperparameters." The pre-registered diagnosis ("the partial-then-extrapolated probe is the bottleneck") was correct in identifying *the* bottleneck as the partial-extrapolation, but the right fix was not a smarter extrapolation — it was to stop using a continuous gradient and start using a discrete enumeration.
 
+### Generalisation to bio_ode.toggle and bio_ode.mapk (2026-04-25)
+
+After resolving two pre-existing spec/simulator mismatches in `src/stl_seed/specs/bio_ode_specs.py` (commit message: "fix toggle HIGH=200 -> 100 nM, MAPK state index 2 -> 4 with absolute microM thresholds"; both fixes are spec-side, no simulator parameters changed), the same four candidate samplers were benchmarked on the toggle and MAPK task families to test whether the structural-search-vs-continuous-search distinction generalises beyond the repressilator.
+
+**Toggle.** `bio_ode.toggle.medium` post-fix demands `G_[60,100] (x_1 >= 100) AND G_[60,100] (x_2 < 30) AND G_[0,100] (x_1 < 600 AND x_2 < 600)`. The satisfying region is a single corner: the constant `u = (0, 1)` policy that saturates IPTG on the gene-2 repressor, freeing x_1 to rise to its `alpha_1 = 160 nM` saturation cap (`ToggleParams`). Random-policy sat-frac on this spec is ~37% over 100 trials (the bistable basin is broad enough that even noisy policies sometimes land in the right state); the structural barrier is mild but qualitatively the same as the repressilator. Beam-search recovers the satisfying corner deterministically (3/3 fixed seeds, ρ ≈ +30); gradient-guided lands in the right basin some of the time but its lookahead is dominated by the avoidance clauses.
+
+**MAPK.** `bio_ode.mapk.hard` post-fix demands `F_[0,30] (mapk_pp >= 0.5 microM) AND G_[45,60] (mapk_pp < 0.05 microM) AND G_[0,60] (NOT (mkkk_p > 0.002975 microM))`. The satisfying region requires a *pulse* control schedule (1-2 control steps of u≈1 to push MAPK_PP above 0.5 microM, then u=0 so MAPK_PP can decay back below 0.05 microM by t=45). Random-policy sat-frac is ~0% over 500 trials — the cascade in the Markevich 2004 parameter regime cannot deactivate MAPK_PP within the 15-min settle window once activated, and a uniform-random `u_t ~ U[0, 1]` policy almost always keeps the input above the deactivation threshold throughout. This is a stronger structural barrier than the repressilator's; we document it as a real property of the simulator rather than fudging the spec downward. Beam-search recovers the pulse pattern deterministically (3/3 fixed seeds at ρ ≈ +0.0024, bottlenecked by the small MKKK safety margin rather than the activation/settle clauses); all four continuous samplers fail.
+
+The pattern that holds across all three bio_ode subtasks: continuous-gradient-based methods fail when the satisfying region is a measure-near-zero attractor in the joint action box; discrete enumeration over a finite vocabulary recovers the satisfying policy when that policy is in the vocabulary by construction.
+
 ### Updated framing for the paper
 
 Before today the artifact's paper-level position on the repressilator was a single-sentence negative result. After today the position is:
 
-> Different inference-time samplers dominate different task structures. Gradient-guided sampling lifts mean ρ from +0.16 to +19.91 on `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients); beam-search warmstart hits ρ ≈ +25 on `bio_ode.repressilator.easy` (3/3 seeds, vs gradient-guided's 0/3). The artifact characterises which sampler wins which task class, with reproducible per-seed evidence. There is no single best sampler.
+> Different inference-time samplers dominate different task structures. Gradient-guided sampling lifts mean ρ from +0.16 to +19.91 on `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients); beam-search warmstart resolves *all three* bio_ode subtasks (repressilator ρ ≈ +25 at 3/3 seeds, toggle ρ ≈ +30 at 3/3 seeds, MAPK ρ ≈ +0.0024 at 3/3 seeds) where the satisfying policy is a narrow vocabulary attractor that continuous-gradient samplers cannot reach. The artifact characterises which sampler wins which task class on four task families (three biomolecular ODEs plus glucose-insulin), with reproducible per-seed evidence. There is no single best sampler.
 
-This is the honest version. There is no claim of universal dominance; there is a calibration of which method to reach for under which structural assumptions. The negative result for gradient-guided on the canonical IC is preserved (and the `xfail` remains in place); we now also have a positive result for beam-search-warmstart on the same IC that was the negative-result counter-example.
+This is the honest version. There is no claim of universal dominance; there is a calibration of which method to reach for under which structural assumptions. The negative result for gradient-guided on the canonical IC is preserved (and the `xfail` remains in place); we now also have a positive result for beam-search-warmstart on the same IC that was the negative-result counter-example, and on two additional bio_ode subtasks (toggle and MAPK) where the same continuous-vs-structural distinction holds.
 
 ### Provenance and reproducibility
 
 - C1 implementation: `src/stl_seed/inference/beam_search_warmstart.py`.
-- C1 unit tests (3-seed pilot): `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution`, plus the new explicit `tests/test_inference.py::test_beam_search_solves_repressilator`.
-- Cross-sampler harness with all four extended samplers (A1, A2, A3, C1) on both task families: `scripts/run_unified_comparison.py`; results in `runs/unified_comparison/results.parquet`, headline figure in `paper/figures/unified_comparison.png`, summary in `paper/unified_comparison_results.md`.
+- C1 unit tests (3-seed pilot): `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution`, plus three task-family-explicit tests in `tests/test_inference.py`: `test_beam_search_solves_repressilator`, `test_beam_search_solves_toggle`, `test_beam_search_solves_mapk`.
+- Cross-sampler harness with all nine samplers on **four task families** (glucose_insulin, bio_ode.repressilator, bio_ode.toggle, bio_ode.mapk): `scripts/run_unified_comparison.py`; results in `runs/unified_comparison/results.parquet`, headline figure in `paper/figures/unified_comparison.png`, summary in `paper/unified_comparison_results.md`.
+- Spec fixes (2026-04-25): `src/stl_seed/specs/bio_ode_specs.py` — `bio_ode.toggle.medium` HIGH lowered from 200 to 100 nM (`alpha_1 = 160` saturation cap); `bio_ode.mapk.hard` switched to state index 4 (MAPK_PP) using absolute microM thresholds (peak >= 0.5, settle \< 0.05, MKKK safety \< 0.002975).
 - `tests/test_inference.py::test_gradient_guided_improves_rho_repressilator` remains marked `xfail(strict=False)` — it is still a true statement about the gradient-guided sampler on this configuration.
 
 ## References

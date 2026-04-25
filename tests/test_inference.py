@@ -56,11 +56,21 @@ from stl_seed.specs import REGISTRY
 from stl_seed.stl import evaluate_robustness
 from stl_seed.tasks._trajectory import Trajectory
 from stl_seed.tasks.bio_ode import (
+    MAPK_ACTION_DIM,
     REPRESSILATOR_ACTION_DIM,
+    TOGGLE_ACTION_DIM,
+    MAPKSimulator,
     RepressilatorSimulator,
+    ToggleSimulator,
+    _mapk_initial_state,
     _repressilator_initial_state,
+    _toggle_initial_state,
 )
-from stl_seed.tasks.bio_ode_params import RepressilatorParams
+from stl_seed.tasks.bio_ode_params import (
+    MAPKParams,
+    RepressilatorParams,
+    ToggleParams,
+)
 from stl_seed.tasks.glucose_insulin import (
     BergmanParams,
     GlucoseInsulinSimulator,
@@ -775,6 +785,131 @@ def test_beam_search_solves_repressilator() -> None:
         f"expected at least 2 of 3 with rho > 0. This is the resolution "
         f"test for paper/cross_task_validation.md; a regression here means "
         f"the beam-search fix has been broken."
+    )
+
+
+def test_beam_search_solves_toggle() -> None:
+    """Beam-search warmstart reaches rho > 0 on bio_ode.toggle.medium on
+    at least 2/3 fixed seeds.
+
+    Companion to ``test_beam_search_solves_repressilator``: confirms the
+    structural-search-vs-continuous-search distinction generalises to a
+    second bio_ode task family. The Gardner-Cantor-Collins 2000 toggle
+    is bistable; the spec asks the controller to flip into the (x_1
+    high, x_2 low) state and hold it through the back of the horizon.
+    The satisfying control is the constant ``u = (0, 1)`` policy
+    (saturating IPTG on the gene-2 repressor of gene 1, freeing x_1
+    to rise to its alpha_1 = 160 saturation cap). Beam search on the
+    ``k_per_dim=5`` lattice on [0, 1]^2 (K=25) enumerates that corner
+    by construction; the constant-extrapolation lookahead gives it the
+    full ``rho ~ +30`` score from step 0, so the top-B beam keeps it
+    alive through the horizon.
+
+    Pre-registered acceptance criterion: at least 2 of 3 fixed seeds
+    must produce ``final_rho > 0``.
+    """
+    from stl_seed.inference import BeamSearchWarmstartSampler
+
+    sim = ToggleSimulator()
+    params = ToggleParams()
+    x0 = _toggle_initial_state(params)
+    spec = REGISTRY["bio_ode.toggle.medium"]
+    V = make_uniform_action_vocabulary(
+        [0.0] * TOGGLE_ACTION_DIM,
+        [1.0] * TOGGLE_ACTION_DIM,
+        k_per_dim=5,
+    )
+    K = int(V.shape[0])
+    sampler = BeamSearchWarmstartSampler(
+        _uniform_llm(K),
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        beam_size=8,
+        gradient_refine_iters=0,
+        tail_strategy="repeat_candidate",
+    )
+
+    n_seeds = 3
+    rhos: list[float] = []
+    for s in range(n_seeds):
+        k = jax.random.key(1000 + s)
+        _, diag = sampler.sample(x0, k)
+        rhos.append(float(diag["final_rho"]))
+
+    n_satisfying = sum(r > 0.0 for r in rhos)
+    assert n_satisfying >= 2, (
+        f"beam-search warmstart did not solve the toggle: "
+        f"per-seed rhos = {rhos}, satisfying seeds = {n_satisfying}/{n_seeds}; "
+        f"expected at least 2 of 3 with rho > 0. The spec was corrected on "
+        f"2026-04-25 to set HIGH=100 nM (reachable given alpha_1=160 cap); "
+        f"a regression here means either the spec drift or the beam-search "
+        f"fix has been broken."
+    )
+
+
+def test_beam_search_solves_mapk() -> None:
+    """Beam-search warmstart reaches rho > 0 on bio_ode.mapk.hard on at
+    least 2/3 fixed seeds.
+
+    Companion to ``test_beam_search_solves_repressilator`` and
+    ``test_beam_search_solves_toggle``: confirms the structural-search
+    advantage on a third bio_ode task family. The MAPK spec demands
+    a *pulse* control schedule (turn the input on briefly to push
+    MAPK_PP above 0.5 microM, then off so MAPK_PP can decay back below
+    0.05 microM by t=45). Random policies essentially never satisfy
+    this because once activated, MAPK_PP cannot decay to baseline
+    within the 15-min settle window in the Markevich 2004 parameter
+    regime. Beam search recovers a satisfying single-pulse policy
+    (e.g. u=0.25 for the first 1-2 control steps then u=0) by enumerating
+    the K=5 vocabulary at each step under the model-predictive
+    constant-extrapolation lookahead.
+
+    Pre-registered acceptance criterion: at least 2 of 3 fixed seeds
+    must produce ``final_rho > 0``.
+    """
+    from stl_seed.inference import BeamSearchWarmstartSampler
+
+    sim = MAPKSimulator()
+    params = MAPKParams()
+    x0 = _mapk_initial_state(params)
+    spec = REGISTRY["bio_ode.mapk.hard"]
+    V = make_uniform_action_vocabulary(
+        [0.0] * MAPK_ACTION_DIM,
+        [1.0] * MAPK_ACTION_DIM,
+        k_per_dim=5,
+    )
+    K = int(V.shape[0])
+    sampler = BeamSearchWarmstartSampler(
+        _uniform_llm(K),
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        beam_size=8,
+        gradient_refine_iters=0,
+        tail_strategy="repeat_candidate",
+    )
+
+    n_seeds = 3
+    rhos: list[float] = []
+    for s in range(n_seeds):
+        k = jax.random.key(1000 + s)
+        _, diag = sampler.sample(x0, k)
+        rhos.append(float(diag["final_rho"]))
+
+    n_satisfying = sum(r > 0.0 for r in rhos)
+    assert n_satisfying >= 2, (
+        f"beam-search warmstart did not solve the MAPK cascade: "
+        f"per-seed rhos = {rhos}, satisfying seeds = {n_satisfying}/{n_seeds}; "
+        f"expected at least 2 of 3 with rho > 0. The spec was corrected on "
+        f"2026-04-25 to read state index 4 (MAPK_PP) using absolute microM "
+        f"thresholds (peak >= 0.5, settle < 0.05, MKKK safety < 0.002975); "
+        f"a regression here means either the spec drift or the beam-search "
+        f"fix has been broken."
     )
 
 

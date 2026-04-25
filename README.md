@@ -6,16 +6,16 @@ Differentiable STL robustness as inference-time guidance for small open-weights 
 
 ## Headline
 
-**Different samplers dominate different task structures**, and the artifact characterises which sampler wins which class of task with reproducible per-seed evidence.
+**Different samplers dominate different task structures**, and the artifact characterises which sampler wins which class of task with reproducible per-seed evidence on **4 biomolecular ODE systems** (glucose-insulin minimal model, repressilator, toggle switch, MAPK cascade).
 
 - On `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients), gradient-guided STL decoding lifts mean ρ from +0.16 (standard sampling) to +19.91 — saturating the spec at matched compute. The hybrid sampler hits the +20.0 ceiling on every seed.
-- On `bio_ode.repressilator.easy` (narrow vocabulary attractor: a single corner of the action box satisfies the spec, every other corner fails by ~275 ρ units), the gradient-guided sampler floors at ρ ≈ −250 — the satisfying region is measure-near-zero in the continuous action space. **Beam-search warmstart** resolves this: discrete enumeration over the dense action lattice scored under a model-predictive constant-extrapolation lookahead reaches ρ ≈ +25 on 3/3 seeds (vs gradient-guided's 0/3) on the same canonical IC. The xfail for the gradient-guided sampler stays in place — it is still a true statement about that sampler — and a positive resolution test now stands beside it.
+- On the three bio_ode subtasks (`bio_ode.repressilator.easy`, `bio_ode.toggle.medium`, `bio_ode.mapk.hard`) the satisfying region is a narrow vocabulary attractor — a single corner of the action box (repressilator, toggle) or a non-trivial pulse pattern (MAPK) satisfies the spec, while continuous random / gradient-perturbed control fails by tens to hundreds of ρ units. **Beam-search warmstart** resolves all three: discrete enumeration over a dense action lattice scored under a model-predictive constant-extrapolation lookahead reaches ρ > 0 on 3/3 fixed seeds for every bio_ode subtask (vs gradient-guided's 0/3 on each). The xfail for the gradient-guided sampler stays in place — it is still a true statement about that sampler — and a positive resolution test now stands beside it for each task family.
 
 The headline is therefore not "one sampler that wins everywhere" but "continuous-gradient methods for smooth, locally-informative landscapes; discrete enumeration for narrow vocabulary attractors." Resolution analysis: [`paper/cross_task_validation.md`](paper/cross_task_validation.md), Resolution (2026-04-25) section.
 
 ![Unified sampler comparison](paper/figures/unified_comparison.png)
 
-N=8 seeds, 95% bootstrap CIs, 9 samplers × 2 tasks. Per-cell numbers in [`paper/unified_comparison_results.md`](paper/unified_comparison_results.md). Reproduce with `uv run python scripts/run_unified_comparison.py`.
+N=8 seeds, 95% bootstrap CIs, 9 samplers × 4 task families = 288 cells. Per-cell numbers in [`paper/unified_comparison_results.md`](paper/unified_comparison_results.md). Reproduce with `uv run python scripts/run_unified_comparison.py`.
 
 ## What and why
 

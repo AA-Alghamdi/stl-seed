@@ -217,17 +217,18 @@ def test_topology_aware_drives_toggle_high() -> None:
     repressor (gene 1) of the target gene 0, driving x_1 to its
     asymptote (alpha_1 = 160 in dimensionless units) and x_2 to ~0.
 
-    NOTE on spec satisfaction. The bio_ode.toggle.medium spec asks for
-    ``x_1 >= 200``, but the simulator's dimensionless dynamics cap x_1 at
-    alpha_1 = 160. This is a pre-existing spec/simulator unit mismatch
-    (the spec was written assuming nM-dimensional Gardner 2000 stable
-    states; the simulator runs in dimensionless Box 1 form scaled by
-    alpha_1). The controller itself is *structurally correct* — it drives
-    x_1 toward its reachable maximum and x_2 toward zero, which is the
-    correct response to ``target_direction="high"``. We assert on the
-    structural property (controller emits the right action shape and the
-    simulated trajectory bottoms out at x_2 << LOW=30 with x_1 saturated
-    near alpha_1), not on full spec satisfaction.
+    NOTE on spec satisfaction (post-2026-04-25 fix). The
+    bio_ode.toggle.medium spec was corrected on 2026-04-25 to set
+    ``x_1 >= 100`` (down from the unreachable ``x_1 >= 200``); the
+    simulator's dimensionless dynamics cap x_1 at alpha_1 = 160, so
+    the new HIGH=100 threshold is comfortably reachable. The
+    controller drives x_1 to ~160 and x_2 to ~0, satisfying the spec
+    with rho ~ +30 in the open-loop rollout. We still assert on the
+    structural property (controller emits the right action shape and
+    the simulated trajectory bottoms out at x_2 << LOW=30 with x_1
+    saturated near alpha_1) because that is what this test exists to
+    verify; the end-to-end spec satisfaction is exercised by
+    ``test_inference.py::test_beam_search_solves_toggle``.
     """
     sim = ToggleSimulator()
     params = ToggleParams()
@@ -295,15 +296,17 @@ def test_pid_drives_mapk_setpoint() -> None:
     raise the terminal kinase MAPK_PP above the 0.5 setpoint within the
     horizon.
 
-    NOTE on spec satisfaction. The bio_ode.mapk.hard spec accesses state
-    index 2 expecting MAPK_PP, but the simulator's index 2 is MKK_PP
-    (MAPK_PP is at index 4); the spec also uses normalized [0, 1]
-    thresholds while the simulator returns absolute microM
-    concentrations (MAPK_PP saturates around 1.25 microM). This is a
-    pre-existing spec/simulator mismatch independent of the controller.
-    The controller defined here observes the *correct* MAPK_PP signal
-    (index 4) and drives it above the textbook 0.5 setpoint; we assert
-    on that structural property, not on full spec satisfaction.
+    NOTE on spec satisfaction (post-2026-04-25 fix). The
+    bio_ode.mapk.hard spec was corrected on 2026-04-25 to read state
+    index 4 (MAPK_PP) using ABSOLUTE microM thresholds (peak >= 0.5,
+    settle < 0.05, MKKK safety < 0.002975) instead of the broken
+    fractional thresholds on the wrong state index. The PID
+    controller below already observed index 4 at the textbook 0.5
+    microM setpoint, so it remains structurally correct against the
+    fixed spec. End-to-end spec satisfaction (the reach-then-settle
+    pulse pattern) is exercised by
+    ``test_inference.py::test_beam_search_solves_mapk``; this test
+    just confirms the PID drives MAPK_PP above the activation gate.
     """
     sim = MAPKSimulator()
     params = MAPKParams()

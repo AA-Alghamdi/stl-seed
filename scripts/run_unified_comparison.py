@@ -97,11 +97,21 @@ from stl_seed.inference.horizon_folded import HorizonFoldedGradientSampler
 from stl_seed.inference.rollout_tree import RolloutTreeSampler
 from stl_seed.specs import REGISTRY
 from stl_seed.tasks.bio_ode import (
+    MAPK_ACTION_DIM,
     REPRESSILATOR_ACTION_DIM,
+    TOGGLE_ACTION_DIM,
+    MAPKSimulator,
     RepressilatorSimulator,
+    ToggleSimulator,
+    _mapk_initial_state,
     _repressilator_initial_state,
+    _toggle_initial_state,
 )
-from stl_seed.tasks.bio_ode_params import RepressilatorParams
+from stl_seed.tasks.bio_ode_params import (
+    MAPKParams,
+    RepressilatorParams,
+    ToggleParams,
+)
 from stl_seed.tasks.glucose_insulin import (
     BergmanParams,
     GlucoseInsulinSimulator,
@@ -117,7 +127,12 @@ _DEFAULT_OUT_DIR = _REPO_ROOT / "runs" / "unified_comparison"
 _DEFAULT_FIG_PATH = _REPO_ROOT / "paper" / "figures" / "unified_comparison.png"
 _DEFAULT_MD_PATH = _REPO_ROOT / "paper" / "unified_comparison_results.md"
 
-_DEFAULT_TASKS: tuple[str, ...] = ("glucose_insulin", "bio_ode.repressilator")
+_DEFAULT_TASKS: tuple[str, ...] = (
+    "glucose_insulin",
+    "bio_ode.repressilator",
+    "bio_ode.toggle",
+    "bio_ode.mapk",
+)
 _DEFAULT_SAMPLERS: tuple[str, ...] = (
     "standard",
     "best_of_n",
@@ -164,6 +179,12 @@ _BEAM_GRADIENT_REFINE_ITERS: int = 30
 # dim gives K=125 on the 3-D repressilator action box (matches the test in
 # tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution).
 _BEAM_K_PER_DIM_REPRESSILATOR: int = 5
+# Beam-search vocabulary density for the toggle (2-D action box). k=5 gives
+# K=25 candidates per beam-expansion step; this keeps the satisfying
+# u = (0, 1) corner in scope while letting the lookahead-rho score
+# discriminate intermediate (e.g. partial-IPTG) candidates that the
+# coarse k=2 lattice collapses onto a corner.
+_BEAM_K_PER_DIM_TOGGLE: int = 5
 
 # Rich console, shared across the script.
 console = Console()
@@ -290,6 +311,78 @@ def _bio_ode_repressilator_setup() -> TaskSetup:
     )
 
 
+def _bio_ode_toggle_setup() -> TaskSetup:
+    """Toggle-switch task on the medium spec.
+
+    Spec: ``bio_ode.toggle.medium`` (post-2026-04-25 spec fix; HIGH=100
+    nM, reachable given alpha_1 = 160 saturation cap). The satisfying
+    region requires saturating the gene-2 inducer (u = (0, 1) constant
+    drives x_1 to ~160 nM, x_2 to ~0). Vocabulary is the 4-corner
+    discretisation of [0, 1]^2 for gradient samplers (k_per_dim=2);
+    beam-search uses the denser k_per_dim=5 lattice (K=25) so the
+    satisfying corner is in the lookahead-rho enumeration directly.
+    """
+    sim = ToggleSimulator()
+    params = ToggleParams()
+    spec = REGISTRY["bio_ode.toggle.medium"]
+    V = make_uniform_action_vocabulary(
+        [0.0] * TOGGLE_ACTION_DIM,
+        [1.0] * TOGGLE_ACTION_DIM,
+        k_per_dim=2,
+    )
+    x0 = _toggle_initial_state(params)
+    return TaskSetup(
+        name="bio_ode.toggle",
+        spec_key=spec.name,
+        simulator=sim,
+        params=params,
+        spec=spec,
+        vocabulary=V,
+        initial_state=x0,
+        horizon=int(sim.n_control_points),
+        aux=None,
+    )
+
+
+def _bio_ode_mapk_setup() -> TaskSetup:
+    """MAPK cascade task on the hard spec.
+
+    Spec: ``bio_ode.mapk.hard`` (post-2026-04-25 spec fix; reads state
+    index 4 (MAPK_PP) in absolute microM, peak >= 0.5 microM in
+    [0, 30], settle < 0.05 microM in [45, 60], MKKK_P safety <
+    0.002975 microM throughout). The satisfying policy is a brief
+    activating pulse (e.g. u=1 for 1-3 control steps then u=0)
+    because MAPK_PP must rise above 0.5 microM but settle back to
+    near zero by t=45. Random-policy success rate is ~0 because the
+    cascade lacks fast enough negative feedback to deactivate
+    MAPK_PP within the 15-min settle window once activated. Beam-
+    search over a small action vocabulary recovers the pulse
+    deterministically. Action vocabulary is the 5-level uniform grid
+    on [0, 1] (k_per_dim=5, K=5); the action box is one-dimensional,
+    so the same lattice is used for all samplers.
+    """
+    sim = MAPKSimulator()
+    params = MAPKParams()
+    spec = REGISTRY["bio_ode.mapk.hard"]
+    V = make_uniform_action_vocabulary(
+        [0.0] * MAPK_ACTION_DIM,
+        [1.0] * MAPK_ACTION_DIM,
+        k_per_dim=5,
+    )
+    x0 = _mapk_initial_state(params)
+    return TaskSetup(
+        name="bio_ode.mapk",
+        spec_key=spec.name,
+        simulator=sim,
+        params=params,
+        spec=spec,
+        vocabulary=V,
+        initial_state=x0,
+        horizon=int(sim.n_control_points),
+        aux=None,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Per-sampler vocabulary overrides.
 # ---------------------------------------------------------------------------
@@ -311,23 +404,45 @@ def _bio_ode_repressilator_setup() -> TaskSetup:
 def _vocabulary_for(sampler_name: str, setup: TaskSetup):
     """Per-sampler vocabulary override.
 
-    Returns ``setup.vocabulary`` unless ``sampler_name`` is the beam-search
-    warmstart sampler on the repressilator, in which case it returns the
-    denser ``k_per_dim=5`` lattice used by the headline pilot in the unit
-    tests. All other (sampler, task) cells use the task-default vocabulary.
+    Beam-search needs a denser lattice on the multi-dimensional action
+    boxes so the satisfying corners are present in the vocabulary by
+    construction. Specifically:
+
+    * On the repressilator (3-D action box) we use ``k_per_dim=5``
+      (K=125) to put the silence-3 corner ``u = (0, 0, 1)`` in scope.
+      The negative result documented in
+      ``paper/cross_task_validation.md`` was on the 8-corner default.
+    * On the toggle (2-D action box) we use ``k_per_dim=5`` (K=25) to
+      put the silence-B corner ``u = (0, 1)`` in scope. The default
+      4-corner vocabulary already contains it but the denser lattice
+      lets the lookahead-rho extrapolation discriminate intermediate
+      candidates more reliably.
+    * On MAPK (1-D action box) the task default already uses
+      ``k_per_dim=5`` (K=5), so no override is needed.
+
+    All other (sampler, task) cells use the task-default vocabulary.
     """
-    if sampler_name == "beam_search_warmstart" and setup.name == "bio_ode.repressilator":
-        return make_uniform_action_vocabulary(
-            [0.0] * REPRESSILATOR_ACTION_DIM,
-            [1.0] * REPRESSILATOR_ACTION_DIM,
-            k_per_dim=_BEAM_K_PER_DIM_REPRESSILATOR,
-        )
+    if sampler_name == "beam_search_warmstart":
+        if setup.name == "bio_ode.repressilator":
+            return make_uniform_action_vocabulary(
+                [0.0] * REPRESSILATOR_ACTION_DIM,
+                [1.0] * REPRESSILATOR_ACTION_DIM,
+                k_per_dim=_BEAM_K_PER_DIM_REPRESSILATOR,
+            )
+        if setup.name == "bio_ode.toggle":
+            return make_uniform_action_vocabulary(
+                [0.0] * TOGGLE_ACTION_DIM,
+                [1.0] * TOGGLE_ACTION_DIM,
+                k_per_dim=_BEAM_K_PER_DIM_TOGGLE,
+            )
     return setup.vocabulary
 
 
 _TASK_BUILDERS: dict[str, callable] = {
     "glucose_insulin": _glucose_insulin_setup,
     "bio_ode.repressilator": _bio_ode_repressilator_setup,
+    "bio_ode.toggle": _bio_ode_toggle_setup,
+    "bio_ode.mapk": _bio_ode_mapk_setup,
 }
 
 

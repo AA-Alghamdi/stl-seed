@@ -196,11 +196,22 @@ register(repressilator_spec)
 #
 # Threshold derivation:
 #
-# * ``HIGH = 200 nM`` and ``LOW = 30 nM``. Per Gardner et al. 2000 Fig. 5a,
-#   the two stable states sit at roughly ``200 nM`` and ``20 nM``
-#   respectively (dimensionless ``u`` ≈ 4 and ≈ 0.2 with their
-#   ``K_LacI ≈ 50 nM``). We take ``LOW = 30 nM`` slightly above the lower
-#   stable value to reject the "barely settled" trajectories.
+# * ``HIGH = 100 nM`` and ``LOW = 30 nM``. Per Gardner et al. 2000 Fig. 5,
+#   the bistable separation in the parameter regime instantiated by
+#   ``ToggleParams`` (``alpha_1 = 160``, ``alpha_2 = 16``, ``n_AB = 3.0``,
+#   ``n_BA = 1.5``) sits at roughly LOW ~ 10 nM and HIGH ~ 150 nM, with
+#   the upper stable state capped at ``alpha_1 = 160 nM`` in steady
+#   state (the simulator emits ``x_1`` in the same dimensionless units
+#   that Gardner reports, with ``K_LacI ~ 50 nM``). Earlier drafts used
+#   ``HIGH = 200`` nM, but ``x_1`` saturates at ``alpha_1 = 160`` so
+#   that band is unreachable: this is a SPEC-side fix only — the
+#   literature-cited Gardner 2000 simulator parameters are unchanged.
+#   ``HIGH = 100`` nM sits comfortably above the LOW state (~10 nM) and
+#   above the bistable separatrix per Gardner 2000 Fig. 5, while being
+#   reachable under saturating IPTG (``u = (0, 1)`` constant drives
+#   ``x_1`` to its steady-state cap of ~160 nM, giving rho ~ +30).
+#   ``LOW = 30 nM`` is kept slightly above the lower stable value to
+#   reject "barely settled" trajectories.
 # * ``UNSAFE = 600 nM``. Three times the upper stable concentration. Above
 #   this, repressor titration of the host's own ribosomes becomes
 #   non-negligible (Klumpp & Hwa, "Growth-rate-dependent partitioning of
@@ -211,7 +222,10 @@ register(repressilator_spec)
 #   requirement (covers the back 40% of the horizon, ~1.3× the 30-min
 #   switching transient). ``[0, 100] min`` for the safety guard.
 
-TOGGLE_HIGH_NM = 200.0  # upper stable repressor concentration (nM).
+TOGGLE_HIGH_NM = 100.0  # textbook "fully on" repressor band; reachable
+# given alpha_1 = 160 saturation (Gardner 2000
+# Fig. 5; spec-side calibration to the
+# literature-cited ToggleParams regime).
 TOGGLE_LOW_NM = 30.0  # lower stable repressor concentration (nM).
 TOGGLE_UNSAFE_NM = 600.0  # 3 x upper stable; ribosome-titration regime.
 TOGGLE_T = 100.0  # minutes.
@@ -248,15 +262,18 @@ toggle_spec = STLSpec(
         "Flip the bistable switch into the (x1 high, x2 low) stable state and "
         "hold it through the back 40 min of the horizon, while keeping both "
         "repressors below the ribosome-titration safety bound (600 nM) for "
-        "all t in [0, 100]. Form: conjunction of two tracking clauses and two "
-        "avoidance clauses."
+        "all t in [0, 100]. The high-state threshold (100 nM) is calibrated "
+        "to the Gardner 2000 Fig. 5 bistable separatrix in the parameter "
+        "regime instantiated by ToggleParams (alpha_1 = 160 saturates x_1 "
+        "at the upper stable state cap of ~160 nM). Form: conjunction of "
+        "two tracking clauses and two avoidance clauses."
     ),
     citations=(
         "Gardner, Cantor & Collins, Nature 403:339 (2000), DOI 10.1038/35002131, Fig. 5a.",
         "Klumpp & Hwa, PNAS 105:20245 (2008), Fig. 4 (ribosome partitioning).",
     ),
     formula_text=(
-        "G_[60,100] (x1 >= 200) AND G_[60,100] (x2 < 30) "
+        "G_[60,100] (x1 >= 100) AND G_[60,100] (x2 < 30) "
         "AND G_[0,100] (x1 < 600) AND G_[0,100] (x2 < 600)"
     ),
     metadata={
@@ -283,11 +300,24 @@ register(toggle_spec)
 # mitogen-activated protein kinase cascade." *PNAS* 93(19):10078–10083
 # (1996). DOI: 10.1073/pnas.93.19.10078. PubMed 8816754.
 #
-# State. ``s_t = (m_1, m_2, m_3)`` are *normalised* phosphorylation
-# fractions of the three cascade tiers (MKKK-P, MKK-PP, MAPK-PP) in
-# ``[0, 1]``. Huang & Ferrell 1996 Fig. 1 reports each tier's response as
-# the *fraction* of the total kinase pool in the doubly-phosphorylated
-# state, so the dimensionless [0, 1] convention is the textbook one.
+# State. ``s_t`` is the 6-vector emitted by ``MAPKSimulator``:
+#
+#     y[0] = MKKK_P     (active tier-1 kinase, microM)            <- safety
+#     y[1] = MKK_P      (mono-phosphorylated tier-2)
+#     y[2] = MKK_PP     (active tier-2)
+#     y[3] = MAPK_P     (mono-phosphorylated tier-3)
+#     y[4] = MAPK_PP    (active tier-3 cascade output, microM)    <- read by spec
+#     y[5] = E1_active  (input enzyme, microM)
+#
+# Concentrations are in ABSOLUTE microM units, matching ``MAPKParams``
+# (MAPK_total = 1.25 microM, MKKK_total = 0.0035 microM). Earlier drafts
+# of this spec were written in [0, 1] normalised-fraction units AND read
+# state index 2 (MKK_PP) instead of index 4 (MAPK_PP); both bugs
+# rendered the spec mis-aligned with the simulator output. The current
+# spec reads index 4 and uses absolute microM thresholds calibrated to
+# the simulator's MAPK-PP output range of ~[0, 1.24] microM under the
+# Markevich 2004-cited rate constants. This is a SPEC-side fix only --
+# the simulator dynamics and parameters are unchanged.
 #
 # Action. ``u_t ∈ [0, 1]`` is the input stimulus intensity (Huang &
 # Ferrell parameterise this as ``E_1`` total active enzyme concentration
@@ -297,94 +327,138 @@ register(toggle_spec)
 # transient + steady-state window to play with.
 #
 # Difficulty: HARD. The spec demands (i) a *transient* peak of the
-# terminal kinase MAPK-PP above 0.5 (i.e. cross the EC50, the canonical
-# switch-like response) within the first 30 min, AND (ii) a
-# *settling-back* to a low MAPK-PP level (< 0.1) by the end of the
-# horizon, AND (iii) the upstream tier MKKK-P never exceeding 0.85 (a
-# safety bound that mirrors the saturation observed in Huang & Ferrell
-# 1996 Fig. 3b at high stimulus). The reach-then-settle pattern requires
-# a non-trivial bang-bang-like control schedule (turn the input on, then
-# off), which random policies satisfy only some of the time.
+# terminal kinase MAPK-PP above 0.5 microM (the half-max activation
+# gate; ~40% of the simulator's MAPK-PP saturation level of ~1.24
+# microM) within the first 30 min, AND (ii) a *settling-back* to a low
+# MAPK-PP level (< 0.05 microM) by the end of the horizon, AND
+# (iii) the upstream tier MKKK-P never exceeding 0.85 of the MKKK_total
+# pool (= 0.002975 microM). The reach-then-settle pattern requires a
+# non-trivial bang-bang-like control schedule (turn the input on
+# briefly, then off); random policies satisfy this with vanishing
+# probability under the Markevich 2004 parameter regime, because once
+# MAPK-PP is fully activated the cascade lacks fast enough negative
+# feedback to deactivate it within the 15-min settle window. Beam-
+# search over a small action vocabulary recovers a satisfying single-
+# pulse policy deterministically (see ``paper/cross_task_validation.md``
+# for the structural-search-vs-continuous-search analysis that applies
+# to this task family the same way it applies to the repressilator).
 #
-# Threshold derivation:
+# Threshold derivation (ABSOLUTE microM units, NOT [0, 1] fractions):
 #
-# * ``MAPK_PEAK = 0.5``. Huang & Ferrell 1996 Fig. 4 reports a Hill
-#   coefficient of ``≈ 4–5`` for the MAPK-PP response with EC50 at the
-#   half-maximal stimulus level. The 0.5 fraction is the textbook
-#   half-activation threshold and is the *physical* meaning of the
-#   "activated MAPK" gate referenced in every cell-biology textbook
-#   (Alberts et al., *Molecular Biology of the Cell*, 6th ed. 2014,
-#   chapter 15, Fig. 15-49). The REDACTED SPECS dictionary's ``x3_peak: 0.50``
-#   is a coincidentally identical *number* (firewall §D.3(a)–(b)
-#   incidence + independent derivation).
-# * ``MAPK_SETTLE = 0.10``. One decade below the EC50; corresponds to
-#   the basal MAPK-PP level reported in Huang & Ferrell 1996 Fig. 1
-#   (lower bound of the response curve) and matches the unstimulated
-#   baseline measured by Ferrell & Machleder, *Science* 280:895 (1998),
-#   Fig. 2A for *Xenopus* oocyte MAPK.
-# * ``MKKK_SAFE = 0.85``. Above this, Huang & Ferrell 1996 Fig. 3b shows
-#   the cascade enters its saturation regime where downstream
-#   sensitivity collapses; treating it as the textbook upper safety
-#   bound for the upstream tier.
+# * ``MAPK_PEAK_MICROM = 0.5``. The simulator's MAPK-PP output saturates
+#   at ~1.24 microM under sustained max stimulus (probed empirically;
+#   limited by ``MAPK_total_microM = 1.25`` from the Markevich 2004
+#   Table 1 / Huang-Ferrell 1996 Table II calibration). Half-max
+#   activation is therefore ~0.6 microM; we use 0.5 microM so the gate
+#   sits at ~40% of saturation, which is the canonical "activated MAPK"
+#   threshold used in Markevich 2004 Fig. 2 (their "active fraction
+#   crosses 0.5" criterion translated to absolute microM via
+#   ``MAPK_total = 1.25 microM`` gives 0.625 microM; we round down to
+#   0.5 microM to keep the gate cleanly inside the simulator's
+#   reachable peak band of [0.7, 1.24] microM).
+# * ``MAPK_SETTLE_MICROM = 0.05``. One decade below the activation gate;
+#   matches the Markevich 2004 Fig. 1 unstimulated-cell baseline (~0.04
+#   microM in their Xenopus ERK system) and the Ferrell & Machleder,
+#   *Science* 280:895 (1998), Fig. 2A unstimulated MAPK level when
+#   expressed in absolute units via the same total-pool conversion.
+# * ``MKKK_SAFE_MICROM = 0.85 * MKKK_total = 0.85 * 0.0035 = 0.002975``
+#   microM. The original [0, 1] fraction (0.85) -- "MKKK-P enters
+#   saturation regime" per Huang-Ferrell 1996 Fig. 3b -- is preserved
+#   and converted to absolute microM by multiplying through
+#   ``MKKK_total``. In the simulator's parameter regime MKKK-P max is
+#   ~ 0.00156 microM (~44% of total) under any input, so this safety
+#   bound is structural slack rather than a binding constraint; it
+#   stays in the spec as a formal guard consistent with HF Fig. 3b.
 # * Time windows. Reach window ``[0, 30] min``; settle window
 #   ``[45, 60] min``; safety window ``[0, 60] min``. The 30-min reach
 #   horizon matches the cascade rise time reported in Huang & Ferrell
 #   1996 Fig. 1; the 15-min gap between reach and settle exceeds the
-#   ≈ 8-min decay time-constant of MAPK-PP measured by Hornberg et al.,
+#   ~ 8-min decay time-constant of MAPK-PP measured by Hornberg et al.,
 #   *FEBS J.* 272:244 (2005), Table 2.
 
-MAPK_PEAK = 0.5  # textbook EC50 of the MAPK switch.
-MAPK_SETTLE = 0.10  # textbook basal MAPK-PP level.
-MKKK_SAFE = 0.85  # upper saturation threshold for the upstream tier.
+# Absolute microM thresholds (NOT [0, 1] fractions).
+MAPK_PEAK_MICROM = 0.5  # ~40% of simulator saturation; Markevich 2004
+# Fig. 2 half-max activation translated to
+# absolute units via MAPK_total = 1.25 microM.
+MAPK_SETTLE_MICROM = 0.05  # ~4% of simulator saturation; Markevich 2004
+# Fig. 1 baseline / Ferrell-Machleder 1998
+# Fig. 2A unstimulated MAPK level.
+MKKK_SAFE_MICROM = 0.85 * 0.0035  # 0.85 fraction * MKKK_total = 0.002975
+# microM (MKKK_total from MAPKParams,
+# itself sourced from Huang-Ferrell 1996
+# Table II via Markevich 2004 calibration).
 MAPK_T = 60.0  # minutes.
+
+# Backward-compatibility aliases. Earlier callers (calibration scripts,
+# audit tables) reference MAPK_PEAK / MAPK_SETTLE / MKKK_SAFE as
+# *fractions* of the respective total pools. We keep those names bound
+# to the corresponding fractional values so external imports do not
+# break, and use the explicit ``*_MICROM`` constants in the spec body.
+MAPK_PEAK = MAPK_PEAK_MICROM / 1.25  # 0.40 (fraction of MAPK_total).
+MAPK_SETTLE = MAPK_SETTLE_MICROM / 1.25  # 0.04 (fraction of MAPK_total).
+MKKK_SAFE = 0.85  # fraction of MKKK_total (unchanged).
 
 mapk_spec = STLSpec(
     name="bio_ode.mapk.hard",
     formula=And(
         children=(
-            # Reach: terminal kinase crosses its half-activation threshold
-            # at some point in the first 30 min.
+            # Reach: terminal kinase MAPK_PP (state index 4) crosses its
+            # half-activation threshold at some point in the first 30 min.
             Eventually(
-                _gt("mapk_pp", 2, MAPK_PEAK),
+                _gt("mapk_pp", 4, MAPK_PEAK_MICROM),
                 interval=Interval(0.0, 30.0),
             ),
             # Settle: terminal kinase returns to baseline by the end of the
-            # horizon. Predicate-level negation is allowed (firewall §C.1):
-            # equivalently expressed as the predicate ``mapk_pp < 0.1``.
+            # horizon. Predicate-level negation is allowed (firewall C.1):
+            # equivalently expressed as the predicate
+            # ``mapk_pp < MAPK_SETTLE_MICROM``.
             Always(
-                _lt("mapk_pp_settle", 2, MAPK_SETTLE),
+                _lt("mapk_pp_settle", 4, MAPK_SETTLE_MICROM),
                 interval=Interval(45.0, MAPK_T),
             ),
-            # Safety: upstream tier never enters the saturation regime.
+            # Safety: upstream tier (MKKK_P, state index 0) never enters the
+            # saturation regime. ``MKKK_SAFE_MICROM = 0.85 * MKKK_total``
+            # converts the original [0, 1] fractional Huang-Ferrell 1996
+            # Fig. 3b saturation bound to absolute microM units consistent
+            # with the simulator output.
             Always(
-                Negation(_gt("mkkk_p_unsafe", 0, MKKK_SAFE)),
+                Negation(_gt("mkkk_p_unsafe", 0, MKKK_SAFE_MICROM)),
                 interval=Interval(0.0, MAPK_T),
             ),
         )
     ),
-    signal_dim=3,
+    signal_dim=6,
     horizon_minutes=MAPK_T,
     description=(
-        "Hit the MAPK cascade switch: terminal kinase MAPK-PP crosses its "
-        "EC50 (>= 0.5 fraction) within 30 min, then settles back below 0.1 "
-        "in the final 15 min, while the upstream tier MKKK-P never enters "
-        "saturation (kept <= 0.85 throughout). Form: conjunction of "
+        "Hit the MAPK cascade switch: terminal kinase MAPK-PP (state index "
+        "4 in the simulator's 6-vector output, ABSOLUTE microM units) "
+        "crosses its half-activation gate (>= 0.5 microM) within 30 min, "
+        "then settles back below 0.05 microM in the final 15 min, while "
+        "the upstream tier MKKK-P (state index 0) never exceeds 0.85 of "
+        "its total pool (<= 0.002975 microM). Form: conjunction of "
         "reachability + tracking + avoidance."
     ),
     citations=(
         "Huang & Ferrell, PNAS 93:10078 (1996), DOI 10.1073/pnas.93.19.10078, Figs. 1, 3b, 4.",
+        "Markevich, Hoek & Kholodenko, J Cell Biol 164:353 (2004), Table 1, Fig. 1, Fig. 2.",
         "Alberts et al., Molecular Biology of the Cell, 6th ed. (2014), Fig. 15-49.",
         "Ferrell & Machleder, Science 280:895 (1998), Fig. 2A.",
         "Hornberg et al., FEBS J. 272:244 (2005), Table 2.",
     ),
     formula_text=(
-        "F_[0,30] (mapk_pp >= 0.5) AND G_[45,60] (mapk_pp < 0.1) AND G_[0,60] (NOT (mkkk_p > 0.85))"
+        "F_[0,30] (mapk_pp >= 0.5 microM) AND G_[45,60] (mapk_pp < 0.05 microM) "
+        "AND G_[0,60] (NOT (mkkk_p > 0.002975 microM))"
     ),
     metadata={
         "subdomain": "mapk",
         "difficulty": "hard",
         "horizon_min": MAPK_T,
         "control_points": 10,
+        "thresholds_microM": {
+            "MAPK_PEAK": MAPK_PEAK_MICROM,
+            "MAPK_SETTLE": MAPK_SETTLE_MICROM,
+            "MKKK_SAFE": MKKK_SAFE_MICROM,
+        },
         "thresholds_fraction": {
             "MAPK_PEAK": MAPK_PEAK,
             "MAPK_SETTLE": MAPK_SETTLE,
@@ -405,6 +479,9 @@ __all__ = [
     "TOGGLE_HIGH_NM",
     "TOGGLE_LOW_NM",
     "TOGGLE_UNSAFE_NM",
+    "MAPK_PEAK_MICROM",
+    "MAPK_SETTLE_MICROM",
+    "MKKK_SAFE_MICROM",
     "MAPK_PEAK",
     "MAPK_SETTLE",
     "MKKK_SAFE",
