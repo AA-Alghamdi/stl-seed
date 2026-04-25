@@ -6,6 +6,9 @@ Author: Abdullah AlGhamdi
 Date: 2026-04-24
 Target venue: workshop submission concurrent with CMU MS-AIE matriculation (Aug 2026); primary audience REDACTED' group (MLD).
 
+> **Note on task family naming (added 2026-04-24, post-implementation):**
+> This document was drafted before the task families were fully implemented and uses placeholder names `{gene-toggle, predator-prey/lv}`. The shipped artifact uses **`{bio_ode, glucose_insulin}`** with bio_ode covering 3 subdomains (repressilator, toggle switch, MAPK cascade). All hypotheses, statistical models, and power analyses transfer directly — only the family labels differ. See [`paper/architecture.md`](architecture.md) and [`src/stl_seed/tasks/`](../src/stl_seed/tasks/) for the canonical task definitions, and [`paper/REDACTED.md`](REDACTED.md) for the actual STL specs. The empirical pilot ([`paper/power_analysis_empirical.md`](power_analysis_empirical.md)) confirmed the design remains adequately powered (MDE ≈ 0.024 vs claimed ≥ 0.08).
+
 ---
 
 ## 1. Problem statement
