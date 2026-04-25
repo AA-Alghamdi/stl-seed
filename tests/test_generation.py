@@ -20,6 +20,7 @@ from stl_seed.generation import (
     BangBangController,
     ConstantPolicy,
     HeuristicPolicy,
+    PerturbedHeuristicPolicy,
     PIDController,
     RandomPolicy,
     TopologyAwareController,
@@ -166,6 +167,96 @@ def test_heuristic_policy_routes_repressilator() -> None:
 def test_heuristic_policy_unknown_raises() -> None:
     with pytest.raises(KeyError):
         HeuristicPolicy("nonexistent_task_family")
+
+
+# -----------------------------------------------------------------------------
+# PerturbedHeuristicPolicy tests
+# -----------------------------------------------------------------------------
+
+
+def test_perturbed_heuristic_in_range(key: jax.Array) -> None:
+    """Perturbed actions must stay inside the declared [low, high] box.
+
+    Wraps a constant base policy whose output sits at the *upper* bound,
+    so any positive noise without clipping would push the action out of
+    range — confirms the wrapper's clip is doing real work.
+    """
+    base = ConstantPolicy(jnp.array([1.0]))  # action sits at high bound
+    pol = PerturbedHeuristicPolicy(
+        base_policy=base,
+        sigma_frac=0.5,  # large σ to force many out-of-range proposals
+        action_low=0.0,
+        action_high=1.0,
+    )
+    spec = next(iter(REGISTRY.values()))
+    actions = []
+    for h in range(256):
+        a = pol(jnp.array([0.0]), spec, [], jax.random.fold_in(key, h))
+        actions.append(np.asarray(a))
+    arr = np.stack(actions)
+    assert (arr >= 0.0 - 1e-6).all(), f"min action {arr.min()} below low bound"
+    assert (arr <= 1.0 + 1e-6).all(), f"max action {arr.max()} above high bound"
+
+
+def test_perturbed_heuristic_with_zero_sigma(key: jax.Array) -> None:
+    """sigma_frac=0 must reproduce the base policy exactly (no noise injected).
+
+    If this regresses, the PerturbedHeuristicPolicy is no longer a clean
+    superset of HeuristicPolicy and the canonical generator's policy mix
+    becomes ambiguous.
+    """
+    base = ConstantPolicy(jnp.array([0.3, 0.7]))
+    pol = PerturbedHeuristicPolicy(
+        base_policy=base,
+        sigma_frac=0.0,
+        action_low=0.0,
+        action_high=1.0,
+    )
+    spec = next(iter(REGISTRY.values()))
+    base_action = np.asarray(base(jnp.array([0.0]), spec, [], key))
+    for h in range(8):
+        perturbed = np.asarray(pol(jnp.array([0.0]), spec, [], jax.random.fold_in(key, h)))
+        np.testing.assert_allclose(perturbed, base_action, atol=1e-6)
+
+
+def test_perturbed_heuristic_diversity(key: jax.Array) -> None:
+    """With σ>0, distinct call indices on identical inputs yield distinct
+    actions. This is the contract the canonical generator depends on for
+    the "perturbed_heuristic" leg to produce diverse SFT examples.
+    """
+    base = ConstantPolicy(jnp.array([0.5]))  # constant, so all variation comes from noise
+    pol = PerturbedHeuristicPolicy(
+        base_policy=base,
+        sigma_frac=0.1,
+        action_low=0.0,
+        action_high=1.0,
+    )
+    spec = next(iter(REGISTRY.values()))
+    # Vary the *history length* (which the wrapper uses to derive the noise
+    # subkey) to simulate distinct call indices.
+    actions = []
+    fake_state = jnp.array([0.0])
+    fake_action = jnp.array([0.0])
+    for h in range(32):
+        history: list[tuple[jnp.ndarray, jnp.ndarray]] = [(fake_state, fake_action)] * h
+        a = pol(fake_state, spec, history, key)
+        actions.append(float(np.asarray(a)[0]))
+    # All 32 actions must not collapse to a single value (the noise must
+    # actually be injected). We require >= 30 unique values to guarantee
+    # diversity well above any spurious-collision chance from float
+    # rounding (a normal draw at σ=0.1 has effectively zero probability of
+    # exact collision for distinct subkeys).
+    assert len(set(actions)) >= 30, (
+        f"expected >=30 unique actions across 32 calls, got {len(set(actions))}: "
+        f"{sorted(set(actions))[:10]}..."
+    )
+
+
+def test_perturbed_heuristic_negative_sigma_rejected() -> None:
+    """A negative σ is meaningless and must be rejected at construction."""
+    base = ConstantPolicy(jnp.array([0.0]))
+    with pytest.raises(ValueError, match="sigma_frac must be >= 0"):
+        PerturbedHeuristicPolicy(base_policy=base, sigma_frac=-0.1)
 
 
 # -----------------------------------------------------------------------------

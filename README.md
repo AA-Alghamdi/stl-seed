@@ -8,14 +8,14 @@
 > **Soft-verified SFT for scientific control. STL robustness as a formal process verifier on small open-weights LLMs.**
 >
 > Phase 1 release (theory + library + local pilot), 2026-04-24. Phase 2 (canonical RunPod sweep) targets v0.1.0.
+>
+> **Phase 2 status:** the canonical 18-cell sweep ships as a single command — `python scripts/run_canonical_sweep.py --confirm` — with a default `$25` cap and an expected spend of `$5–15`. Awaiting RunPod credentials.
 
 ---
 
-## The one-line claim
+## The rule of thumb (above-the-fold, ≤ 100 words)
 
-On a 100-trajectory glucose-insulin pilot, MLX QLoRA on Qwen3-0.6B-bf16 drove training loss from **1.484 → 0.466** monotonically in **15.0 seconds of M5 Pro wall-clock**, hit **5/5 parse-success on held-out**, and produced a **4.6 MiB adapter** that loads back into mlx_lm — all on a Mac, all for $0 of cloud compute. That is the smoke checkpoint that gates Phase 2. The full canonical sweep (3 model sizes × 3 filter densities × 2 task families = 18 checkpoints, ~$25 of RunPod 4090 spot) ships as v0.1.0 once the Phase-1 audit lands.
-
-The point of stl-seed is not the smoke test. The point is that the soft signal here — STL robustness ρ — is **mathematically natural** in a way that line-overlap on patches (SERA's signal) is not, and the corresponding Goodhart decomposition in §7 has a structurally zero verifier-noise term. That is what I want REDACTED' group to look at.
+On a 100-trajectory glucose-insulin pilot, MLX QLoRA on Qwen3-0.6B-bf16 drove training loss **1.484 → 0.466** monotonically in **15.0 s** of M5 Pro wall-clock, hit **5/5 held-out parse-success**, and produced a **4.6 MiB adapter** — all for $0 of cloud compute. The post-fix repressilator pilot (topology-aware heuristic) lifts pooled satisfaction from 0% to **46.5%** (N=2,388). That gates Phase 2: a single command, 3 sizes × 3 filters × 2 task families = 18 RunPod 4090 cells, $5–15 of $25 cap. The artifact's point is the Goodhart decomposition (§6) — the verifier-fidelity term is provably zero.
 
 ---
 
@@ -155,23 +155,34 @@ The framing for Phase 2: this smoke test passes the hard checkpoint; the full ca
 
 The other Phase-1 deliverable is the STL infrastructure. Real numbers:
 
-- **123 unit tests** across 9 modules in `tests/` pass on the smoke-test machine (`tests/test_stl_evaluator.py`, `tests/test_filter.py`, `tests/test_glucose_insulin.py`, `tests/test_bio_ode.py`, `tests/test_generation.py`, `tests/test_training.py`, `tests/test_evaluation.py`, `tests/test_stats.py`, `tests/test_smoke.py`).
-- **Empirical ICC = 0.9979** on the pilot's 3,982 trajectories grouped by task family, computed with the unbalanced-group Shrout-Fleiss ICC(1,1) estimator ([paper/power_analysis_empirical.md §3](paper/power_analysis_empirical.md)). Higher than the design-time plug-in ICC = 0.40, but the hierarchical model pools across 18 cells and the global pooled MDE is **0.0244** on the probability scale, well within the registered Δ = 0.080. The TOST equivalence test at Δ = 0.05 requires SE ≤ 0.0171; actual is **0.0098**. The locked design is powered.
-- **Pilot composition** (4 task × policy buckets, ρ in trajectory units of concentration·time):
+- **317 unit tests pass + 2 platform-skipped** across 22 test modules in `tests/` on the smoke-test machine (319 total collected; 2 skips are an Apple-Silicon platform check on a non-Apple host and the CUDA-only bnb backend tests). Coverage is **91%** on `src/stl_seed/` (target ≥ 80%; raised in the 1.7 polish pass after Phase-2 prep added `test_canonical_scripts.py`, `test_topology_aware.py`, `test_mlx_loop.py`, and the `_extra` regression files).
+- **Empirical ICC = 0.9979** on the pilot's 3,982 trajectories grouped by task family, computed with the unbalanced-group Shrout-Fleiss ICC(1,1) estimator ([paper/power_analysis_empirical.md §3](paper/power_analysis_empirical.md)). Higher than the design-time plug-in ICC = 0.40, but the hierarchical model pools across 18 cells and the global pooled MDE is **0.0244** on the probability scale. The canonical registered TOST equivalence threshold (theory.md §3) is Δ = 0.05, which requires SE ≤ 0.0171; actual SE is **0.0098**. The locked design is powered for the strict registered Δ. (The "Δ = 0.080" framing in earlier drafts of `paper/power_analysis_empirical.md` was a relaxation that was never canonical; theory.md §3 is the registration of record.)
+- **Pilot composition** (original 4 task × policy buckets used for the ICC computation, ρ in trajectory units of concentration·time):
 
   | task | policy | N | mean ρ | std | range |
   |---|---|---:|---:|---:|---:|
-  | `bio_ode.repressilator` | heuristic | 1,000 | -2.488e+02 | 0.000 | flat |
+  | `bio_ode.repressilator` | heuristic (bang-bang, pre-fix) | 1,000 | -2.488e+02 | 0.000 | flat |
   | `bio_ode.repressilator` | random | 982 | -2.455e+02 | 4.565 | -2.487e+02 to -2.040e+02 |
   | `glucose_insulin` | heuristic | 1,000 | +2.075e+01 | 0.000 | flat |
   | `glucose_insulin` | random | 1,000 | -1.129e+00 | 3.408 | -1.042e+01 to +1.051e+01 |
 
-  The deterministic heuristic policies have zero within-bucket variance (PIDController on glucose-insulin and BangBangController on repressilator are both pure functions of state). The random policy gives the stochastic spread we will see scaled up under the {random, heuristic, LLM} mixture in Phase 2.
+  The deterministic heuristic policies have zero within-bucket variance (PIDController on glucose-insulin and the original BangBangController on repressilator are both pure functions of state). The random policy gives the stochastic spread we will see scaled up under the {random, heuristic, LLM} mixture in Phase 2.
+
+  **Post-fix (topology-aware) repressilator regeneration** — `data/canonical/bio_ode.repressilator/` (N=2,388):
+
+  | policy | N | mean ρ | success rate (ρ > 0) |
+  |---|---:|---:|---:|
+  | `topology_aware` (heuristic slot) | 1,000 | +25.000 | **100.0%** (deterministic) |
+  | `perturbed_heuristic` | 406 | -109.670 | 27.1% |
+  | `random` | 982 | -245.533 | 0.0% |
+  | **pooled** | 2,388 | — | **46.48%** |
+
+  The flat-ρ = -248.8 failure mode (§7) was not a property of the spec or the simulator; it was a topology-naive heuristic that drove the wrong gene. Replacing it with a `TopologyAwareController` that silences the upstream repressor in the cyclic ring (Elowitz-Leibler 2000 wiring; `tests/test_topology_aware.py`) lifts the heuristic-bucket success from 0% to 100% deterministically, and pulls the pooled rate to 46.48%.
 
 - **Bootstrap CI coverage** is verified by simulation in `tests/test_stats.py`: paired and unpaired bootstrap intervals achieve nominal 95% coverage on synthetic data with known truth. The hierarchical Bayes posterior sampler (`src/stl_seed/stats/hierarchical_bayes.py`, NumPyro NUTS 4 chains × 2000 draws) recovers the synthetic δ_A = 0.4 effect within the 95% HDI on a held-out simulation.
 - **Fisher-information sanity check.** At the prior median (A=0.6, b=0.25, N=128) the per-observation Fisher information matrix is `[[2.0249, 2.4941], [2.4941, 3.0719]]`, computed in closed form and cross-checked against an autograd-derivative implementation. Translates through the design-effect chain (n_eff_per_cell = 25.04 with empirical ICC) to the SE numbers above.
 
-The pilot reveals the failure mode that the bio_ode task family has at this stage of Phase 1: the bang-bang heuristic on the repressilator never satisfies the easy spec because **the control channel observed is wrong** (see §8 for the bug + fix). That is the kind of finding that would be silently buried by aggregate metrics; the per-cell pilot lays it bare.
+The original pilot revealed a failure mode in the bio_ode task family: the bang-bang heuristic on the repressilator never satisfied the easy spec because **the control channel observed was wrong** and the controller was **topology-naive** (see §7 for the bug + fix). That is the kind of finding that would be silently buried by aggregate metrics; the per-cell pilot laid it bare. The fix shipped in the Phase-2-prep pass replaces the bang-bang with a `TopologyAwareController`, lifting pooled bio_ode satisfaction to 46.48% (table above).
 
 ---
 
@@ -210,7 +221,7 @@ The honest section. From the actual experience of bringing the Phase-1 stack up 
 
 **The repressilator bang-bang heuristic produced flat ρ = −248.8 across 1,000 trajectories.** This was caught when [paper/power_analysis_empirical.md](paper/power_analysis_empirical.md) ran the ICC computation and the heuristic bucket had **zero within-bucket variance** — every single one of 1,000 trajectories landed at exactly the same robustness value. Two compounding bugs, both real:
   1. The heuristic was observing the wrong state channels. The repressilator state vector is `(m_1, m_2, m_3, p_1, p_2, p_3)` — three mRNAs followed by three proteins — but the bang-bang was driving its decision off the mRNA channels (indices 0, 1, 2) when the spec is over the protein channels (indices 3, 4, 5). Patched by adding `observation_indices=[3, 4, 5]` to the controller constructor.
-  2. Even after the channel fix, the controller is *topology-naive*: it tries to drive p_1 high by maximizing the input that nominally activates p_1, but the repressilator topology is `p_1 represses p_2 represses p_3 represses p_1`, so to drive p_1 high you have to **silence p_3** (p_1's repressor), not p_1 itself. Random sampling on the 30-dimensional continuous action space rarely hits the narrow good region, and a topology-naive heuristic provably never does. Documented as Phase-2 prep work: either a topology-aware heuristic, or LLM-warm-started exploration with the spec in context.
+  2. Even after the channel fix, the controller is *topology-naive*: it tries to drive p_1 high by maximizing the input that nominally activates p_1, but the repressilator topology is `p_1 represses p_2 represses p_3 represses p_1`, so to drive p_1 high you have to **silence p_3** (p_1's repressor), not p_1 itself. Random sampling on the 30-dimensional continuous action space rarely hits the narrow good region, and a topology-naive heuristic provably never does. **Resolution (Phase-2 prep, shipped 2026-04-24):** `TopologyAwareController` (`tests/test_topology_aware.py`, drop-in heuristic-slot replacement) silences the upstream repressor in the cyclic ring; on the regenerated canonical pilot it lifts the heuristic-bucket satisfaction from 0% to 100% (deterministic) and the pooled rate across all 2,388 bio_ode trajectories from 0% to 46.48%. The bio_ode reference policy mixture for Phase 2 is now informative.
 
   **What this taught me:** the pilot's job is to expose this kind of bug before you have spent $25 on a full sweep. ICC near 1.0 in a synthetic pilot is a *symptom*, not an inconvenience — it means one of your policies has zero entropy and you should figure out why before the canonical run. The numerical-power exercise paid for itself the first time it ran.
 
@@ -319,7 +330,7 @@ The honest list. None of these are dealbreakers; all of them are real:
 
 - **No wet-lab validation loop.** As above. The Phase-2 eval is closed-loop in simulation only.
 
-- **The repressilator pilot exposed the topology-naive-heuristic limitation.** The bang-bang heuristic doesn't satisfy the easy spec because random sampling on a 30-dimensional continuous action space rarely hits the narrow good region of u-space induced by the cyclic-repression topology. This means the Phase-2 reference policy mixture {random, heuristic, LLM} is *less informative* on bio_ode than on glucose_insulin (where the PID heuristic does satisfy the easy spec). Phase-2 needs either a topology-aware heuristic or LLM-warm-started exploration for the bio_ode leg; I have not committed to which.
+- **The repressilator pilot exposed the topology-naive-heuristic limitation, since fixed.** The original bang-bang heuristic didn't satisfy the easy spec because random sampling on a 30-dimensional continuous action space rarely hits the narrow good region of u-space induced by the cyclic-repression topology. The 2026-04-24 prep pass replaced it with `TopologyAwareController` (silences upstream repressor in the cyclic ring; `tests/test_topology_aware.py`); the regenerated canonical pilot now shows pooled satisfaction 46.48% on bio_ode (heuristic 100% deterministic, perturbed_heuristic 27%, random 0%). The Phase-2 reference policy mixture {random, heuristic, LLM} is now informative on both task families.
 
 - **Hierarchical Bayes inference uses NumPyro with default NUTS settings.** R̂ < 1.01 and ESS thresholds ([paper/theory.md §4](paper/theory.md)) will be checked at Phase-2 fit time. If the posterior turns out to be funnel-pathological for the random-effects standard deviations, the analysis switches to non-centered parametrization and re-runs; the registered analysis plan permits this without de-registration because the likelihood is unchanged.
 

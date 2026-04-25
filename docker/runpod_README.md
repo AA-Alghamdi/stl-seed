@@ -171,6 +171,38 @@ chase (d); raise it during the canonical sweep instead.
 
 ## 6. Run the canonical Phase-2 sweep
 
+### 6.0 Prerequisite (local, FREE): pre-generate canonical trajectory stores
+
+Before pushing to RunPod, run the canonical trajectory generator on the
+M5 Pro. The simulators are CPU-bound and finish in ~16 s combined; doing
+this locally saves ~30 min of paid GPU time per sweep and makes the
+sweep deterministic on the source host.
+
+```bash
+# On the local M5 Pro, NOT on RunPod:
+cd /Users/abdullahalghamdi/stl-seed
+uv run python scripts/generate_canonical.py 2>&1 | tee scripts/generate_canonical.log
+```
+
+The script writes `data/canonical/<task>/trajectories-*.parquet` for
+each of the two Phase-2 task families and validates two pre-registered
+gates per task: NaN-drop rate < 1% and ρ-satisfaction fraction ≥ 30%.
+Exits non-zero if either gate fails — investigate before proceeding.
+
+`data/canonical/` is gitignored (same policy as `data/pilot/`); the
+sweep runner picks it up at runtime via the resolution order:
+
+1. `data/canonical/<task>/` (preferred — full-scale 2,500-traj store).
+2. `data/pilot/` (Phase-1 fallback — 2,000-traj store).
+3. Regenerate fresh inside the cell (slowest; only if neither exists).
+
+The dry-run (`--dry-run` flag) surfaces which source each cell will
+consume, so you can confirm the canonical store is being picked up
+before spending GPU time. If a stripped-clone reproduction wants to
+skip Phase 1 entirely, only step 6.0 is required before step 6.1.
+
+### 6.1 Run the sweep
+
 The driver is `scripts/run_canonical_sweep.py` (composed via Hydra over
 `configs/sweep_main.yaml`). The single-command Phase-2 invocation is:
 

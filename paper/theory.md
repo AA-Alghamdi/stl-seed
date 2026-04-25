@@ -6,8 +6,7 @@ Author: Abdullah AlGhamdi
 Date: 2026-04-24
 Target venue: workshop submission concurrent with CMU MS-AIE matriculation (Aug 2026); primary audience REDACTED' group (MLD).
 
-> **Note on task family naming (added 2026-04-24, post-implementation):**
-> This document was drafted before the task families were fully implemented and uses placeholder names `{gene-toggle, predator-prey/lv}`. The shipped artifact uses **`{bio_ode, glucose_insulin}`** with bio_ode covering 3 subdomains (repressilator, toggle switch, MAPK cascade). All hypotheses, statistical models, and power analyses transfer directly — only the family labels differ. See [`paper/architecture.md`](architecture.md) and [`src/stl_seed/tasks/`](../src/stl_seed/tasks/) for the canonical task definitions, and [`paper/REDACTED.md`](REDACTED.md) for the actual STL specs. The empirical pilot ([`paper/power_analysis_empirical.md`](power_analysis_empirical.md)) confirmed the design remains adequately powered (MDE ≈ 0.024 vs claimed ≥ 0.08).
+> **v2 (2026-04-24): task family names reconciled with shipped artifact.**
 
 ---
 
@@ -17,7 +16,7 @@ We study LLM-driven *scientific control*: an autoregressive language-model polic
 
 dx/dt = f(x(t), u(t); θ),  x(0) = x_0,
 
-where θ ∈ Θ ⊂ ℝ^d collects (kinetic, mechanical, electrical) parameters that are *fixed* and supplied by literature priors, and u : [0, T] → U is a piecewise-constant control with H switching points u_{1:H} = (u_1, …, u_H). Concretely, u(t) = u_{⌈t·H/T⌉}. The per-step state is s_t := τ(t·T/H) ∈ ℝ^n. Existence and uniqueness of τ given (θ, u_{1:H}, x_0) follow from local Lipschitz continuity of f in x (Picard-Lindelöf; verified for the Hill-type, Lotka-Volterra-type, and gene-toggle dynamics used here), and τ ∈ C([0, T], ℝ^n) when f is continuous and u is bounded measurable.
+where θ ∈ Θ ⊂ ℝ^d collects (kinetic, mechanical, electrical) parameters that are *fixed* and supplied by literature priors, and u : [0, T] → U is a piecewise-constant control with H switching points u_{1:H} = (u_1, …, u_H). Concretely, u(t) = u_{⌈t·H/T⌉}. The per-step state is s_t := τ(t·T/H) ∈ ℝ^n. Existence and uniqueness of τ given (θ, u_{1:H}, x_0) follow from local Lipschitz continuity of f in x (Picard-Lindelöf; verified for the Hill-type, Bergman-minimal-model, and bio_ode (repressilator) dynamics used here), and τ ∈ C([0, T], ℝ^n) when f is continuous and u is bounded measurable.
 
 The behavioral specification is an STL formula φ over signal predicates μ_i(x) > 0, built from the Boolean connectives and the temporal operators 𝒰 (until), 𝒢_I (always over interval I ⊆ [0, T]), 𝒻_I (eventually). The STL syntax and Boolean semantics are due to Maler and Nickovic [arXiv:cs/0408019; DOI:10.1007/978-3-540-30206-3_12]. The quantitative *robustness* semantics ρ(τ, φ) ∈ ℝ — positive iff τ ⊨ φ, with magnitude measuring the signed margin to the nearest violation — is due to Donzé and Maler [DOI:10.1007/978-3-642-15297-9_9, FORMATS 2010] and is recursively defined on the formula tree using min/max over the predicate margins. We use the standard space-robustness ρ throughout (not the time-robustness variant of Donzé et al.).
 
@@ -51,13 +50,13 @@ The continuous-weighted condition can be derived as the M-step of a one-iteratio
 
 All hypotheses are registered before the canonical sweep. Falsification criteria are stated numerically.
 
-**H1 (headline equivalence).** Across the 3×3×2 grid of {filter v} × {model size M} × {task family F ∈ {gene-toggle, predator-prey}}, the eval success rate satisfies
+**H1 (headline equivalence).** Across the 3×3×2 grid of {filter v} × {model size M} × {task family F ∈ {bio_ode (repressilator), glucose_insulin}}, the eval success rate satisfies
 
 |p̂_{quant, M, F} − p̂_{hard, M, F}| ≤ 0.05  AND  |p̂_{cont, M, F} − p̂_{hard, M, F}| ≤ 0.05,
 
 simultaneously for all 18 cells, evaluated on the same held-out instance set. This is an *equivalence* claim, so the formal test is two one-sided tests (TOST [Schuirmann 1987, DOI:10.1007/BF01068419; Lakens 2017, DOI:10.1177/1948550617697177]) at α = 0.05 with Δ = 0.05. **H1_null:** at least one cell has |Δp̂| > 0.05 with TOST p > 0.05, i.e. equivalence fails. Rejecting H1 — finding a cell where soft significantly *beats* or *underperforms* hard — is itself publishable, especially in the latter direction since SERA's central claim was equivalence in coding [arXiv:2601.20789].
 
-**H2 (size-monotone improvement).** For at least one task family F* ∈ {gene-toggle, predator-prey} and at least one v* ∈ {quantile, continuous}, the posterior-mean success rate is strictly monotone in M:
+**H2 (size-monotone improvement).** For at least one task family F* ∈ {bio_ode (repressilator), glucose_insulin} and at least one v* ∈ {quantile, continuous}, the posterior-mean success rate is strictly monotone in M:
 
 E[p_{v*, Qwen3-0.6B, F*}] < E[p_{v*, Qwen3-1.7B, F*}] < E[p_{v*, Qwen3-4B, F*}],
 
@@ -69,7 +68,7 @@ The three hypotheses are jointly registered in `paper/preregistration.md` (separ
 
 ## 4. Statistical analysis plan
 
-We model trial-level outcomes hierarchically in NumPyro [arXiv:1912.11554]. Index trials by (m, v, f, i, s, N), where m ∈ {Q06, Q17, Q40} indexes model size, v ∈ {hard, quant, cont}, f ∈ {toggle, lv} indexes task family, i ∈ {1, …, n_f} indexes instances within family (n_toggle = n_lv = 25), s ∈ {1, …, 5} indexes seed, and N ∈ {1, 2, 4, 8, 16, 32, 64, 128} indexes the best-of-N budget. Y_{m,v,f,i,s,N} ∈ {0, 1} is the success indicator: 1 iff at least one of the N samples drawn under (m, v) for instance (f, i) on seed s achieves ρ(τ, φ_eval) > 0.
+We model trial-level outcomes hierarchically in NumPyro [arXiv:1912.11554]. Index trials by (m, v, f, i, s, N), where m ∈ {Q06, Q17, Q40} indexes model size, v ∈ {hard, quant, cont}, f ∈ {bio_ode, gluc} indexes task family, i ∈ {1, …, n_f} indexes instances within family (n_bio_ode = n_gluc = 25), s ∈ {1, …, 5} indexes seed, and N ∈ {1, 2, 4, 8, 16, 32, 64, 128} indexes the best-of-N budget. Y_{m,v,f,i,s,N} ∈ {0, 1} is the success indicator: 1 iff at least one of the N samples drawn under (m, v) for instance (f, i) on seed s achieves ρ(τ, φ_eval) > 0.
 
 The likelihood is Bernoulli with success probability following a saturating power-law in N:
 
@@ -147,7 +146,7 @@ Five failure modes ranked by ex-ante probability with mitigations.
 
 **FM4 — Backend numerical divergence (~15%).** Symptom: the canonical RunPod (bf16, A100, bnb 4-bit base) sweep produces materially different numbers than the local MLX (mps, fp16) pilot. Has bitten me before. Manifestations: (i) ρ_i differing in sign across backends due to ODE integrator choice; (ii) LoRA training dynamics differing because the bnb-quantized base introduces noise that MLX's fp16 base does not. *Mitigation:* a "preflight" step on RunPod replicates a tiny slice (1 model × 1 filter × 1 task family × 2 instances × 2 seeds × 4 BoN budgets) of the MLX pilot and checks that per-instance success rates match within 5 percentage points before launching the full canonical sweep. ODE integration uses Diffrax `Tsit5` with `rtol=1e-6, atol=1e-9` on both backends to remove integrator confounds. NaN/Inf events on Diffrax solves are replaced with zeros and counted in a separate field of the trial record (per the project rule in `~/CLAUDE.md`).
 
-**FM5 — Compute overrun (~10%).** Symptom: the canonical sweep doesn't finish by day 14. *Mitigation:* hard checkpoint at day 8. If compute is on the critical path, the fallback is a 2 × 2 × 2 sub-design (Qwen3-{0.6B, 4B} × {hard, cont} × {toggle, lv}) that still touches all three hypotheses with reduced power, and the missing cells are annotated as "not run" rather than imputed. Imputation across model sizes is explicitly forbidden in the analysis plan.
+**FM5 — Compute overrun (~10%).** Symptom: the canonical sweep doesn't finish by day 14. *Mitigation:* hard checkpoint at day 8. If compute is on the critical path, the fallback is a 2 × 2 × 2 sub-design (Qwen3-{0.6B, 4B} × {hard, cont} × {bio_ode, gluc}) that still touches all three hypotheses with reduced power, and the missing cells are annotated as "not run" rather than imputed. Imputation across model sizes is explicitly forbidden in the analysis plan.
 
 ## 8. REDACTED firewall
 
@@ -166,7 +165,7 @@ The optimization variable is the control sequence u_{1:H} ∈ ℝ^{H · m}, the 
 **Firewall checklist.** No REDACTED artifact appears in stl-seed:
 - (i) No file in `stl-seed/` imports from `~/REDACTED.py`, `~/REDACTED.py`, `~/REDACTED.py`. (Verified by grep at `paper/firewall_grep.txt`.)
 - (ii) No θ value in `stl-seed/configs/` matches any REDACTED-tuned θ to within 5 significant figures. All θ values are pulled from BRENDA / SABIO-RK / KEGG with citation strings recorded in the config.
-- (iii) The STL spec library (`stl-seed/specs/`) is independently authored: gene-toggle and predator-prey specs are written from textbook descriptions [Strogatz 2014 nonlinear dynamics, Gardner et al. 2000 toggle-switch, DOI:10.1038/35002131] without reference to REDACTED's repressilator/Hill specs.
+- (iii) The STL spec library (`stl-seed/specs/`) is independently authored: bio_ode (repressilator) and glucose_insulin specs are written from textbook descriptions [Strogatz 2014 nonlinear dynamics, Elowitz & Leibler 2000 repressilator DOI:10.1038/35002125, Bergman et al. 1979 minimal model PMID:443421] without reference to REDACTED's Hill specs.
 - (iv) Reproducibility scripts (`REDACTED.py` etc.) are not invoked anywhere in the stl-seed pipeline.
 
 The shared infrastructure (Diffrax integrator, Donzé-Maler ρ evaluator) is acknowledged in both papers as a software dependency, not a methodological overlap. The two papers are submittable to disjoint venues (REDACTED vs. NeurIPS workshop) without overlap-of-contribution concerns.

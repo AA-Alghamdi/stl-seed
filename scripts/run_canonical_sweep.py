@@ -81,6 +81,15 @@ _CONFIG_DIR = _REPO_ROOT / "configs"
 _RUNS_DIR = _REPO_ROOT / "runs" / "canonical"
 _SWEEP_LOG = _RUNS_DIR / "sweep_log.csv"
 
+# Trajectory store roots searched in priority order. Canonical first
+# (Phase-2 full-scale 2,500-traj/task store from
+# `scripts/generate_canonical.py`); pilot second (Phase-1 2,000-traj
+# fallback from `scripts/generate_pilot.py`); then None to signal
+# "regenerate fresh inside the cell" so a stripped-clone reproduction
+# still works without prior data prep.
+_CANONICAL_DATA_ROOT = _REPO_ROOT / "data" / "canonical"
+_PILOT_DATA_ROOT = _REPO_ROOT / "data" / "pilot"
+
 # Per-model expected duration in minutes (from configs/model/*.yaml).
 # Used by the cost estimator BEFORE Hydra is invoked, so we can reject a
 # nonsensical budget without spending Hydra-init time.
@@ -158,6 +167,80 @@ def enumerate_cells(cfg: DictConfig) -> list[Cell]:
     tasks = list(sweep.tasks)
     cells = [Cell(model=m, filter=f, task=t) for m in models for f in filters for t in tasks]
     return cells
+
+
+# ---------------------------------------------------------------------------
+# Trajectory-store resolution (canonical > pilot > regenerate-fresh).
+# ---------------------------------------------------------------------------
+
+
+def _task_to_family(task_cfg_name: str) -> str:
+    """Map sweep `task=` slug to the trajectory-store `task` field.
+
+    The Hydra task group uses underscored slugs (`bio_ode_repressilator`)
+    while the trajectory-store records the dotted family
+    (`bio_ode.repressilator`). Keep this mapping next to the resolver so
+    it stays in lockstep with `configs/task/*.yaml#family`.
+    """
+    return {
+        "bio_ode_repressilator": "bio_ode.repressilator",
+        "bio_ode_toggle": "bio_ode.toggle",
+        "bio_ode_mapk": "bio_ode.mapk",
+        "glucose_insulin": "glucose_insulin",
+    }.get(task_cfg_name, task_cfg_name)
+
+
+def resolve_data_root(task_cfg_name: str) -> tuple[Path | None, str]:
+    """Return ``(path, source)`` for the trajectory store of ``task``.
+
+    The sweep prefers the canonical (full-scale) store and falls back to
+    the pilot, then to a "regenerate fresh" sentinel. The contract is:
+
+    1. ``data/canonical/<dotted_family>/`` if it contains at least one
+       ``trajectories-*.parquet`` shard. Source label: ``"canonical"``.
+    2. ``data/pilot/`` (the flat Phase-1 store) if any
+       ``trajectories-*.parquet`` shard contains at least one row whose
+       ``task`` column matches ``dotted_family``. Source label: ``"pilot"``.
+    3. ``(None, "regenerate")`` if neither store has the task. The
+       caller is then expected to invoke the in-cell generation path
+       (slower, paid GPU time).
+
+    The resolver is read-only: it does not touch the parquet payload
+    beyond a column-projection scan that loads only the ``task`` column.
+
+    The ``(path, source)`` tuple is what the dry-run summary surfaces, so
+    the user can see WHICH source the sweep would consume before
+    spending GPU time. Returning ``Path`` (not ``TrajectoryStore``) keeps
+    this helper free of heavy imports — the cell-side training driver
+    (`stl_seed.training.loop`) is responsible for the actual load.
+    """
+    family = _task_to_family(task_cfg_name)
+
+    # 1. Canonical: per-task subdir.
+    canonical_dir = _CANONICAL_DATA_ROOT / family
+    if canonical_dir.is_dir():
+        shards = list(canonical_dir.glob("trajectories-*.parquet"))
+        if shards:
+            return canonical_dir, "canonical"
+
+    # 2. Pilot: flat dir, scan only the `task` column to confirm presence.
+    if _PILOT_DATA_ROOT.is_dir():
+        pilot_shards = list(_PILOT_DATA_ROOT.glob("trajectories-*.parquet"))
+        if pilot_shards:
+            try:
+                import pyarrow.parquet as pq
+
+                for shard in pilot_shards:
+                    tbl = pq.read_table(shard, columns=["task"])
+                    if family in {str(t) for t in tbl.column("task").to_pylist()}:
+                        return _PILOT_DATA_ROOT, "pilot"
+            except (ImportError, FileNotFoundError, OSError):
+                # Defensive: if pyarrow misbehaves, fall through to regenerate
+                # rather than crash the dry-run forecast.
+                pass
+
+    # 3. No prior data — caller must regenerate inside the cell.
+    return None, "regenerate"
 
 
 # ---------------------------------------------------------------------------
@@ -544,11 +627,23 @@ def print_cell_table(cells: list[Cell], dollars_per_hour: float) -> None:
     table.add_column("cell_id")
     table.add_column("expected min", justify="right")
     table.add_column("expected $", justify="right")
+    table.add_column("data source")
     table.add_column("done?", justify="center")
+    # Cache the data-source resolution per task so we don't re-scan
+    # parquet metadata once per cell.
+    src_cache: dict[str, tuple[Path | None, str]] = {}
     for i, c in enumerate(cells):
         m, d = estimate_cell_cost(c, dollars_per_hour)
+        if c.task not in src_cache:
+            src_cache[c.task] = resolve_data_root(c.task)
+        _, src = src_cache[c.task]
+        src_label = {
+            "canonical": "[green]canonical[/]",
+            "pilot": "[yellow]pilot (fallback)[/]",
+            "regenerate": "[red]regenerate (no prior data)[/]",
+        }[src]
         is_done = "[green]Y[/]" if c.done_flag.exists() else "-"
-        table.add_row(str(i + 1), c.cell_id, f"{m:.0f}", f"${d:.2f}", is_done)
+        table.add_row(str(i + 1), c.cell_id, f"{m:.0f}", f"${d:.2f}", src_label, is_done)
     console.print(table)
 
 
