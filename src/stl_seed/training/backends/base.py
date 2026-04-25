@@ -6,6 +6,15 @@ Both backends construct :class:`TrainedCheckpoint` from the same
 :class:`TrainingConfig` so the rest of the pipeline (eval harness,
 hierarchical-Bayes analysis) can consume artifacts uniformly.
 
+Provenance for ``lora_target_modules`` naming convention: smoke test
+A15 (``paper/REDACTED.md``) showed that bare names like
+``"q_proj"`` silently match zero modules under MLX's
+``linear_to_lora_layers`` (which scopes its name match within each
+TransformerBlock). The fix is to use locally-prefixed names like
+``"self_attn.q_proj"``. The dataclass defaults below carry the
+prefixed form, and ``__post_init__`` warns if a caller supplies bare
+names that would silently no-op under MLX.
+
 Defaults are sourced as follows (every numerical field is cited):
 
 * QLoRA hyperparameters (``learning_rate``, ``lora_rank``, ``lora_alpha``,
@@ -88,15 +97,34 @@ class TrainingConfig:
     # SERA QLoRA YAML: target_modules = q/k/v/o + gate/up/down projections.
     # The exact attribute names are Qwen3-family canonical (validated against
     # the Qwen3 modeling file in transformers ≥ 4.45).
+    #
+    # IMPORTANT — naming convention (MLX-compatible):
+    #   Names MUST be local-relative paths inside each TransformerBlock,
+    #   e.g. ``"self_attn.q_proj"`` and ``"mlp.gate_proj"``. The MLX
+    #   ``linear_to_lora_layers`` helper (mlx_lm 0.31) matches keys
+    #   *relative to each TransformerBlock*: bare names like ``"q_proj"``
+    #   silently match zero modules and produce a 0-trainable-parameter
+    #   LoRA. The bnb backend (PEFT) accepts both forms via suffix match,
+    #   but we standardize on the prefixed form so a single config works
+    #   on both backends without per-backend rewriting.
+    #
+    # Reference: ``paper/REDACTED.md`` (A15) §"Issues encountered"
+    # — the smoke test caught the silent no-op when bare names were used.
+    #
+    # Example (working on both MLX and bnb):
+    #     ["self_attn.q_proj", "self_attn.v_proj"]   # attention only
+    #     ["self_attn.q_proj", "self_attn.k_proj",
+    #      "self_attn.v_proj", "self_attn.o_proj",
+    #      "mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"]   # full SERA
     lora_target_modules: list[str] = field(
         default_factory=lambda: [
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj",
-            "gate_proj",
-            "up_proj",
-            "down_proj",
+            "self_attn.q_proj",
+            "self_attn.k_proj",
+            "self_attn.v_proj",
+            "self_attn.o_proj",
+            "mlp.gate_proj",
+            "mlp.up_proj",
+            "mlp.down_proj",
         ]
     )
     # SERA QLoRA YAML: lora_dropout: 0.0 (disabled for FlashAttention compat).
@@ -148,6 +176,27 @@ class TrainingConfig:
             raise ValueError(f"warmup_ratio must be in [0, 1], got {self.warmup_ratio}")
         if not (0.0 <= self.lora_dropout < 1.0):
             raise ValueError(f"lora_dropout must be in [0, 1), got {self.lora_dropout}")
+        # MLX naming-convention guard (paper/REDACTED.md §"Issues
+        # encountered"): bare names without a "." prefix silently match zero
+        # modules under mlx_lm.tuner.utils.linear_to_lora_layers because the
+        # matcher walks each TransformerBlock and compares against locally
+        # qualified attribute paths (e.g. "self_attn.q_proj"). A bare
+        # "q_proj" produces a 0-trainable-parameter LoRA — training runs
+        # but does nothing. Warn loudly so callers catch the typo before
+        # burning compute.
+        bare = [t for t in self.lora_target_modules if "." not in t]
+        if bare:
+            import logging as _logging
+
+            _logging.getLogger(__name__).warning(
+                "lora_target_modules contains bare names %r without a '.' "
+                "prefix. These silently match zero modules under MLX's "
+                "linear_to_lora_layers (mlx_lm 0.31) and will produce a "
+                "0-trainable-parameter LoRA. Use the locally-prefixed form "
+                "(e.g. 'self_attn.q_proj' instead of 'q_proj'). See "
+                "paper/REDACTED.md §'Issues encountered'.",
+                bare,
+            )
 
 
 # ---------------------------------------------------------------------------

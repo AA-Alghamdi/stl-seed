@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from stl_seed.evaluation.harness import EvalHarness, EvalResults
 from stl_seed.evaluation.metrics import (
+    action_diversity,
     bon_success,
     bon_success_curve,
     goodhart_gap,
@@ -39,4 +40,5 @@ __all__ = [
     "bon_success_curve",
     "rho_margin",
     "goodhart_gap",
+    "action_diversity",
 ]

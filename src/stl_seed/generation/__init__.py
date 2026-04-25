@@ -27,6 +27,7 @@ from stl_seed.generation.policies import (
     MLXModelPolicy,
     PIDController,
     RandomPolicy,
+    TopologyAwareController,
 )
 from stl_seed.generation.runner import TrajectoryRunner
 from stl_seed.generation.store import TrajectoryStore
@@ -38,6 +39,7 @@ __all__ = [
     "MLXModelPolicy",
     "PIDController",
     "RandomPolicy",
+    "TopologyAwareController",
     "TrajectoryRunner",
     "TrajectoryStore",
 ]

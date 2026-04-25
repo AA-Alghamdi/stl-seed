@@ -136,10 +136,22 @@ class TestTrainingConfigDefaults:
 
     def test_lora_target_modules_cover_attention_and_mlp(self):
         # paper/REDACTED.md §C.3: target_modules = q/k/v/o + gate/up/down.
+        # Names use the local-relative form (self_attn.* / mlp.*) required
+        # by mlx_lm's linear_to_lora_layers — see paper/REDACTED.md
+        # §"Issues encountered" for the silent-no-op rationale.
         cfg = TrainingConfig()
         targets = set(cfg.lora_target_modules)
-        assert {"q_proj", "k_proj", "v_proj", "o_proj"}.issubset(targets)
-        assert {"gate_proj", "up_proj", "down_proj"}.issubset(targets)
+        assert {
+            "self_attn.q_proj",
+            "self_attn.k_proj",
+            "self_attn.v_proj",
+            "self_attn.o_proj",
+        }.issubset(targets)
+        assert {"mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"}.issubset(targets)
+        # Defaults must NOT contain bare names — they would trigger the
+        # MLX naming-convention warning emitted in __post_init__.
+        for t in targets:
+            assert "." in t, f"default target {t!r} is bare; would no-op under MLX"
 
     def test_max_seq_length_is_smaller_than_sera(self):
         # SERA uses 32768 for code; stl-seed control trajectories are shorter

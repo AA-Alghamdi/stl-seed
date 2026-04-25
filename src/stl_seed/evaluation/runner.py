@@ -57,7 +57,15 @@ class RunnerConfig:
 
 @dataclass
 class RunRecord:
-    """Per-checkpoint outcome record stored by the runner."""
+    """Per-checkpoint outcome record stored by the runner.
+
+    The ``diversity_warnings`` field carries a list of spec names whose
+    ``first_action_uniqueness`` fell below the runner's diversity
+    threshold (default 0.5). Surfaced in :func:`stringify_aggregate` as
+    a ``[DIVERSITY WARNING]`` annotation. Wired up in response to the
+    A15 smoke test (paper/REDACTED.md §"Issues encountered")
+    where 5/5 generations produced an identical first action.
+    """
 
     checkpoint_name: str
     output_path: Path | None
@@ -66,6 +74,14 @@ class RunRecord:
     success: bool
     error: str | None = None
     extras: dict[str, Any] = field(default_factory=dict)
+    diversity_warnings: list[str] = field(default_factory=list)
+
+
+# Threshold at which a (checkpoint, spec) cell is annotated as
+# [DIVERSITY WARNING] in the stringified output. Below 0.5 means more
+# than half of generations share their first action with another
+# generation — the A15 memorization signature.
+DIVERSITY_WARNING_THRESHOLD: float = 0.5
 
 
 class EvalRunner:
@@ -219,9 +235,25 @@ class EvalRunner:
                 key=seed,
             )
             agg = results.aggregate_bon()
+            # Identify cells that tripped the diversity warning.
+            diversity_warnings: list[str] = []
+            for spec_name, per_spec in results.per_spec.items():
+                fau = per_spec.diversity.get("first_action_uniqueness")
+                if fau is None:
+                    continue
+                try:
+                    fau_f = float(fau)
+                except (TypeError, ValueError):
+                    continue
+                if (
+                    fau_f == fau_f  # not NaN
+                    and fau_f < DIVERSITY_WARNING_THRESHOLD
+                ):
+                    diversity_warnings.append(spec_name)
             if out_path is not None:
                 payload = results.as_dict()
                 payload["aggregate_bon"] = agg
+                payload["diversity_warnings"] = list(diversity_warnings)
                 out_path.write_text(json.dumps(payload, indent=2, default=_json_default))
             return RunRecord(
                 checkpoint_name=name,
@@ -229,6 +261,7 @@ class EvalRunner:
                 aggregate_bon=agg,
                 n_specs=len(results.per_spec),
                 success=True,
+                diversity_warnings=diversity_warnings,
             )
         except Exception as exc:  # noqa: BLE001  — driver-level catch by design
             return RunRecord(
@@ -258,14 +291,23 @@ def _json_default(obj: Any) -> Any:
 
 
 def stringify_aggregate(records: Iterable[RunRecord]) -> str:
-    """Tabular summary of a run, for paste-into-paper consumption."""
+    """Tabular summary of a run, for paste-into-paper consumption.
+
+    Cells whose ``first_action_uniqueness`` fell below
+    :data:`DIVERSITY_WARNING_THRESHOLD` are appended with
+    ``[DIVERSITY WARNING: <spec1>, <spec2>, ...]`` so the A15 memorization
+    failure mode (paper/REDACTED.md) is visible at a glance.
+    """
     lines = []
     for r in records:
         if not r.success:
             lines.append(f"  {r.checkpoint_name:<40s}  FAILED: {r.error}")
             continue
         agg_str = "  ".join(f"BoN-{n}={v:.3f}" for n, v in sorted(r.aggregate_bon.items()))
-        lines.append(f"  {r.checkpoint_name:<40s}  n_specs={r.n_specs}  {agg_str}")
+        line = f"  {r.checkpoint_name:<40s}  n_specs={r.n_specs}  {agg_str}"
+        if r.diversity_warnings:
+            line += f"  [DIVERSITY WARNING: {', '.join(r.diversity_warnings)}]"
+        lines.append(line)
     return "\n".join(lines)
 
 
@@ -273,5 +315,6 @@ __all__ = [
     "EvalRunner",
     "RunnerConfig",
     "RunRecord",
+    "DIVERSITY_WARNING_THRESHOLD",
     "stringify_aggregate",
 ]

@@ -31,11 +31,19 @@ Definitions
   the proxy reward relative to the gold reward — the operational
   definition of the spec-completeness term in the Goodhart
   decomposition theorem of §6.
+
+* **Action diversity**: per-prompt summary of how distinct the model's
+  generations are. Added in response to the A15 smoke-test diagnostic
+  (paper/REDACTED.md §"Issues encountered"): every held-out
+  generation produced an identical first action, indicating
+  memorization on the dominant training pattern. This metric makes the
+  failure mode falsifiable in eval.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Any
 
 import jax.numpy as jnp
 import numpy as np
@@ -192,10 +200,132 @@ def goodhart_gap(
     return float(sa.mean() - sb.mean())
 
 
+# ---------------------------------------------------------------------------
+# Action diversity (paper/REDACTED.md §"Issues encountered")
+# ---------------------------------------------------------------------------
+
+
+def action_diversity(
+    actions: jnp.ndarray | np.ndarray,
+    *,
+    quantization: float = 1e-6,
+) -> dict[str, float]:
+    """Measure action-sequence diversity across N independent generations.
+
+    The A15 smoke test (``paper/REDACTED.md``) found that 5/5
+    held-out generations produced identical first actions — a sign of
+    memorization on the dominant training-set action pattern rather
+    than learned control. This metric makes that regression mode
+    catchable in the eval harness.
+
+    Parameters
+    ----------
+    actions:
+        Array of shape ``(n_prompts, H, m)`` — for each of ``n_prompts``
+        independent generations, the ``H``-step ``m``-dim action
+        sequence the policy emitted. May contain NaN (e.g., from
+        parse failures); rows that are all-NaN are excluded from
+        first-action and sequence-uniqueness counts but counted in the
+        denominator (so a model that fails to parse on every prompt
+        scores 0.0, not NaN).
+    quantization:
+        Two action vectors that differ by less than ``quantization`` in
+        every coordinate are treated as identical. Defaults to ``1e-6``
+        which is well below the 4-sig-fig serialization rounding (see
+        ``stl_seed.training.tokenize._fmt_scalar``).
+
+    Returns
+    -------
+    dict with keys:
+
+    * ``first_action_uniqueness`` — fraction of unique first actions
+      divided by ``n_prompts``. ``1.0`` means every prompt got a
+      different first action; ``1/n_prompts`` means every prompt got
+      the same first action (the A15 failure mode).
+    * ``sequence_uniqueness`` — fraction of unique full sequences /
+      ``n_prompts``. ``1.0`` means every full action sequence is
+      distinct.
+    * ``first_action_pairwise_distance`` — mean pairwise L2 distance
+      between *distinct* first actions. ``0.0`` if there is only one
+      distinct first action; otherwise the average of
+      ``‖a_i − a_j‖_2`` over the ``C(k, 2)`` distinct-pair indices,
+      where ``k`` is the number of distinct first actions.
+
+    Notes
+    -----
+    "Distinct" is defined via per-coordinate quantization rather than
+    exact equality so that small floating-point round-trips through the
+    text-format serialization do not artificially inflate diversity.
+    """
+    arr = np.asarray(actions, dtype=np.float64)
+    if arr.ndim != 3:
+        raise ValueError(f"action_diversity expects shape (n_prompts, H, m); got {arr.shape}")
+    n_prompts = arr.shape[0]
+    if n_prompts == 0:
+        return {
+            "first_action_uniqueness": float("nan"),
+            "sequence_uniqueness": float("nan"),
+            "first_action_pairwise_distance": float("nan"),
+        }
+
+    # Quantize to a fixed grid so two near-identical actions hash to the
+    # same bucket. We use round-to-nearest-multiple-of-quantization on
+    # the raw float values (NaN propagates to a sentinel string below).
+    q = float(quantization)
+    if q <= 0:
+        raise ValueError(f"quantization must be positive, got {q}")
+
+    def _qkey(vec: np.ndarray) -> tuple[Any, ...]:
+        # NaN entries are kept as the literal string "nan" so that two
+        # all-NaN rows hash equal but never collide with a finite vector.
+        out = []
+        for x in vec.ravel():
+            if not np.isfinite(x):
+                out.append("nan")
+            else:
+                out.append(int(round(x / q)))
+        return tuple(out)
+
+    first_keys = [_qkey(arr[i, 0, :]) for i in range(n_prompts)]
+    seq_keys = [_qkey(arr[i]) for i in range(n_prompts)]
+
+    n_unique_first = len(set(first_keys))
+    n_unique_seq = len(set(seq_keys))
+
+    # Pairwise L2 distance over distinct first actions only.
+    seen: dict[tuple[Any, ...], np.ndarray] = {}
+    for i in range(n_prompts):
+        k = first_keys[i]
+        if k not in seen:
+            seen[k] = arr[i, 0, :]
+    distinct_firsts = list(seen.values())
+    if len(distinct_firsts) < 2:
+        mean_dist = 0.0
+    else:
+        ds: list[float] = []
+        for i in range(len(distinct_firsts)):
+            for j in range(i + 1, len(distinct_firsts)):
+                a = distinct_firsts[i]
+                b = distinct_firsts[j]
+                # If either contains NaN, skip — those rows are not real
+                # generations and including them inflates the distance.
+                if not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
+                    continue
+                ds.append(float(np.linalg.norm(a - b)))
+        mean_dist = float(np.mean(ds)) if ds else 0.0
+
+    return {
+        "first_action_uniqueness": float(n_unique_first) / float(n_prompts),
+        "sequence_uniqueness": float(n_unique_seq) / float(n_prompts),
+        "first_action_pairwise_distance": mean_dist,
+    }
+
+
 __all__ = [
     "success_rate",
     "bon_success",
     "bon_success_curve",
     "rho_margin",
     "goodhart_gap",
+    "action_diversity",
 ]

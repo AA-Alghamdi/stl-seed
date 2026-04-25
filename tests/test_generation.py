@@ -22,6 +22,7 @@ from stl_seed.generation import (
     HeuristicPolicy,
     PIDController,
     RandomPolicy,
+    TopologyAwareController,
     TrajectoryRunner,
     TrajectoryStore,
 )
@@ -153,8 +154,12 @@ def test_heuristic_policy_routes_glucose() -> None:
 
 
 def test_heuristic_policy_routes_repressilator() -> None:
+    """The repressilator heuristic now dispatches to the topology-aware
+    controller (cyclic ring needs to silence the upstream repressor of the
+    target gene; bang-bang on the target alone fails to satisfy the spec).
+    """
     h = HeuristicPolicy("bio_ode.repressilator")
-    assert isinstance(h._impl, BangBangController)
+    assert isinstance(h._impl, TopologyAwareController)
     assert h.action_dim == 3
 
 

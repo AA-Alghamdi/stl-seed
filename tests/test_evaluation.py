@@ -17,6 +17,7 @@ import pytest
 
 from stl_seed.evaluation import (
     EvalHarness,
+    action_diversity,
     bon_success,
     bon_success_curve,
     goodhart_gap,
@@ -24,6 +25,7 @@ from stl_seed.evaluation import (
     success_rate,
 )
 from stl_seed.evaluation.runner import (
+    DIVERSITY_WARNING_THRESHOLD,
     EvalRunner,
     RunnerConfig,
     stringify_aggregate,
@@ -356,3 +358,162 @@ def test_runner_resumes_existing(tmp_path) -> None:
     # Second run reads
     r2 = runner.run([_GoodCheckpoint()], ["s"])
     assert r2[0].success and r2[0].extras.get("resumed") is True
+
+
+# ---------------------------------------------------------------------------
+# action_diversity (Fix 3 — paper/REDACTED.md §"Issues encountered")
+# ---------------------------------------------------------------------------
+
+
+def test_action_diversity_all_distinct() -> None:
+    """N distinct first actions → first_action_uniqueness == 1.0."""
+    rng = np.random.default_rng(0)
+    actions = rng.normal(size=(5, 4, 2))
+    out = action_diversity(actions)
+    assert out["first_action_uniqueness"] == pytest.approx(1.0)
+    assert out["sequence_uniqueness"] == pytest.approx(1.0)
+    assert out["first_action_pairwise_distance"] > 0.0
+
+
+def test_action_diversity_all_identical_first_action() -> None:
+    """Every prompt's first action is the same → first_action_uniqueness ==
+    1/n_prompts (the A15 memorization signature)."""
+    a = np.zeros((5, 4, 2), dtype=np.float64)
+    # Different tails so sequence_uniqueness is 1.0 but first action is shared
+    rng = np.random.default_rng(1)
+    a[:, 1:, :] = rng.normal(size=(5, 3, 2))
+    a[:, 0, :] = np.array([12.34, -1.0])  # identical first action
+    out = action_diversity(a)
+    assert out["first_action_uniqueness"] == pytest.approx(1.0 / 5.0)
+    assert out["sequence_uniqueness"] == pytest.approx(1.0)
+    # Only one distinct first action → mean pairwise dist = 0
+    assert out["first_action_pairwise_distance"] == pytest.approx(0.0)
+
+
+def test_action_diversity_quantization_collapses_near_duplicates() -> None:
+    """Two near-identical first actions (diff < q) hash to the same key."""
+    a = np.zeros((3, 2, 1), dtype=np.float64)
+    a[0, 0, 0] = 1.0
+    a[1, 0, 0] = 1.0 + 1e-9  # below default q=1e-6
+    a[2, 0, 0] = 2.0
+    out = action_diversity(a)
+    # rows 0 and 1 collapse → 2 distinct first actions out of 3
+    assert out["first_action_uniqueness"] == pytest.approx(2.0 / 3.0)
+
+
+def test_action_diversity_handles_nan_rows() -> None:
+    """NaN rows do not crash and do not contribute to pairwise distance."""
+    a = np.zeros((4, 2, 1), dtype=np.float64)
+    a[0] = np.nan
+    a[1, 0, 0] = 1.0
+    a[2, 0, 0] = 2.0
+    a[3, 0, 0] = 3.0
+    out = action_diversity(a)
+    # First-action keys: ("nan",), (1,), (2,), (3,) → 4 distinct
+    assert out["first_action_uniqueness"] == pytest.approx(1.0)
+    # Pairwise distances over distinct *finite* first actions only:
+    # |1-2|=1, |1-3|=2, |2-3|=1 → mean = 4/3
+    assert out["first_action_pairwise_distance"] == pytest.approx(4.0 / 3.0)
+
+
+def test_action_diversity_empty_returns_nan() -> None:
+    out = action_diversity(np.zeros((0, 2, 1)))
+    assert np.isnan(out["first_action_uniqueness"])
+    assert np.isnan(out["sequence_uniqueness"])
+    assert np.isnan(out["first_action_pairwise_distance"])
+
+
+def test_action_diversity_wrong_shape_raises() -> None:
+    with pytest.raises(ValueError, match="n_prompts, H, m"):
+        action_diversity(np.zeros((4, 2)))
+
+
+def test_action_diversity_invalid_quantization_raises() -> None:
+    with pytest.raises(ValueError, match="quantization"):
+        action_diversity(np.zeros((2, 2, 1)), quantization=0.0)
+
+
+# ---------------------------------------------------------------------------
+# Harness diversity wiring + runner [DIVERSITY WARNING] flag
+# ---------------------------------------------------------------------------
+
+
+class _MemorizingCheckpoint:
+    """Always emits the same control sequence regardless of prompt — this is
+    the A15 failure mode the diversity warning exists to catch."""
+
+    name = "memorizing"
+
+    def sample_controls(self, spec, initial_state, key):  # noqa: ARG002
+        return jnp.ones((4, 1)) * 0.7
+
+
+def test_harness_records_diversity_per_spec() -> None:
+    h = _make_harness()
+    res = h.evaluate_checkpoint(
+        checkpoint=_RandomCheckpoint(),
+        held_out_specs=["toggle.spec", "lv.spec"],
+        n_samples_per_spec=8,
+        key=42,
+    )
+    for spec_name, per_spec in res.per_spec.items():
+        assert "first_action_uniqueness" in per_spec.diversity, spec_name
+        assert "sequence_uniqueness" in per_spec.diversity, spec_name
+        assert "first_action_pairwise_distance" in per_spec.diversity, spec_name
+
+
+def test_harness_memorizing_checkpoint_low_diversity() -> None:
+    """A constant-output policy must score first_action_uniqueness = 1/N."""
+    h = _make_harness()
+    res = h.evaluate_checkpoint(
+        checkpoint=_MemorizingCheckpoint(),
+        held_out_specs=["toggle.spec"],
+        n_samples_per_spec=8,
+        key=0,
+    )
+    per_spec = res.per_spec["toggle.spec"]
+    assert per_spec.diversity["first_action_uniqueness"] == pytest.approx(1.0 / 8.0)
+    assert per_spec.diversity["first_action_uniqueness"] < DIVERSITY_WARNING_THRESHOLD
+
+
+def test_runner_flags_diversity_warning_in_stringified_output(tmp_path) -> None:
+    """A memorizing checkpoint should trigger a [DIVERSITY WARNING] tag."""
+    sims = {"s": _StubSim()}
+    cfg = RunnerConfig(
+        n_samples_per_spec=8,
+        budgets=(1, 2, 4, 8),
+        output_dir=tmp_path,
+        seed_base=0,
+    )
+    runner = EvalRunner(
+        simulator_registry=sims,
+        spec_registry={"s": object()},
+        stl_evaluator=_stub_evaluator,
+        initial_state_fn=_const_x0,
+        config=cfg,
+    )
+    records = runner.run([_MemorizingCheckpoint(), _RandomCheckpoint()], ["s"])
+    by_name = {r.checkpoint_name: r for r in records}
+    assert "s" in by_name["memorizing"].diversity_warnings
+    assert "s" not in by_name["random"].diversity_warnings
+    table = stringify_aggregate(records)
+    # The memorizing line carries the warning tag; the random line does not.
+    mem_line = next(line for line in table.splitlines() if "memorizing" in line)
+    rand_line = next(line for line in table.splitlines() if "random" in line)
+    assert "DIVERSITY WARNING" in mem_line
+    assert "DIVERSITY WARNING" not in rand_line
+
+
+def test_per_spec_result_as_dict_includes_diversity() -> None:
+    """JSON round-trip must carry the diversity dict (so paper figures
+    can read it directly off the eval artifact)."""
+    h = _make_harness()
+    res = h.evaluate_checkpoint(
+        checkpoint=_MemorizingCheckpoint(),
+        held_out_specs=["toggle.spec"],
+        n_samples_per_spec=8,
+        key=1,
+    )
+    payload = res.per_spec["toggle.spec"].as_dict()
+    assert "diversity" in payload
+    assert "first_action_uniqueness" in payload["diversity"]

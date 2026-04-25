@@ -283,6 +283,149 @@ class BangBangController:
 
 
 # -----------------------------------------------------------------------------
+# TopologyAwareController
+# -----------------------------------------------------------------------------
+
+
+class TopologyAwareController:
+    """Topology-aware feedback controller for cyclic gene regulatory networks.
+
+    Given a topology specifying which gene's product *represses* which other
+    gene, this controller knows how to drive a target protein high or low by
+    actuating the appropriate upstream inducer. It is the natural feedback
+    controller for cyclic repressor networks such as the Elowitz-Leibler 2000
+    repressilator (Gene 1 -| Gene 2 -| Gene 3 -| Gene 1) and other ring
+    topologies.
+
+    Repressilator example. To drive ``p_1`` (target gene 0) HIGH, the
+    controller silences gene 2 — the upstream repressor of gene 0 — by
+    emitting ``u_2 = 1``; the canonical inducer convention here is that
+    ``u_i = 1`` fully silences gene i (per
+    ``stl_seed.tasks.bio_ode.RepressilatorSimulator`` docstring). Once the
+    upstream repressor is suppressed, the target gene is de-repressed and
+    its protein rises. The controller observes the *target protein* and
+    keeps the upstream gene silenced as long as the target is below the
+    threshold (drive high) or above the threshold (drive low).
+
+    Parameters
+    ----------
+    topology:
+        Dict mapping ``gene_index -> upstream_repressor_index``. For the
+        repressilator (gene i repressed by gene (i-1) mod 3) this is
+        ``{0: 2, 1: 0, 2: 1}``. The mapping is derived from the network
+        wiring diagram (Elowitz & Leibler 2000 Fig. 1a) and is independent
+        of any specific spec.
+    target_gene:
+        Index of the gene whose protein the controller is trying to drive.
+        Must be a key of ``topology``.
+    target_direction:
+        ``"high"`` to drive the target protein up (silence the upstream
+        repressor); ``"low"`` to drive it down (do not silence; allow the
+        upstream repressor to act).
+    threshold:
+        Switching threshold (same units as the observed protein) for the
+        feedback decision. With ``target_direction="high"``, the controller
+        emits ``u_upstream = 1`` whenever the observed target protein is
+        below the threshold (still needs help to rise) and ``0`` once it
+        exceeds the threshold (already where we want it). With
+        ``target_direction="low"`` the senses are flipped.
+    observation_indices:
+        State indices (length ``n_genes``) where the proteins live in the
+        full state vector. For the repressilator state
+        ``(m_1, m_2, m_3, p_1, p_2, p_3)`` this is ``[3, 4, 5]`` so that
+        the controller observes proteins, not mRNAs. Defaults to
+        ``range(n_genes)`` if not provided (e.g. for the toggle's
+        2-state form, where ``[0, 1]`` are already the repressors).
+    action_dim:
+        Optional explicit action dimensionality. Defaults to the maximum
+        gene index in ``topology`` plus one (i.e. one channel per gene).
+
+    Notes
+    -----
+    Action sign convention: ``u_i = 1`` *silences* gene i. This matches the
+    bio_ode repressilator simulator (``transcription = alpha_max * (1 - u_i)
+    * repression``). For tasks with the opposite sign (``u_i = 1`` activates
+    gene i), pre-flip the action with a wrapper or extend this controller.
+
+    REDACTED firewall. The topology dict and threshold are derived from
+    Elowitz & Leibler (Nature 2000;403:335) Fig. 1a and the spec's textbook
+    midpoint between ``P_LOW`` and ``P_HIGH`` (specs/bio_ode_specs.py),
+    not from any REDACTED artifact. The class itself is task-family-agnostic.
+    """
+
+    def __init__(
+        self,
+        topology: dict[int, int],
+        target_gene: int,
+        target_direction: str = "high",
+        threshold: float = 50.0,
+        observation_indices: list[int] | None = None,
+        action_dim: int | None = None,
+    ) -> None:
+        if not topology:
+            raise ValueError("topology must be a non-empty dict")
+        if target_gene not in topology:
+            raise KeyError(
+                f"target_gene={target_gene} not in topology keys {sorted(topology.keys())}"
+            )
+        if target_direction not in {"high", "low"}:
+            raise ValueError(f"target_direction must be 'high' or 'low', got {target_direction!r}")
+
+        self.topology = dict(topology)
+        self.target_gene = int(target_gene)
+        self.target_direction = target_direction
+        self.threshold = float(threshold)
+
+        # Derive action_dim from the topology if not specified. Each gene
+        # mentioned (as key or value) gets a channel.
+        n_genes = max(max(self.topology.keys()), max(self.topology.values())) + 1
+        self.action_dim = int(action_dim) if action_dim is not None else n_genes
+
+        if observation_indices is None:
+            self.observation_indices = list(range(n_genes))
+        else:
+            if len(observation_indices) != n_genes:
+                raise ValueError(
+                    f"observation_indices length {len(observation_indices)} "
+                    f"must equal n_genes={n_genes} (one observation per gene)"
+                )
+            self.observation_indices = list(observation_indices)
+
+        # Pre-compute the index of the upstream repressor we will actuate.
+        self._upstream_idx = int(self.topology[self.target_gene])
+        # Pre-compute the index of the target protein we will observe.
+        self._target_obs_idx = int(self.observation_indices[self.target_gene])
+
+    def __call__(
+        self,
+        state: State,
+        spec: STLSpec,  # noqa: ARG002
+        history: History,  # noqa: ARG002
+        key: PRNGKeyArray,  # noqa: ARG002
+    ) -> Action:
+        # Observe the target protein.
+        target = state[self._target_obs_idx]
+
+        # Decide whether the upstream repressor should be silenced.
+        # "high": still need to push target up -> silence upstream while target < threshold.
+        # "low":  still need to push target down -> let upstream act while target > threshold,
+        #         which here means do NOT silence (u_upstream = 0); silencing the target's
+        #         own gene via u_target = 1 also drives target down, so we additionally
+        #         silence the target gene in the "low" branch.
+        u = jnp.zeros((self.action_dim,), dtype=jnp.float32)
+        if self.target_direction == "high":
+            # Silence the upstream repressor while the target is below threshold.
+            silence_upstream = jnp.where(target < self.threshold, 1.0, 0.0)
+            u = u.at[self._upstream_idx].set(silence_upstream)
+        else:  # "low"
+            # Silence the target gene's own transcription while the target
+            # protein is above threshold (active drive-down).
+            silence_target = jnp.where(target > self.threshold, 1.0, 0.0)
+            u = u.at[self.target_gene].set(silence_target)
+        return u
+
+
+# -----------------------------------------------------------------------------
 # MLXModelPolicy
 # -----------------------------------------------------------------------------
 
@@ -434,19 +577,25 @@ _HEURISTIC_DEFAULTS: dict[str, dict[str, Any]] = {
             "action_dim": 1,
         },
     },
-    # Bio_ode/repressilator: bang-bang inducers, 3 channels.
-    # State is (m_1, m_2, m_3, p_1, p_2, p_3). Specs gate on proteins,
-    # so observe state[3:6] not the default state[0:3] (mRNA).
-    # Inducer u_i SILENCES gene i (per bio_ode.py docstring), so flip the
-    # bang-bang sense: when protein i is HIGH, push u_i HIGH to silence.
+    # Bio_ode/repressilator: TOPOLOGY-AWARE controller, 3 channels.
+    # State is (m_1, m_2, m_3, p_1, p_2, p_3). The cyclic repression wiring
+    # (Elowitz & Leibler 2000 Nature 403:335 Fig. 1a) is gene 0 -| gene 1
+    # -| gene 2 -| gene 0, i.e. each gene i is repressed by gene (i-1) % 3.
+    # The ``bio_ode.repressilator.easy`` spec asks the controller to drive
+    # p_1 (gene 0) HIGH; the topology-aware policy therefore silences the
+    # upstream repressor of gene 0, which is gene 2 (per topology[0] = 2).
+    # The threshold is the textbook midpoint between P_LOW=25 and P_HIGH=250
+    # (specs/bio_ode_specs.py); observation_indices=[3,4,5] picks the protein
+    # block out of the (m,p) state. A constant control of u=(0,0,1)
+    # satisfies the spec with rho ~ +25 (manually verified, commit 369872a).
     "bio_ode.repressilator": {
-        "controller": "bangbang",
+        "controller": "topology_aware",
         "kwargs": {
-            "threshold": 137.5,  # nM, midway between P_LOW=25 and P_HIGH=250
-            "low_action": 1.0,  # protein HIGH → silence gene (drive u high)
-            "high_action": 0.0,  # protein LOW → release inducer (u=0)
-            "action_dim": 3,
-            "observation_indices": [3, 4, 5],  # observe proteins, not mRNA
+            "topology": {0: 2, 1: 0, 2: 1},  # gene i repressed by gene (i-1) % 3
+            "target_gene": 0,  # spec drives p_1 (gene 0) high
+            "target_direction": "high",
+            "threshold": 137.5,  # nM, midway P_LOW=25 and P_HIGH=250
+            "observation_indices": [3, 4, 5],  # proteins live in state[3:6]
         },
     },
     # Bio_ode/toggle: bang-bang on 2 inducers.
@@ -521,6 +670,8 @@ class HeuristicPolicy:
             self._impl: Any = PIDController(**kwargs)
         elif spec["controller"] == "bangbang":
             self._impl = BangBangController(**kwargs)
+        elif spec["controller"] == "topology_aware":
+            self._impl = TopologyAwareController(**kwargs)
         else:  # pragma: no cover  -- defensive
             raise ValueError(f"unknown controller kind: {spec['controller']!r}")
 
@@ -544,6 +695,7 @@ __all__ = [
     "MLXModelPolicy",
     "PIDController",
     "RandomPolicy",
+    "TopologyAwareController",
     "State",
     "Action",
     "History",

@@ -48,6 +48,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from stl_seed.evaluation.metrics import (
+    action_diversity,
     bon_success_curve,
     rho_margin,
     success_rate,
@@ -132,6 +133,16 @@ class PerSpecResult:
         states (per the architecture.md NaN policy these trajectories'
         ρ values are recorded as ``nan`` here and dropped from the
         ``success_rate_marginal`` denominator).
+    diversity:
+        ``action_diversity`` summary computed over the ``n_samples``
+        independent generations. Keys: ``first_action_uniqueness``,
+        ``sequence_uniqueness``, ``first_action_pairwise_distance``.
+        Added in response to the A15 smoke-test diagnostic
+        (``paper/REDACTED.md``): every held-out generation
+        produced an identical first action — this metric makes that
+        regression mode falsifiable in eval. ``first_action_uniqueness``
+        below 0.5 is treated as a warning by the runner's
+        rich-formatted output.
     """
 
     spec_name: str
@@ -143,6 +154,7 @@ class PerSpecResult:
     rho_mean: float
     rho_iqr: float
     n_nan: int
+    diversity: dict[str, float] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -155,6 +167,7 @@ class PerSpecResult:
             "rho_mean": self.rho_mean,
             "rho_iqr": self.rho_iqr,
             "n_nan": self.n_nan,
+            "diversity": dict(self.diversity),
         }
 
 
@@ -339,6 +352,12 @@ class EvalHarness:
         seeds = np.zeros(n_samples, dtype=np.int64)
         sample_keys = jax.random.split(key, n_samples)
 
+        # Collect each generation's action sequence so we can compute
+        # action_diversity (paper/REDACTED.md §"Issues"). We
+        # lazily allocate the buffer on the first successful sample to
+        # learn the (H, m) shape from the policy itself.
+        controls_buf: np.ndarray | None = None
+
         n_nan = 0
         for s in range(n_samples):
             sk = sample_keys[s]
@@ -359,6 +378,24 @@ class EvalHarness:
                     initial_state=initial_state,
                     key=policy_key,
                 )
+                # Record the action sequence for diversity.
+                ctrl_np = np.asarray(controls, dtype=np.float64)
+                if ctrl_np.ndim == 1:
+                    ctrl_np = ctrl_np.reshape(-1, 1)
+                if controls_buf is None:
+                    controls_buf = np.full(
+                        (n_samples, ctrl_np.shape[0], ctrl_np.shape[1]),
+                        np.nan,
+                        dtype=np.float64,
+                    )
+                if (
+                    ctrl_np.shape[0] == controls_buf.shape[1]
+                    and ctrl_np.shape[1] == controls_buf.shape[2]
+                ):
+                    controls_buf[s] = ctrl_np
+                # else: shape mismatch — leave row as NaN; action_diversity
+                # treats NaN rows as not-a-real-generation.
+
                 trajectory = sim.simulate(
                     initial_state=initial_state,
                     control_sequence=controls,
@@ -401,6 +438,18 @@ class EvalHarness:
         sr = success_rate(rhos)
         rmean, riqr = rho_margin(rhos)
 
+        # Action-diversity summary. If the policy never produced a
+        # successful control rollout (e.g., every call raised), the
+        # buffer stays None — record NaN sentinels.
+        if controls_buf is None:
+            diversity = {
+                "first_action_uniqueness": float("nan"),
+                "sequence_uniqueness": float("nan"),
+                "first_action_pairwise_distance": float("nan"),
+            }
+        else:
+            diversity = action_diversity(controls_buf)
+
         return PerSpecResult(
             spec_name=spec_name,
             n_samples=n_samples,
@@ -411,6 +460,7 @@ class EvalHarness:
             rho_mean=rmean,
             rho_iqr=riqr,
             n_nan=n_nan,
+            diversity=diversity,
         )
 
 
