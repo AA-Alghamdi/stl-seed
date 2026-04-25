@@ -62,10 +62,18 @@ from stl_seed.generation.runner import TrajectoryRunner
 from stl_seed.generation.store import TrajectoryStore
 from stl_seed.specs import REGISTRY
 from stl_seed.tasks.bio_ode import (
+    MAPKSimulator,
     RepressilatorSimulator,
+    ToggleSimulator,
+    default_mapk_initial_state,
     default_repressilator_initial_state,
+    default_toggle_initial_state,
 )
-from stl_seed.tasks.bio_ode_params import RepressilatorParams
+from stl_seed.tasks.bio_ode_params import (
+    MAPKParams,
+    RepressilatorParams,
+    ToggleParams,
+)
 from stl_seed.tasks.glucose_insulin import (
     U_INSULIN_MAX_U_PER_H,
     U_INSULIN_MIN_U_PER_H,
@@ -121,6 +129,34 @@ _POLICY_MIX_BY_TASK: dict[str, dict[str, float]] = {
         "heuristic": 0.4,
         "perturbed_heuristic": 0.2,
     },
+    # Toggle: random leg DROPPED because uniform random inducer sequences
+    # drive the bistable Gardner-Cantor-Collins integrator into a regime
+    # where the state goes slightly negative (numerical step error) and
+    # the Hill term ``A^n_BA`` with non-integer ``n_BA = 1.5`` then
+    # returns NaN. Empirically (2026-04-24, 50-sample probe) the random
+    # leg has ~48% NaN-drop rate while the heuristic and perturbed legs
+    # at sigma_frac=0.01 have ~1.5% drop rate; the corpus-level NaN
+    # budget of 1% cannot be met with any non-trivial random fraction.
+    # We therefore drop the random leg entirely and rely on the
+    # topology-aware heuristic + its low-sigma perturbed variant for
+    # action diversity. Fixing the underlying NaN propagation requires
+    # a `jnp.maximum(state, 0)` clip in `bio_ode._toggle_vector_field`;
+    # that is a separate work item tracked outside this canonical-
+    # generator change.
+    "bio_ode.toggle": {
+        "heuristic": 0.65,
+        "perturbed_heuristic": 0.35,
+    },
+    # MAPK: same enriched mix as repressilator. The MAPK simulator is
+    # numerically well-conditioned (no NaN drops observed in the 2026-04-24
+    # 2,500-trajectory canonical run); the only failure mode is spec
+    # satisfaction (a separate spec/simulator state-index mismatch
+    # documented in the controller config in `_HEURISTIC_DEFAULTS`).
+    "bio_ode.mapk": {
+        "random": 0.4,
+        "heuristic": 0.4,
+        "perturbed_heuristic": 0.2,
+    },
     "glucose_insulin": {
         "random": 0.5,
         "heuristic": 0.5,
@@ -133,6 +169,12 @@ _POLICY_MIX_BY_TASK: dict[str, dict[str, float]] = {
 # justification).
 _SIGMA_FRAC_BY_TASK: dict[str, float] = {
     "bio_ode.repressilator": 0.02,  # 0.1 spec'd; reduced for solver stability
+    # Toggle: reduced to 0.01 because the bistable Hill term ``A^n_BA`` with
+    # non-integer n_BA = 1.5 amplifies any small negative excursion into NaN
+    # propagation. Empirically (2026-04-24, 200-sample probe):
+    #   sigma=0.05 -> 71% NaN; sigma=0.02 -> 13%; sigma=0.01 -> 1.5%.
+    "bio_ode.toggle": 0.01,
+    "bio_ode.mapk": 0.05,  # MAPK PID; ultrasensitive but bounded
     "glucose_insulin": 0.1,  # unused (perturbed leg not in this family's mix)
 }
 _SIGMA_FRAC_DEFAULT = 0.1
@@ -177,6 +219,36 @@ def _build_repressilator_runner(store: TrajectoryStore) -> TrajectoryRunner:
         spec_registry={"bio_ode.repressilator.easy": REGISTRY["bio_ode.repressilator.easy"]},
         output_store=store,
         initial_state=default_repressilator_initial_state(params),
+        horizon=sim.n_control_points,
+        action_dim=sim.action_dim,
+        sim_params=params,
+    )
+
+
+def _build_toggle_runner(store: TrajectoryStore) -> TrajectoryRunner:
+    """Wire a TrajectoryRunner around the Gardner-Cantor-Collins toggle."""
+    sim = ToggleSimulator()
+    params = ToggleParams()
+    return TrajectoryRunner(
+        simulator=sim,
+        spec_registry={"bio_ode.toggle.medium": REGISTRY["bio_ode.toggle.medium"]},
+        output_store=store,
+        initial_state=default_toggle_initial_state(params),
+        horizon=sim.n_control_points,
+        action_dim=sim.action_dim,
+        sim_params=params,
+    )
+
+
+def _build_mapk_runner(store: TrajectoryStore) -> TrajectoryRunner:
+    """Wire a TrajectoryRunner around the Huang-Ferrell MAPK cascade."""
+    sim = MAPKSimulator()
+    params = MAPKParams()
+    return TrajectoryRunner(
+        simulator=sim,
+        spec_registry={"bio_ode.mapk.hard": REGISTRY["bio_ode.mapk.hard"]},
+        output_store=store,
+        initial_state=default_mapk_initial_state(params),
         horizon=sim.n_control_points,
         action_dim=sim.action_dim,
         sim_params=params,
@@ -488,6 +560,22 @@ def main() -> int:
             spec_key="glucose_insulin.tir.easy",
             runner_factory=_build_glucose_runner,
             seed=_SEED + 2,
+        )
+    )
+    summaries.append(
+        _generate_one_task(
+            task="bio_ode.toggle",
+            spec_key="bio_ode.toggle.medium",
+            runner_factory=_build_toggle_runner,
+            seed=_SEED + 3,
+        )
+    )
+    summaries.append(
+        _generate_one_task(
+            task="bio_ode.mapk",
+            spec_key="bio_ode.mapk.hard",
+            runner_factory=_build_mapk_runner,
+            seed=_SEED + 4,
         )
     )
 

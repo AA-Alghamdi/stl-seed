@@ -152,19 +152,35 @@ class PIDController:
     Parameters
     ----------
     setpoint:
-        Target value for `state[0]`. Default 110.0 (mg/dL) for glucose.
+        Target value for the *observed* component of `state` (default
+        `state[0]`; configurable via ``observation_indices``). Default
+        110.0 (mg/dL) for glucose.
     kp, ki, kd:
         Proportional, integral, derivative gains (units consistent with
-        the units of `state[0]` and the action). Defaults are the
-        literature-anchored gains from Marchetti et al., "An improved PID
-        switching control strategy for type 1 diabetes," IEEE TBME 55:857
-        (2008), Table II, scaled to the U/h action units of this task.
+        the units of the observed state component and the action).
+        Defaults are the literature-anchored gains from Marchetti et al.,
+        "An improved PID switching control strategy for type 1 diabetes,"
+        IEEE TBME 55:857 (2008), Table II, scaled to the U/h action units
+        of this task.
     action_clip:
         Optional `(low, high)` bound on the scalar output, applied after
         the PID equation. Default `(0.0, 5.0)` matches the glucose-insulin
         action box.
     action_dim:
         Output dimensionality. Default 1 (scalar insulin rate).
+    observation_indices:
+        Optional 1-d list of state indices used as the observation
+        signal. Currently only the first index is used (PID is a
+        single-channel controller); the parameter is accepted as a list
+        to mirror :class:`BangBangController`'s API and to leave room for
+        a future multi-channel PID. Default ``[0]``.
+    error_sign:
+        Sign convention for the error term. ``+1`` (default) means the
+        controller acts to *reduce* the observation toward the setpoint
+        when the observation is *above* the setpoint (the canonical
+        glucose convention: high G -> more insulin). ``-1`` reverses the
+        sense (e.g. the MAPK case: when MAPK_PP is *below* the setpoint
+        we need *more* upstream stimulus).
     """
 
     def __init__(
@@ -175,6 +191,8 @@ class PIDController:
         kd: float = 0.02,
         action_clip: tuple[float, float] | None = (0.0, 5.0),
         action_dim: int = 1,
+        observation_indices: list[int] | None = None,
+        error_sign: float = 1.0,
     ) -> None:
         self.setpoint = float(setpoint)
         self.kp = float(kp)
@@ -182,6 +200,14 @@ class PIDController:
         self.kd = float(kd)
         self.action_clip = action_clip
         self.action_dim = action_dim
+        if observation_indices is None:
+            self.observation_indices = [0]
+        else:
+            if len(observation_indices) < 1:
+                raise ValueError("observation_indices must be non-empty")
+            self.observation_indices = list(observation_indices)
+        self.error_sign = float(error_sign)
+        self._obs_idx = int(self.observation_indices[0])
 
     def __call__(
         self,
@@ -190,14 +216,22 @@ class PIDController:
         history: History,
         key: PRNGKeyArray,  # noqa: ARG002
     ) -> Action:
-        # Current error (scalar): G - setpoint.
-        error = jnp.asarray(state[0]) - self.setpoint
+        # Current error: observed - setpoint, optionally sign-flipped so
+        # the action grows in the right direction for the task's
+        # actuator-effect convention.
+        observed = jnp.asarray(state[self._obs_idx])
+        error = self.error_sign * (observed - self.setpoint)
 
         # Integral term: cumulative sum of past errors (one per past call).
         # We rebuild it from history so the controller is stateless and
         # therefore safe to vmap over instances.
         if history:
-            past_errors = jnp.stack([s[0] - self.setpoint for (s, _) in history])
+            past_errors = jnp.stack(
+                [
+                    self.error_sign * (jnp.asarray(s[self._obs_idx]) - self.setpoint)
+                    for (s, _) in history
+                ]
+            )
             integral = jnp.sum(past_errors)
             # Derivative: backward difference between current and previous error.
             prev_error = past_errors[-1]
@@ -598,27 +632,76 @@ _HEURISTIC_DEFAULTS: dict[str, dict[str, Any]] = {
             "observation_indices": [3, 4, 5],  # proteins live in state[3:6]
         },
     },
-    # Bio_ode/toggle: bang-bang on 2 inducers.
+    # Bio_ode/toggle: TOPOLOGY-AWARE controller, 2 channels.
     # State is (x_1, x_2) repressor concentrations (no mRNA in 2-state form),
-    # so default observation_indices = [0, 1] is correct for this task.
+    # so the proteins themselves live at indices 0 and 1 — observation_indices
+    # = [0, 1] picks them directly. Topology dict {0: 1, 1: 0} encodes the
+    # mutual-repression wiring of the Gardner-Cantor-Collins 2000 toggle
+    # (gene 0 repressed by gene 1, and vice versa). The bio_ode.toggle.medium
+    # spec asks the controller to drive x_1 HIGH; the topology-aware policy
+    # therefore silences x_1's upstream repressor (gene 1) by emitting u_1 = 1
+    # (full IPTG/aTc on the repressor of gene 0). Threshold is the textbook
+    # midpoint between LOW=30 nM and HIGH=200 nM (specs/bio_ode_specs.py).
+    #
+    # CALIBRATION NOTE (2026-04-24). The simulator's dimensionless dynamics
+    # cap x_1 at alpha_1 = 160 (ToggleParams), strictly below the spec's
+    # HIGH=200 nM threshold; the controller drives x_1 toward 160 (the
+    # asymptote with B fully silenced) but cannot satisfy
+    # ``G_[60,100] (x1 >= 200)`` under this parameterization. This is a
+    # pre-existing spec/simulator unit mismatch (the spec was written for
+    # the dimensional Gardner 2000 ~200 nM stable state, but the simulator
+    # follows the dimensionless Box 1 form scaled by alpha_1 = 160). Fixing
+    # the spec or the simulator is a separate work item; the controller
+    # itself is structurally correct against either.
     "bio_ode.toggle": {
-        "controller": "bangbang",
+        "controller": "topology_aware",
         "kwargs": {
+            "topology": {0: 1, 1: 0},  # mutual repression: i repressed by 1-i
+            "target_gene": 0,  # spec drives x_1 (gene 0) high
+            "target_direction": "high",
             "threshold": 100.0,  # nM, midway between LOW=30 and HIGH=200
-            "low_action": 0.0,
-            "high_action": 1.0,
-            "action_dim": 2,
+            "observation_indices": [0, 1],  # proteins live in state[0:2]
         },
     },
-    # Bio_ode/MAPK: bang-bang on a single stimulus channel.
+    # Bio_ode/MAPK: PID controller on a single stimulus channel, observing
+    # the terminal-tier MAPK-PP and driving it toward a setpoint band.
+    # The MAPK cascade has no cyclic topology — it's a stimulus -> output
+    # signaling cascade — so the natural feedback heuristic is a PID on
+    # the output kinase (MAPK-PP) rather than a topology-aware silencer.
+    #
+    # Simulator state convention (`bio_ode.MAPKSimulator`):
+    #   y[0]=MKKK_P  y[1]=MKK_P  y[2]=MKK_PP  y[3]=MAPK_P  y[4]=MAPK_PP  y[5]=E1
+    # so MAPK-PP lives at index 4.
+    #
+    # PID sign convention. The action u in [0, 1] sets the upstream stimulus
+    # (E1_target ∝ u); raising u drives MAPK-PP UP. We want u to grow when
+    # MAPK-PP is BELOW setpoint, so we use error_sign=-1 (action grows as
+    # observed - setpoint becomes more negative).
+    #
+    # Setpoint = 0.5 microM, midway in the MAPK_PP reachable range
+    # [0, MAPK_total = 1.25 microM] under the simulator's parameter set
+    # (`MAPKParams`). Gains are first-pass; PID tuning is not the
+    # bottleneck — see the calibration note in the toggle entry above
+    # for the broader spec/simulator mismatch context.
+    #
+    # CALIBRATION NOTE (2026-04-24). The bio_ode.mapk.hard spec accesses
+    # state index 2 expecting "mapk_pp" but the simulator's index 2 is
+    # MKK-PP, not MAPK-PP (MAPK-PP is at index 4). The spec also uses
+    # normalized [0, 1] thresholds while the simulator returns absolute
+    # microM concentrations. The controller defined here observes the
+    # *correct* MAPK-PP signal (index 4) regardless of the spec issue;
+    # the spec mismatch is a separate work item.
     "bio_ode.mapk": {
-        "controller": "bangbang",
+        "controller": "pid",
         "kwargs": {
-            "threshold": 0.5,
-            "low_action": 0.0,
-            "high_action": 1.0,
+            "setpoint": 0.5,  # microM, midway in [0, MAPK_total = 1.25]
+            "kp": 0.4,
+            "ki": 0.05,
+            "kd": 0.1,
+            "action_clip": (0.0, 1.0),
             "action_dim": 1,
-            "observation_indices": [2],  # observe MAPK-PP (terminal tier)
+            "observation_indices": [4],  # MAPK_PP in the 6-state simulator
+            "error_sign": -1.0,  # u grows when MAPK_PP is below setpoint
         },
     },
 }
