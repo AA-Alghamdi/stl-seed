@@ -55,6 +55,10 @@ from stl_seed.inference.baselines import (
     ContinuousBoNSampler,
     StandardSampler,
 )
+from stl_seed.inference.beam_search_warmstart import (
+    BeamSearchDiagnostics,
+    BeamSearchWarmstartSampler,
+)
 from stl_seed.inference.gradient_guided import (
     GuidanceDiagnostics,
     STLGradientGuidedSampler,
@@ -63,6 +67,8 @@ from stl_seed.inference.hybrid import HybridGradientBoNSampler
 from stl_seed.inference.protocol import LLMProposal, Sampler, SamplerResult
 
 __all__ = [
+    "BeamSearchDiagnostics",
+    "BeamSearchWarmstartSampler",
     "BestOfNSampler",
     "ContinuousBoNSampler",
     "GuidanceDiagnostics",
