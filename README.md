@@ -66,9 +66,7 @@ Phase 1 (theory, library, local pilot) shipped 2026-04-24. Phase 2 is the canoni
 python scripts/run_canonical_sweep.py --confirm
 ```
 
-## Acknowledgments
-
-Murat Arcak for STL formal-methods grounding. Hanna REDACTED et al. for the STL-on-biomolecular-ODE precedent ([REDACTED 2025](https://arxiv.org/abs/2412.15227)). Karen Leung et al. for [STLCG++](https://arxiv.org/abs/2501.04194). REDACTED et al. for SERA. Setlur et al. for PAVs.
+## Citation
 
 ```bibtex
 @misc{alghamdi2026stlseed,

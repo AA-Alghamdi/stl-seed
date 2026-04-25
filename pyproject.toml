@@ -144,3 +144,8 @@ skips = [
               # plain text fed into a tokenizer; never returned to a browser, so XSS
               # does not apply. Autoescape would corrupt the prompt characters.
 ]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]

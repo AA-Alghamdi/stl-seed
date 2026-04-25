@@ -2928,6 +2928,11 @@ mlx = [
     { name = "mlx-lm" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "accelerate", specifier = ">=1.0" },
@@ -2965,6 +2970,9 @@ requires-dist = [
     { name = "typer", specifier = ">=0.13" },
 ]
 provides-extras = ["mlx", "cuda", "dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pre-commit", specifier = ">=4.6.0" }]
 
 [[package]]
 name = "sympy"
