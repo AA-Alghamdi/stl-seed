@@ -443,16 +443,23 @@ _HEURISTIC_DEFAULTS: dict[str, dict[str, Any]] = {
         },
     },
     # Bio_ode/repressilator: bang-bang inducers, 3 channels.
+    # State is (m_1, m_2, m_3, p_1, p_2, p_3). Specs gate on proteins,
+    # so observe state[3:6] not the default state[0:3] (mRNA).
+    # Inducer u_i SILENCES gene i (per bio_ode.py docstring), so flip the
+    # bang-bang sense: when protein i is HIGH, push u_i HIGH to silence.
     "bio_ode.repressilator": {
         "controller": "bangbang",
         "kwargs": {
-            "threshold": 50.0,  # nM, midway between P_LOW=25 and P_HIGH=250
-            "low_action": 0.0,
-            "high_action": 1.0,
+            "threshold": 137.5,  # nM, midway between P_LOW=25 and P_HIGH=250
+            "low_action": 1.0,   # protein HIGH → silence gene (drive u high)
+            "high_action": 0.0,  # protein LOW → release inducer (u=0)
             "action_dim": 3,
+            "observation_indices": [3, 4, 5],  # observe proteins, not mRNA
         },
     },
     # Bio_ode/toggle: bang-bang on 2 inducers.
+    # State is (x_1, x_2) repressor concentrations (no mRNA in 2-state form),
+    # so default observation_indices = [0, 1] is correct for this task.
     "bio_ode.toggle": {
         "controller": "bangbang",
         "kwargs": {
