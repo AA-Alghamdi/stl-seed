@@ -8,7 +8,6 @@ topology-aware policy silences the *upstream repressor* in the cyclic ring
 (Elowitz & Leibler 2000 Nature 403:335 Fig. 1a), which drives the target
 protein UP and satisfies ``bio_ode.repressilator.easy``.
 
-REDACTED firewall: nothing in this test imports any REDACTED artifact; the
 topology dict is the wiring of the Elowitz-Leibler ring.
 """
 

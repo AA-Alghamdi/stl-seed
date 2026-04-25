@@ -17,7 +17,6 @@ These three samplers exist primarily as comparison targets for
 All three implement the :class:`Sampler` protocol from
 :mod:`stl_seed.inference.protocol`.
 
-REDACTED firewall. None of these classes import from any REDACTED artifact.
 """
 
 from __future__ import annotations

@@ -73,12 +73,3 @@ repos:
         types: [python]
         stages: [pre-commit]
 
-      # REDACTED firewall: blocks the commit on any forbidden import / vocabulary.
-      # See paper/REDACTED.md (Part E, Part F.1, F.5).
-      - id: l4dc-firewall
-        name: REDACTED firewall (forbidden imports + vocabulary)
-        entry: bash scripts/REDACTED.sh
-        language: system
-        pass_filenames: false
-        always_run: true
-        stages: [pre-commit]

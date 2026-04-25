@@ -13,7 +13,6 @@ Coverage:
 * The full validation pipeline (sweep + eval + analysis + firewall)
   passes end-to-end under the mock backend.
 
-REDACTED firewall: no REDACTED / REDACTED / REDACTED imports.
 """
 
 from __future__ import annotations

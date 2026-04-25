@@ -16,9 +16,7 @@ Performance: trajectories are cached *per policy* in
 is just a vmap over cached states). On an M5 Pro the full 6-spec sweep
 runs in roughly 2-4 minutes.
 
-REDACTED firewall: every search range is constructed inline below from the
 literature-derived plausibility bands documented in
-``stl_seed.specs.{bio_ode,glucose_insulin}_specs``. No REDACTED artifact is
 used and no run-time mutation of the registered specs is performed
 (the script emits *recommendations* — adoption is a separate v0.2 step).
 """

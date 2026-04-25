@@ -2,7 +2,7 @@
 
 A formal-verification instantiation of soft-filtered SFT for scientific control with LLM agents.
 
-Author: Abdullah AlGhamdi. Date: 2026-04-24. Target venue: workshop submission concurrent with CMU MS-AIE matriculation (Aug 2026); primary audience REDACTED' group (MLD).
+Author: Abdullah AlGhamdi. Date: 2026-04-24.
 
 ## Problem statement
 
@@ -124,14 +124,6 @@ Five modes ranked by ex-ante probability with mitigations.
 
 **FM5 (~10%): Compute overrun.** Symptom: the canonical sweep doesn't finish by day 14. Mitigation: hard checkpoint at day 8. Fallback is a $2 \\times 2 \\times 2$ sub-design (Qwen3-{0.6B, 4B} × {hard, cont} × {bio_ode, gluc}) that still touches all three hypotheses with reduced power, missing cells annotated as "not run" rather than imputed. Imputation across model sizes is explicitly forbidden in the analysis plan.
 
-## REDACTED firewall
+## Parameter sourcing
 
-The author's prior work on the REDACTED paper (REDACTED et al.; physics-informed STL parameter synthesis) shares simulator infrastructure with this artifact but is mathematically a different optimization problem.
-
-REDACTED problem: $\\max\_{\\theta \\in \\Theta\_\\text{phys}} \\rho(\\tau(\\theta; x_0), \\varphi)$ where $\\tau$ solves $\\dot x = f(x, u\_\\text{fixed}; \\theta)$. The optimization variable is the physical parameter vector $\\theta \\in \\mathbb{R}^d$, the control $u$ is fixed (or absent — the system is autonomous), $x_0$ is given, and the loss landscape is shaped by physics-prior penalties C1-C11 documented in `REDACTED.py` and the augmented-Lagrangian / CEGAR machinery in `REDACTED.py`.
-
-stl-seed problem: $\\max\_{u\_{1:H} \\in U^H} \\rho(\\tau(\\theta\_\\text{fixed}, u\_{1:H}; x_0), \\varphi)$ where $\\theta\_\\text{fixed}$ is drawn from BRENDA \[DOI 10.1093/nar/gky1048\] *fresh* for each task family and *not* taken from any REDACTED tuned solution. The optimization variable is the control sequence, parameters are fixed and literature-sourced, and the loss is the unmodified $\\rho$ — no Augmented Lagrangian, no CEGAR loop, no residual-NN correction term, no C1-C11 physics-filter penalties, no conjunction-vs-implication spec-form ablation. The optimization is performed *implicitly* by a learned policy via best-of-$N$ decoding rather than by a numerical solver.
-
-Firewall checklist. (i) No file in `stl-seed/` imports from `~/REDACTED.py`, `~/REDACTED.py`, `~/REDACTED.py` (verified by grep at `paper/firewall_grep.txt`). (ii) No $\\theta$ value in `stl-seed/configs/` matches any REDACTED-tuned $\\theta$ to within 5 significant figures; all $\\theta$ values are pulled from BRENDA / SABIO-RK / KEGG with citation strings recorded in the config. (iii) The STL spec library (`stl-seed/specs/`) is independently authored: bio_ode (repressilator) and glucose_insulin specs are written from textbook descriptions \[Strogatz 2014; Elowitz & Leibler 2000 DOI 10.1038/35002125; Bergman et al. 1979 PMID 443421\] without reference to REDACTED's Hill specs. (iv) Reproducibility scripts (`REDACTED.py` etc.) are not invoked anywhere in the stl-seed pipeline.
-
-The shared infrastructure (Diffrax integrator, Donzé-Maler $\\rho$ evaluator) is a software dependency, not a methodological overlap. The two papers are submittable to disjoint venues without overlap-of-contribution concerns.
+All kinetic and physiological parameter values for the bio_ode and glucose_insulin task families are pulled fresh from primary literature sources: Elowitz & Leibler 2000 (repressilator, DOI 10.1038/35002125), Gardner-Cantor-Collins 2000 (toggle switch, DOI 10.1038/35002131), Huang & Ferrell 1996 (MAPK cascade, DOI 10.1073/pnas.93.19.10078), Bergman et al. 1979 (glucose-insulin, PMID 443421), and Dalla Man et al. 2007 (meal disturbance, PMID 17926672). STL spec thresholds are derived from textbook references (Strogatz 2014, ADA 2024 standards, Elowitz Fig. 5 phenotypic ranges).

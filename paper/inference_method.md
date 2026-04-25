@@ -71,7 +71,7 @@ Bias scale is also uncalibrated: $b\_{t,k}$ has units of $\\lambda \\cdot \\rho$
 
 ## Status (2026-04-24)
 
-Implementation: `src/stl_seed/inference/{__init__,protocol,gradient_guided,baselines,hybrid}.py`. Tests: 21 in `tests/test_inference.py`, 20 passing plus one documented `xfail` for the cross-task transfer (see `paper/cross_task_validation.md`). CLI: `stl-seed sample` accepts sampler $\\in$ {standard, bon, bon_continuous, gradient_guided, hybrid}. REDACTED firewall clean (`scripts/REDACTED.sh` returns OK). Test suite: 421 pass, 6 platform skips, 2 xfails for documented discretization / cross-task limitations.
+Implementation: `src/stl_seed/inference/{__init__,protocol,gradient_guided,baselines,hybrid}.py`. Tests: 21 in `tests/test_inference.py`, 20 passing plus one documented `xfail` for the cross-task transfer (see `paper/cross_task_validation.md`). CLI: `stl-seed sample` accepts sampler $\\in$ {standard, bon, bon_continuous, gradient_guided, hybrid, horizon_folded, rollout_tree, cmaes_gradient, beam_search_warmstart}. Test suite: 480+ pass, platform skips, documented xfails for discretization / cross-task limitations.
 
 ## References
 

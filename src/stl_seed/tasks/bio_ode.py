@@ -6,7 +6,6 @@ Implements three biomolecular ODE control problems for the stl-seed pipeline:
 * :class:`ToggleSimulator`        — 2-state Gardner-Cantor-Collins 2000 switch.
 * :class:`MAPKSimulator`          — 6-state Huang-Ferrell 1996 cascade.
 
-Framing (per `paper/REDACTED.md` Part B). The kinetic parameter vector
 $\\theta$ is a fixed literature-sourced constant, loaded from
 ``bio_ode_params.py``. The agent (LLM policy) optimizes only the control
 schedule $u_{1:H}$. Each simulator implements the locked
@@ -40,12 +39,9 @@ References
               promoter in the absence of DNA loops..." *Nucleic Acids Res*
               34:606-612 (2006).
 
-REDACTED firewall
 -------------
 This module imports from `numpy`, `jax`, `jax.numpy`, `equinox`, `diffrax`,
 `jaxtyping`, and the in-package ``bio_ode_params`` / ``_trajectory`` modules.
-It does NOT import from `REDACTED`, `REDACTED`, `REDACTED`,
-`REDACTED`, or `REDACTED`. All kinetic constants flow in through
 `bio_ode_params.py`, which is itself literature-cited per parameter.
 """
 

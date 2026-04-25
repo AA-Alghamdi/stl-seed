@@ -64,10 +64,9 @@ The user supplies a search space dict ``{base_name: [v1, v2, ...]}`` and
 the tuner sweeps the cartesian product. Predicates whose base names are
 not in the search space keep their original threshold.
 
-REDACTED firewall posture
 ~~~~~~~~~~~~~~~~~~~~~
 
-Auto-tuning is *not* allowed to relax a spec into the REDACTED dimensionless
+Auto-tuning is *not* allowed to relax a spec into a dimensionless
 threshold band by accident: the search space is supplied externally and is
 the user's responsibility (the auto-tune script in
 ``scripts/auto_tune_specs.py`` constructs each search range from the

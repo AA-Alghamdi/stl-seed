@@ -19,11 +19,8 @@ we ask in :func:`stl_seed.baselines.comparison.compare_pav_vs_stl` is
 whether either signal predicts terminal success better on a held-out
 split, and how much training data PAV needs to match STL.
 
-REDACTED firewall
 -------------
 This module imports only from JAX, Equinox, and the in-repo
-:class:`stl_seed.tasks._trajectory.Trajectory` type. No REDACTED,
-REDACTED, REDACTED, REDACTED, or REDACTED artifacts.
 
 Architecture
 ------------

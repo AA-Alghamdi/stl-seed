@@ -42,9 +42,6 @@ All four samplers implement the :class:`Sampler` Protocol and produce a
 canonical :class:`stl_seed.tasks._trajectory.Trajectory` plus a
 diagnostics dict.
 
-REDACTED firewall. None of this code imports from ``REDACTED``,
-``REDACTED``, ``REDACTED``, ``REDACTED``, or any
-``REDACTED*`` artifact. The autodiff path goes through the from-
 scratch evaluator in ``stl_seed.stl.evaluator``.
 """
 

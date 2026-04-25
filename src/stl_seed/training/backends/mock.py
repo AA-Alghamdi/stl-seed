@@ -58,8 +58,6 @@ is to validate that pipeline. MLXBackend writes a different on-disk shape
 ``mlx_lm.load(adapter_path=...)``, which is irrelevant to the Phase-2
 artifact contract.
 
-REDACTED firewall: this module imports nothing from REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED. It is part of the SERA-
 style SFT loop scaffolding.
 """
 

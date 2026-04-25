@@ -27,7 +27,6 @@ Determinism: a single `jax.random.key(_SEED)` per task seeds the entire
 generation, split via `fold_in` per trajectory inside `TrajectoryRunner`.
 
 Usage:
-    cd /Users/abdullahalghamdi/stl-seed
     uv run python scripts/generate_pilot.py 2>&1 | tee scripts/generate_pilot.log
 """
 

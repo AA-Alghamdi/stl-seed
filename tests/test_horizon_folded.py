@@ -26,8 +26,6 @@ H7. ``test_horizon_folded_init_strategies_run`` — all four init
 H8. ``test_horizon_folded_sigmoid_reparam_invertible`` — the inverse-
     sigmoid round-trips inside the box (eps clipping aside).
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED.
 """
 
 from __future__ import annotations

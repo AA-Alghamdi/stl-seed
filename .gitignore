@@ -73,3 +73,5 @@ results/*.csv
 # Documentation builds
 docs/_build/
 site/
+.claude/
+CLAUDE.md

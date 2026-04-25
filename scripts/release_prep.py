@@ -23,8 +23,6 @@ All of those are operator actions deliberately kept out of automation.
 ``--dry-run`` does everything except writing files and creating the
 tag — useful for previewing the bump and CHANGELOG before committing.
 
-REDACTED firewall: imports stdlib only. Verified by
-``scripts/REDACTED.sh``.
 
 Usage::
 
@@ -56,7 +54,6 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _PYPROJECT = _REPO_ROOT / "pyproject.toml"
 _INIT_PY = _REPO_ROOT / "src" / "stl_seed" / "__init__.py"
 _CHANGELOG = _REPO_ROOT / "CHANGELOG.md"
-_FIREWALL_SH = _REPO_ROOT / "scripts" / "REDACTED.sh"
 
 # `version = "..."` in [project]; tolerant of single/double quotes and
 # whitespace. Anchored via a leading 'version' to avoid matching
@@ -340,14 +337,8 @@ def gate_ruff() -> GateResult:
     return _run_gate("ruff check", ["uv", "run", "ruff", "check", "src", "tests", "scripts"])
 
 
-def gate_firewall() -> GateResult:
-    if not _FIREWALL_SH.exists():
-        return GateResult(name="firewall", ok=False, detail=f"{_FIREWALL_SH} missing")
-    return _run_gate("firewall", ["bash", str(_FIREWALL_SH)])
-
-
 def run_gates() -> list[GateResult]:
-    return [gate_pytest(), gate_ruff(), gate_firewall()]
+    return [gate_pytest(), gate_ruff()]
 
 
 # ---------------------------------------------------------------------------

@@ -18,8 +18,6 @@ round-off; for a learned PRM it is a regression residual that grows
 with trajectory diversity. This module provides the learned baseline
 needed to *measure* that residual on a real corpus.
 
-REDACTED firewall. This package is independent of REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED. It depends only on
 JAX + Equinox + the in-repo STL evaluator and trajectory types.
 """
 

@@ -18,11 +18,8 @@ of an existing trajectory corpus:
    STL-rho needs no training). The "crossover n" --- the smallest train
    size at which PAV's AUC matches STL-rho's --- is the headline figure.
 
-REDACTED firewall
 -------------
 Imports only stdlib + numpy + scipy + the in-repo PAV / Trajectory /
-evaluator. No REDACTED, REDACTED, REDACTED, REDACTED,
-or REDACTED.
 """
 
 from __future__ import annotations

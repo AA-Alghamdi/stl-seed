@@ -47,14 +47,10 @@ approximately compute-equivalent to a continuous-BoN run with
 ``bwd ≈ fwd``; ``3n`` if ``bwd ≈ 2 * fwd``.) The conservative
 matched-compute baseline is therefore ``ContinuousBoNSampler(n=2*n)``.
 
-REDACTED firewall
 -------------
 
 This module imports only from JAX, jaxtyping, and in-package modules
 (``stl_seed.inference.gradient_guided`` and the Trajectory dataclass).
-No ``REDACTED``, ``REDACTED``, ``REDACTED``, ``REDACTED``,
-or ``REDACTED*`` symbol is touched. Verified by
-``scripts/REDACTED.sh``.
 """
 
 from __future__ import annotations

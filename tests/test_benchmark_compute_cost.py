@@ -20,9 +20,6 @@ without re-running the full N=8 sweep:
 These tests are smoke tests, not the empirical benchmark itself. The
 substantive results live in ``paper/compute_cost_results.md``.
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED. The tested script is
-firewalled (verified by ``scripts/REDACTED.sh``).
 """
 
 from __future__ import annotations

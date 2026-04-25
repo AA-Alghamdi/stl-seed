@@ -5,17 +5,15 @@ of STL formulae that ``stl-seed`` will use to score control trajectories. A
 concrete robustness evaluator is wired in subphase 1.3 (it can target either
 ``stljax`` for autograd, or a NumPy reference implementation).
 
-REDACTED firewall posture (see ``paper/REDACTED.md`` Part C):
 
 * Every formula in this package is composed exclusively from ``Always``,
   ``Eventually``, conjunction, and predicate-level negation. No top-level
   disjunction. No implication. No ``Until``.
 * Every numerical threshold is sourced from biological / clinical literature
   and cited inline at the point of use. No threshold is transcribed from the
-  REDACTED paper, ``REDACTED.py``, or any ``REDACTED*.py`` artifact.
 * The signal scales used here (protein concentrations in nM, glucose in
   mg/dL, normalised phosphorylation fraction in [0, 1], time in minutes) do
-  not coincide with the REDACTED dimensionless ``x_i ∈ [0, 1.5]`` on ``t ∈
+  not coincide with dimensionless `x_i ∈ [0, 1.5]` on `t ∈
   [0, 25]`` regime, so even accidental numerical overlap is structurally
   excluded.
 

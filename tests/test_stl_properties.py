@@ -8,10 +8,7 @@ for *every* well-formed input. They complement the example-based tests in
 written examples miss (off-by-one in window masking, wrong sign in De
 Morgan dualities, scaling violations, etc.).
 
-REDACTED firewall. Pure tests of the from-scratch evaluator in
 ``stl_seed.stl.evaluator`` over the conjunction-only AST in
-``stl_seed.specs``. No imports of ``REDACTED`` / ``REDACTED`` /
-``REDACTED`` / ``REDACTED`` / ``REDACTED``.
 
 Properties verified
 -------------------

@@ -75,13 +75,10 @@ uninformative (cliff-shaped, conjunctive long-horizon ``G`` clauses) and
 the vocabulary is small enough that a full sweep over ``B * K`` per step
 fits in memory.
 
-REDACTED firewall
 -------------
 
 This module imports only from JAX, jaxtyping, and in-package modules
 (``stl_seed.inference.protocol``, ``stl_seed.specs``, ``stl_seed.stl``,
-``stl_seed.tasks._trajectory``). No ``REDACTED``, ``REDACTED``,
-``REDACTED``, ``REDACTED``, or ``REDACTED*`` symbol is
 referenced.
 """
 
@@ -306,7 +303,6 @@ class BeamSearchWarmstartSampler:
     * ``default_action``: extrapolation tail for partial sequences. Defaults
       to the action-box centre.
 
-    REDACTED firewall
     -------------
 
     Only the in-package STL evaluator and streaming wrapper are used.

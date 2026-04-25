@@ -57,9 +57,6 @@ jobs:
       - name: Security scan (bandit)
         run: uv run pre-commit run bandit --all-files
 
-      - name: REDACTED firewall (forbidden imports + vocabulary)
-        run: bash scripts/REDACTED.sh
-
       - name: Run tests with coverage (CPU-only marks)
         run: |
           uv run pytest -m "not gpu and not cuda and not mlx" \

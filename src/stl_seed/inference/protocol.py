@@ -27,8 +27,6 @@ straight-through estimator (Bengio et al. 2013) endpoint: the gradient
 ``V_k - u_bar`` to form the logit bias. Section 2 of
 ``paper/inference_method.md`` derives this estimator formally.
 
-REDACTED firewall. This module imports only from typing / jaxtyping / JAX. No
-``REDACTED`` artifact is referenced.
 """
 
 from __future__ import annotations

@@ -13,9 +13,6 @@ SFT loop consume. The three first-class objects are:
 * `TrajectoryStore` (`store.py`): append-only Parquet-backed corpus with
   filter queries, summary statistics, and concurrent-read safety.
 
-REDACTED firewall: this subpackage imports only from `stl_seed.specs`,
-`stl_seed.tasks`, and standard scientific Python. No `REDACTED`,
-`REDACTED`, `REDACTED`, `REDACTED` symbols appear.
 """
 
 from __future__ import annotations

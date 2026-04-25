@@ -42,11 +42,7 @@ than the glucose ODE in the standard Bergman convention).
 Control variable: u(t) = piecewise-constant insulin infusion rate (U/h),
 held constant on each [t_h, t_{h+1}) interval, h = 1..H, H = 12.
 
-This file follows the stl-seed firewall (paper/REDACTED.md). Parameter
 values are taken from [Bergman 1979] and [DallaMan 2007] for the average
-healthy non-diabetic adult subject; no value is sourced from any REDACTED
-artifact. Cross-checked against /Users/abdullahalghamdi/.superset/worktrees/
-REDACTED/progress/REDACTED.py and REDACTED_v2.py: zero numerical
 overlap (those files use 6-state Hill GRN parameters in [0, 1]; the Bergman
 parameters live in min^-1 / pmol-scaled units and are dimensionally distinct).
 """

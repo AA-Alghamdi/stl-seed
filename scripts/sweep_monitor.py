@@ -25,8 +25,6 @@ Two backends, in priority order:
 Both modes refresh on a configurable interval (default 60 s). The
 ``--once`` flag does a single render and exits, suitable for cron.
 
-REDACTED firewall: imports only stdlib + numpy + pandas + rich +
-huggingface_hub. Verified by ``scripts/REDACTED.sh``.
 
 Usage::
 

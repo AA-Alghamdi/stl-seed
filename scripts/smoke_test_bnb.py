@@ -45,10 +45,7 @@ Why this script raises on non-CUDA hosts:
   pre-flight check on macOS, but the moment ``main()`` runs it asserts
   CUDA is available and exits with a helpful error.
 
-REDACTED firewall: imports only from
 ``stl_seed.{filter,generation,specs,tasks,training}`` plus numpy /
-pyarrow / rich / re / json / datasets. No REDACTED / REDACTED /
-REDACTED / REDACTED.
 
 Usage (on RunPod):
     cd /workspace/stl-seed

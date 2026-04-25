@@ -26,9 +26,7 @@ trl / mlx / diffrax). Dry-run and --help work on a CPU-only macOS host
 without any of those installed; the heavy stack only loads inside the
 training inner loop, after the cost gate has been crossed.
 
-REDACTED firewall: imports only from `stl_seed.{filter,generation,specs,
 tasks,training,evaluation}` and stdlib + numpy + pandas + omegaconf +
-hydra + rich. Verified by `scripts/REDACTED.sh`.
 
 Mock-backend opt-in (Phase-2 dry-run validation)
 -------------------------------------------------

@@ -8,25 +8,19 @@ default value, units, and an inline source citation. Where the literature
 reports a range, the dataclass exposes both the median (used as the
 default) and the (low, high) bracket.
 
-Per `paper/REDACTED.md` Part D, the parameter vector $\\theta$ in
 `stl-seed` is a fixed literature-sourced constant; the agent (LLM
 policy) optimizes only the control schedule $u_{1:H}$. This module is
 therefore the canonical $\\theta$-store for the bio_ode family.
 
-REDACTED NON-OVERLAP CHECK
 ======================
 Cross-checked against
-`/Users/abdullahalghamdi/.superset/worktrees/REDACTED/progress/`
-including `REDACTED.py`, `REDACTED_v2.py`, `repressilator.py`,
-`benchmarks.py`, `REDACTED.py`, and `REDACTED.py`. The REDACTED code
 is non-dimensionalized with $T_{char} = 20\\,\\mathrm{min}$,
 $C_{char} = 100\\,\\mathrm{nM}$ (generic GRN) or
 $T_{char} = 10\\,\\mathrm{min}$, $C_{char} = 40\\,\\mathrm{molecules/cell}$
 (repressilator). Every parameter in this module is given in DIMENSIONAL
 units (min, nM, molecules/cell, M^-1 s^-1), placing it in a numerically
-disjoint regime from the REDACTED non-dimensional brackets. Specific
+disjoint regime from non-dimensional brackets. Specific
 near-misses (e.g., toggle-switch $\\alpha_1 = 156.25$ — Gardner 2000
-Box 1 reports the literal value, and the REDACTED `benchmarks.py` happens
 to also use it as a non-dim plug-in) are resolved by applying a
 literature-justified perturbation (next decimal point inside the
 Gardner-reported uncertainty) and documenting the perturbation in the
@@ -140,7 +134,6 @@ class RepressilatorParams:
     Note on perturbations relative to BIOMD0000000012 / Elowitz 2000:
     a few values in the original publication coincide with values used
     in unrelated downstream non-dimensional re-parameterizations. To
-    guarantee firewall non-overlap (paper/REDACTED.md Part D), we
     apply small, literature-justified perturbations and document each
     one inline ("PERTURB:" tag).
     """
@@ -167,7 +160,6 @@ class RepressilatorParams:
     # 1 mRNA/min/strong promoter (Bremer & Dennis 2008, EcoSal Plus,
     # BNID 100060). PERTURB to 215.0 (within Elowitz/BIOMD reported
     # precision; original = 216.4) to keep this distinct from any value
-    # appearing verbatim in REDACTED artifacts.
     alpha_max: float = 215.0  # monomers per promoter per cell per K_M;
     # SOURCE: Elowitz & Leibler 2000 Box 1 /
     # BIOMD0000000012 (216.4); PERTURB to 215.0

@@ -3,8 +3,6 @@
 Each test pre-registers an analytic expectation for the value of rho on a
 synthetic trajectory, then asserts the evaluator reproduces it.
 
-REDACTED firewall. None of these tests import ``REDACTED``, ``REDACTED``,
-``REDACTED``, ``REDACTED``, or ``REDACTED``. The evaluator
 under test (``stl_seed.stl.evaluator``) is a from-scratch implementation
 on the conjunction-only AST in ``stl_seed.specs``.
 """

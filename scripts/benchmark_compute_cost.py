@@ -48,12 +48,10 @@ Outputs
 * ``paper/compute_cost_results.md`` — auto-generated technical writeup
   with headline numbers.
 
-REDACTED firewall
 -------------
 
 Imports only ``stl_seed.{inference, specs, tasks}``, JAX, NumPy, Pandas,
 Matplotlib, psutil, and the standard library. Verified by
-``scripts/REDACTED.sh``.
 
 Usage
 -----
@@ -322,6 +320,35 @@ def _uniform_llm(K: int) -> LLMProposal:
     return llm
 
 
+def _make_llm(llm_name: str, setup: TaskSetup, vocabulary: Any) -> LLMProposal:
+    """Build the LLM proposal for one (task, sampler-vocab) pair.
+
+    Mirrors :func:`scripts.run_unified_comparison._make_llm`. ``uniform``
+    returns the synthetic flat-prior proxy; ``qwen3-{0.6b,1.7b,4b}``
+    wraps the corresponding mlx-community Qwen3-bf16 checkpoint via
+    :class:`MLXLLMProposal` (Apple Silicon only).
+    """
+    if llm_name == "uniform":
+        return _uniform_llm(int(np.asarray(vocabulary).shape[0]))
+    if llm_name in {"qwen3-0.6b", "qwen3-1.7b", "qwen3-4b"}:
+        from stl_seed.inference.mlx_llm_proposal import MLXLLMProposal
+
+        x0 = np.asarray(setup.initial_state)
+        return MLXLLMProposal(
+            action_vocabulary=vocabulary,
+            spec=setup.spec,
+            task=setup.name,
+            initial_state=x0,
+            horizon=setup.horizon,
+            state_dim=int(x0.shape[0]),
+            model_id=llm_name,
+        )
+    raise ValueError(
+        f"Unknown LLM backend {llm_name!r}; expected one of "
+        "{uniform, qwen3-0.6b, qwen3-1.7b, qwen3-4b}."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Task setup.
 # ---------------------------------------------------------------------------
@@ -529,10 +556,10 @@ def _vocabulary_for(sampler_name: str, setup: TaskSetup):
 # ---------------------------------------------------------------------------
 
 
-def _build_sampler(name: str, setup: TaskSetup) -> Sampler:
+def _build_sampler(name: str, setup: TaskSetup, llm_name: str = "uniform") -> Sampler:
     vocabulary = _vocabulary_for(name, setup)
-    K = int(vocabulary.shape[0])
-    llm = _uniform_llm(K)
+    K = int(vocabulary.shape[0])  # noqa: F841 (clarity; future use)
+    llm = _make_llm(llm_name, setup, vocabulary)
     common = dict(
         llm=llm,
         simulator=setup.simulator,
@@ -655,6 +682,7 @@ def benchmark_sampler(
     target_rho: float,
     seed_offset: int = 1000,
     verbose: bool = True,
+    llm_name: str = "uniform",
 ) -> tuple[BenchmarkResult, list[dict[str, Any]]]:
     """Measure wall-clock, peak memory, and final-rho for one sampler.
 
@@ -685,7 +713,7 @@ def benchmark_sampler(
     """
     if n_seeds < 1:
         raise ValueError(f"n_seeds must be >= 1, got {n_seeds}")
-    sampler = _build_sampler(sampler_name, task)
+    sampler = _build_sampler(sampler_name, task, llm_name=llm_name)
 
     # Warm-up GC + RSS baseline before measurement.
     gc.collect()
@@ -1688,6 +1716,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Suppress per-seed verbose logging.",
     )
+    p.add_argument(
+        "--llm",
+        type=str,
+        default="uniform",
+        choices=["uniform", "qwen3-0.6b", "qwen3-1.7b", "qwen3-4b"],
+        help=(
+            "LLM proposal backend. 'uniform' uses a flat-prior synthetic "
+            "LLM (default; matches the v0.1 cost benchmark); the qwen3-* "
+            "options wrap the corresponding mlx-community Qwen3-bf16 "
+            "checkpoint via MLXLLMProposal. Apple Silicon only. "
+            "Default: uniform."
+        ),
+    )
     return p.parse_args(argv)
 
 
@@ -1759,6 +1800,7 @@ def main(argv: list[str] | None = None) -> int:
                 target_rho=task_target,
                 seed_offset=int(args.seed_offset),
                 verbose=not args.quiet,
+                llm_name=str(args.llm),
             )
             all_results.append(res)
             all_per_seed.extend(rows)

@@ -58,15 +58,12 @@ Conjunction-only structure (firewall §C.1): every formula in this module is
 assembled from ``Always``, ``Eventually``, n-ary ``And``, and predicate-level
 ``Negation``. No top-level disjunction, no implication, no ``Until``.
 
-REDACTED-overlap check: the REDACTED ``REDACTED.py`` SPECS dictionary uses
 dimensionless thresholds ``{0.50, 0.30, 0.90, 0.45, 0.35, 0.80, 0.40, 0.70,
 1.5, 0.20, 0.60}`` on signals ``x_1..x_4 in [0, 1.5]`` over ``t in [0, 25]``.
 The thresholds in this module are FHN dimensionless voltages
 ``{V_PEAK = 1.0, V_REST = 0.5}`` over ``t in [0, 100]`` on the 2-state
 ``(V, w)`` system. The ``V_REST = 0.5`` literal coincides numerically with
-``REDACTED.py``'s 0.5, but the *meaning* (FHN membrane voltage in the
 subthreshold band) and the *signal scale* (V ranges over [-2, +2.5] over
-the 100-unit horizon) are different from REDACTED's, so the agreement is
 incidental rather than transcribed (firewall §D.3 protocol).
 """
 

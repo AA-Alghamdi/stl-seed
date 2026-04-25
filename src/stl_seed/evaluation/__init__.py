@@ -14,7 +14,6 @@ Public API:
     rho_margin                — (mean ρ, IQR)
     goodhart_gap              — measured spec-completeness gap
 
-REDACTED firewall: no REDACTED / REDACTED / REDACTED / REDACTED
 imports anywhere in this package.
 """
 

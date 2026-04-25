@@ -60,9 +60,7 @@ Connection to prior decoding-time methods
   ``grad rho`` as a *per-decision* signal at decoding time, not a
   per-rollout return.
 
-REDACTED firewall. This module imports only from JAX, jaxtyping, and
 in-package modules (``stl_seed.stl``, ``stl_seed.tasks``,
-``stl_seed.inference``). No ``REDACTED``, ``REDACTED``, or
 ``physics_*`` symbol is touched.
 
 Computational cost

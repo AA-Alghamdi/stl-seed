@@ -25,9 +25,7 @@ Output schema (one row per trial)::
 This schema matches `src/stl_seed/stats/hierarchical_bayes.py
 ::HierarchicalData` field-for-field after a one-shot Pandas pivot.
 
-REDACTED firewall: imports only `stl_seed.{evaluation,specs,tasks,training}`
 plus stdlib + numpy + pandas + pyarrow + omegaconf + hydra + rich.
-Verified by `scripts/REDACTED.sh`.
 
 Mock-backend opt-in (Phase-2 dry-run validation)
 -------------------------------------------------

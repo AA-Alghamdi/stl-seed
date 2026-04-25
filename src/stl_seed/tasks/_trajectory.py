@@ -22,10 +22,7 @@ Design notes
   pytree leaf-set; `jax.tree.map(...)` walks both states/actions/times AND
   meta together.
 
-This file does NOT import from `REDACTED`, `REDACTED`, `REDACTED`,
-`REDACTED`, or `REDACTED*`. The `Trajectory` interface is
 documented in `paper/architecture.md` and was authored independently of any
-REDACTED artifact.
 """
 
 from __future__ import annotations

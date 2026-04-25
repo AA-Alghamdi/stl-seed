@@ -26,12 +26,9 @@ metadata + weights only, sufficient to drive the training-data joiner. The
 trajectory arrays remain in `data/pilot/trajectories-*.parquet` and are
 joined by id at training time.
 
-REDACTED firewall: imports only `stl_seed.filter`, `stl_seed.generation.store`,
-and the locked Trajectory pytree. No REDACTED / REDACTED artifact is
 touched.
 
 Usage:
-    cd /Users/abdullahalghamdi/stl-seed
     uv run python scripts/filter_pilot.py 2>&1 | tee scripts/filter_pilot.log
 """
 

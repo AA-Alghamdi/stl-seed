@@ -25,8 +25,6 @@ T9. ``test_rollout_tree_branch_k_caps_at_vocabulary_size`` — requesting more
 T10. ``test_rollout_tree_diagnostics_well_formed`` — every diagnostic field
      has the expected shape / type / range.
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED.
 """
 
 from __future__ import annotations

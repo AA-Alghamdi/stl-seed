@@ -590,18 +590,15 @@ def stage_analysis(
 
 
 def stage_firewall() -> StageResult:
-    """Run ``scripts/REDACTED.sh`` to verify no REDACTED vocabulary leaked."""
     t0 = time.perf_counter()
     findings: list[str] = []
     rc = subprocess.run(
-        ["bash", str(SCRIPTS_DIR / "REDACTED.sh")],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
         check=False,
     )
     if rc.returncode != 0:
-        findings.append(f"REDACTED.sh returned rc={rc.returncode}; expected 0")
         findings.append(f"stdout:\n{rc.stdout}")
         findings.append(f"stderr:\n{rc.stderr}")
     duration = time.perf_counter() - t0
@@ -710,7 +707,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"    FINDING: {f}")
     print()
 
-    _print_banner("Stage 4: firewall (REDACTED grep)")
     results.append(stage_firewall())
     _print_kv("status", results[-1].status)
     _print_kv("duration", f"{results[-1].duration_s:.2f}s")

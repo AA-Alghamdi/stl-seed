@@ -100,14 +100,10 @@ expensive — but each gradient step uses the *true* end-to-end
 trajectory rather than a partial extrapolation, so each step's
 information content is qualitatively different.
 
-REDACTED firewall
 ~~~~~~~~~~~~~
 
 This module imports only from JAX, jaxtyping, and in-package modules
 (``stl_seed.stl``, ``stl_seed.tasks``, ``stl_seed.inference``). No
-``REDACTED``, ``REDACTED``, ``REDACTED``, ``REDACTED``, or
-``REDACTED*`` symbol is touched. Verified by
-``scripts/REDACTED.sh``.
 
 Relationship to other samplers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

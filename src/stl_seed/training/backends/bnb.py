@@ -16,7 +16,6 @@ cross-entropy by the per-sample ``weight`` column from the dataset. This
 matches the formalism in ``paper/theory.md`` §2 (continuous-weighted
 condition: w_i = softmax(ρ_i / β)).
 
-REDACTED firewall: imports nothing from REDACTED / REDACTED / REDACTED.
 
 Lazy-import discipline: the heavy imports (``torch``, ``bitsandbytes``,
 ``transformers``, ``trl``, ``peft``) are deferred inside :meth:`train`

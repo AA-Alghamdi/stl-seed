@@ -24,9 +24,6 @@ explicit and seedable. We do not use ``scipy.stats.bootstrap`` because
 differences, and (b) we want the BCa intermediate quantities exposed
 for tests.
 
-REDACTED firewall (per ``CLAUDE.md``): this module does not import
-``REDACTED``, ``REDACTED``, ``REDACTED``, or any
-``REDACTED*`` artifact. The API design (a frozen dataclass with
 ``statistic``, ``lower``, ``upper``, ``n``, ``n_resamples``,
 ``confidence_level``, ``method``) intentionally matches the user's
 preferred style, but the implementation here is independent.

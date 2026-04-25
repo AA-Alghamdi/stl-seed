@@ -46,11 +46,8 @@ What this script does NOT do
   just replace the worst-case ICC plug-in with the empirical one and
   recompute the *sampling-design* power numbers.
 
-REDACTED firewall: imports only `stl_seed.generation.store` and stdlib /
-numpy. No REDACTED / REDACTED / REDACTED artifact.
 
 Usage:
-    cd /Users/abdullahalghamdi/stl-seed
     uv run python scripts/power_analysis_real.py 2>&1 | tee scripts/power_analysis_real.log
 """
 

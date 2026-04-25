@@ -56,10 +56,7 @@ For the 10-step repressilator with ``branch_k = 8``, ``lookahead_h = 5``,
 budget at matched compute is ``ContinuousBoNSampler(n=80)`` (each BoN
 draw is one full-horizon rollout, no backward).
 
-REDACTED firewall. This module imports only from JAX, jaxtyping, and
 in-package modules (``stl_seed.stl``, ``stl_seed.tasks``,
-``stl_seed.inference``). No ``REDACTED``, ``REDACTED``, ``physics_*``
-or ``REDACTED*`` symbol is touched.
 
 References
 ----------

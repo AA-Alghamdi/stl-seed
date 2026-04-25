@@ -20,8 +20,6 @@ whose `meta.n_nan_replacements` exceeds `nan_fraction_threshold * T` are
 DROPPED from the persisted corpus (and counted in `n_nan_dropped`). The
 sentinel-replaced state is computed by the simulator, not by the runner.
 
-REDACTED firewall: this module imports only from `stl_seed.{generation,
-specs, tasks}`. No REDACTED artifact is touched.
 """
 
 from __future__ import annotations
@@ -98,7 +96,6 @@ def evaluate_robustness(
     times_min:
         Shape `(T,)` numpy array of save times in MINUTES (matches the
         simulator-side convention; the spec's `Interval` bounds are
-        already in minutes per `paper/REDACTED.md`).
 
     Returns
     -------

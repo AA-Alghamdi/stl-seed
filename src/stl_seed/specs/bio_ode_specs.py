@@ -8,14 +8,12 @@ Three subdomains, three specs of varying difficulty:
 
 For each spec the docstring records: (a) the textbook / paper source, (b) the
 control framing (what the action ``u_t`` does to the autonomous ODE), (c) the
-allowed-form classification per ``paper/REDACTED.md`` Part C.1, and
 (d) the literature derivation of every numerical threshold.
 
 Conjunction-only structure (firewall §C.1): every formula in this module is
 assembled from ``Always``, ``Eventually``, n-ary ``And``, and predicate-level
 ``Negation``. No top-level disjunction, no implication, no ``Until``.
 
-REDACTED-overlap check: the REDACTED ``REDACTED.py`` SPECS dictionary uses
 dimensionless thresholds ``{0.50, 0.30, 0.90, 0.45, 0.35, 0.80, 0.40, 0.70,
 1.5, 0.20, 0.60}`` on signals ``x_1..x_4 ∈ [0, 1.5]`` over ``t ∈ [0, 25]``
 with interval breakpoints at 0, 10, 20, 25. The specs in this module use
@@ -24,7 +22,6 @@ with interval breakpoints at 0, 10, 20, 25. The specs in this module use
 and 60 minutes respectively. Even where the literal ``0.5`` recurs (it does
 in the MAPK spec, see the Huang & Ferrell 1996 EC50 derivation below), the
 *meaning* (fraction of doubly-phosphorylated MAPK at steady state) and the
-*signal scale* are different from REDACTED's, so the agreement is incidental
 rather than transcribed (firewall §D.3 protocol).
 """
 

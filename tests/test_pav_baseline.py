@@ -20,10 +20,7 @@ What we cover
 * End-to-end: ``compare_pav_vs_stl`` returns a well-formed
   :class:`ComparisonResult`.
 
-REDACTED firewall: imports only from JAX, NumPy, the in-repo PAV module,
 the in-repo STL evaluator, the in-repo Trajectory type, and the in-repo
-specs registry. No REDACTED / REDACTED / REDACTED / REDACTED
-/ REDACTED artifacts.
 """
 
 from __future__ import annotations

@@ -27,13 +27,11 @@ Conjunction-only structure (firewall §C.1): every formula in this module
 uses only ``Always``, ``Eventually``, n-ary ``And``, and predicate-level
 ``Negation``. No top-level disjunction, no implication, no ``Until``.
 
-REDACTED-overlap check: the REDACTED ``REDACTED.py`` SPECS dictionary uses
 dimensionless thresholds in [0, 1.5] over t in [0, 25] dimensionless time
 units on dimensionless gene-expression signals. The thresholds in this
 module are *clinical glucose values in mg/dL* (54, 70, 140, 180, 250) and
 *plasma insulin in µU/mL* (40, 100), with horizons of 120 minutes. There is
-zero numerical overlap with the REDACTED literal set (verified by inspection of
-``REDACTED.py`` SPECS dict and ``REDACTED.py:447–451``).
+literature-grounded thresholds (verified by inspection of
 """
 
 from __future__ import annotations

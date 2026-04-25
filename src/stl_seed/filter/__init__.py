@@ -9,8 +9,6 @@ Three `FilterCondition` implementations from `paper/theory.md` §2:
 Plus `build_sft_dataset(...)` in `dataset.py` that converts a filtered
 trajectory list + weights into a HuggingFace `Dataset`.
 
-REDACTED firewall: this subpackage imports only from `stl_seed.{filter,
-specs, tasks, training}` and standard scientific Python. No REDACTED artifact
 is touched.
 """
 

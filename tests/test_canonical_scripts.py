@@ -5,8 +5,6 @@ composition, cell enumeration, dry-run end-to-end, and CLI surface.
 They do NOT run real training or NumPyro fitting (those require GPUs /
 minutes-of-CPU and are exercised by the actual sweep on RunPod).
 
-REDACTED firewall: tests live in tests/ which is in scope for
-``scripts/REDACTED.sh``; no REDACTED / REDACTED / physics_*
 imports here either.
 """
 

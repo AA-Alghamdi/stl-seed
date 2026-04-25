@@ -20,11 +20,7 @@ This package implements the analyses required by ``paper/theory.md``:
   [Schuirmann 1987, DOI:10.1007/BF01068419; Lakens 2017,
   DOI:10.1177/1948550617697177].
 
-REDACTED firewall (per ``CLAUDE.md``): no module here imports ``REDACTED``,
-``REDACTED``, ``REDACTED``, ``REDACTED``, or
-``REDACTED``. The bootstrap utilities are a clean reimplementation
 of the API style the user prefers (matching the field layout in the
-``BootstrapCI`` dataclass) and not a copy of the REDACTED ``stats_utils``
 module.
 """
 

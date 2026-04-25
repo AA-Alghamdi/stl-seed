@@ -11,9 +11,7 @@ Signals", DOI: 10.1007/978-3-642-15297-9_9) on the AST defined in
     rho(G_[a,b] phi, tau, t)   = inf_{t' in [t+a, t+b]} rho(phi, tau, t')
     rho(F_[a,b] phi, tau, t)   = sup_{t' in [t+a, t+b]} rho(phi, tau, t')
 
-REDACTED firewall (per ``CLAUDE.md``): this module does NOT import REDACTED
 ``pystl``. The semantics above are coded from scratch on the conjunction-only
-``stl_seed.specs`` AST (see ``paper/REDACTED.md`` Part C).
 
 Public API:
 

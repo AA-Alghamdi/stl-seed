@@ -19,9 +19,7 @@ Outputs
 * ``runs/pav_comparison/<task>__results.json``
 * ``paper/pav_comparison.md``  (regenerated each run)
 
-REDACTED firewall: imports only ``stl_seed.{baselines,generation,specs,stl}``
 plus stdlib + numpy + matplotlib + rich. Verified by
-``scripts/REDACTED.sh``.
 
 Usage
 -----

@@ -25,13 +25,9 @@ This package provides:
   function of policy: correlation, regression slope, top-decile divergence
   between proxy rho and gold score.
 
-REDACTED firewall posture
 ---------------------
 This subpackage operates only on the in-package STL evaluator
 (``stl_seed.stl.evaluator``) and the in-package ``Simulator`` protocol
-(``stl_seed.tasks.bio_ode.Simulator``). It does not import ``REDACTED``,
-``REDACTED``, ``REDACTED``, ``REDACTED``, or any
-``REDACTED`` artifact, and it does not reuse any REDACTED-tuned theta or
 spec literal. The "gold" augmentations are sourced exclusively from
 clinical / molecular-biology literature cited inline in
 ``gold_scorers.py``.

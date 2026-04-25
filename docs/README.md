@@ -40,11 +40,10 @@ The full per-module API surface is documented in the source docstrings; `tests/t
 ## Where to read next
 
 - Formal claim, hypotheses, statistical model: [`paper/theory.md`](../paper/theory.md)
-- Locked module layout and shared interfaces: [`paper/architecture.md`](../paper/architecture.md)
-- Spec design + threshold sourcing: [`paper/REDACTED.md`](../paper/REDACTED.md)
-- REDACTED firewall posture: [`paper/REDACTED.md`](../paper/REDACTED.md)
-- SERA recipe mapping: [`paper/REDACTED.md`](../paper/REDACTED.md)
-- Reproducibility (seeds, provenance, pinned versions): [`paper/reproducibility.md`](../paper/reproducibility.md)
+- Cross-task validation: [`paper/cross_task_validation.md`](../paper/cross_task_validation.md)
+- Inference method (gradient-guided STL decoding): [`paper/inference_method.md`](../paper/inference_method.md)
+- Empirical results: [`paper/unified_comparison_results.md`](../paper/unified_comparison_results.md)
+- Compute-cost Pareto: [`paper/compute_cost_results.md`](../paper/compute_cost_results.md)
 
 ## Gotchas
 

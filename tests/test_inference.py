@@ -28,8 +28,6 @@ T9. ``test_protocol_compliance`` — all four samplers satisfy the Sampler
 T10. ``test_make_vocabulary_shapes_and_endpoints`` — vocabulary builder
     returns the right shape and includes the endpoints.
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED.
 """
 
 from __future__ import annotations

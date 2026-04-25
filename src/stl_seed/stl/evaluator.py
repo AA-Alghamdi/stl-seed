@@ -4,9 +4,6 @@ Reference. Donzé, A. & Maler, O. "Robust Satisfaction of Temporal Logic over
 Real-Valued Signals." FORMATS 2010, LNCS 6246: 92-106.
 DOI: 10.1007/978-3-642-15297-9_9.
 
-REDACTED firewall. This file implements the standard recursive min/max evaluator
-from scratch on the ``stl_seed.specs`` AST. It does not import ``REDACTED``,
-``pystl``, ``REDACTED``, or any REDACTED artifact.
 
 Numerical accuracy. Each min/max node accumulates at most one ulp of float64
 round-off. Worst-case AST depth in this codebase is 4 (And -> Always ->

@@ -91,6 +91,16 @@ def sample(
         "--temperature",
         help="Sampling temperature on biased logits. 0 = greedy argmax.",
     ),
+    llm: str = typer.Option(
+        "uniform",
+        "--llm",
+        help=(
+            "LLM proposal backend. 'uniform' (default) uses a flat-prior "
+            "synthetic LLM. 'qwen3-0.6b' / 'qwen3-1.7b' / 'qwen3-4b' wrap "
+            "the corresponding mlx-community Qwen3-bf16 checkpoint via "
+            "MLXLLMProposal (Apple Silicon only)."
+        ),
+    ),
     output: str | None = typer.Option(
         None,
         "--output",
@@ -99,11 +109,13 @@ def sample(
 ) -> None:
     """Run inference-time decoding and report STL robustness.
 
-    Uses a *uniform* LLM proxy (every action equally likely under the
-    LLM prior) so the result isolates the contribution of gradient
-    guidance vs BoN. To plug in a real LLM, import the sampler classes
-    from ``stl_seed.inference`` directly and pass an ``LLMProposal``
-    callable.
+    By default the CLI uses a *uniform* LLM proxy (every action equally
+    likely under the LLM prior) so the result isolates the contribution
+    of gradient guidance vs BoN. Pass ``--llm qwen3-0.6b`` (or
+    ``qwen3-1.7b`` / ``qwen3-4b``) to use a real Qwen3 base model via
+    :class:`MLXLLMProposal` -- this is the methodology-honest baseline
+    introduced in 2026-04-25 to falsify the original "+128x" claim from
+    the uniform-proxy regime. See ``paper/inference_method.md``.
     """
     from stl_seed.inference import (
         BestOfNSampler,
@@ -180,14 +192,37 @@ def sample(
             [lo] * action_dim, [hi] * action_dim, k_per_dim=k_per_dim
         )
 
-    # Uniform LLM proxy (the CLI is a quick smoke driver; real LLM
-    # integration is via the Python API).
-    def uniform_llm(state, history, key):
-        return jnp.zeros(int(V.shape[0]))
-
     horizon = int(sim.n_control_points)
+
+    # LLM proposal: synthetic uniform (default) or real Qwen3 via MLX.
+    if llm == "uniform":
+
+        def uniform_llm(state, history, key):
+            return jnp.zeros(int(V.shape[0]))
+
+        llm_callable = uniform_llm
+    elif llm in {"qwen3-0.6b", "qwen3-1.7b", "qwen3-4b"}:
+        from stl_seed.inference.mlx_llm_proposal import MLXLLMProposal
+
+        llm_callable = MLXLLMProposal(
+            action_vocabulary=V,
+            spec=spec,
+            task=task,
+            initial_state=x0,
+            horizon=horizon,
+            state_dim=int(jnp.asarray(x0).shape[0]),
+            model_id=llm,
+        )
+    else:
+        typer.echo(
+            f"unknown llm backend: {llm!r}; choose one of "
+            "{uniform, qwen3-0.6b, qwen3-1.7b, qwen3-4b}",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
     common = dict(
-        llm=uniform_llm,
+        llm=llm_callable,
         simulator=sim,
         spec=spec,
         action_vocabulary=V,

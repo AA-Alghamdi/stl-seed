@@ -25,9 +25,6 @@ The substantive results live in
 ``paper/unified_comparison_results.md``; here we only verify the
 machinery.
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED. The tested script
-itself is firewalled (verified by ``scripts/REDACTED.sh``).
 """
 
 from __future__ import annotations

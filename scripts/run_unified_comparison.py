@@ -45,13 +45,8 @@ ODE). The hybrid sampler dominates wall-clock per-seed (it makes
 ``n=4`` gradient-guided draws), which is reflected in the
 ``wall_clock_s`` column.
 
-REDACTED firewall
 -------------
 This script imports only from ``stl_seed.{inference, specs, tasks}``,
-JAX, NumPy, Pandas, Matplotlib, and Rich. No ``REDACTED``,
-``REDACTED``, ``REDACTED``, ``REDACTED``, or
-``REDACTED`` symbol is touched. Verified by
-``scripts/REDACTED.sh``.
 
 Usage
 -----
@@ -197,14 +192,25 @@ _BEAM_K_PER_DIM_TOGGLE: int = 5
 console = Console()
 
 # ---------------------------------------------------------------------------
-# Synthetic LLM: flat prior over the action vocabulary.
+# LLM proposals.
 # ---------------------------------------------------------------------------
 #
-# Using a flat-prior LLM is the cleanest test bed for sampler comparison:
-# the only signal driving choices is the verifier (rho or grad rho), so
-# the comparison isolates *what each sampler does with the verifier
-# information*, not how well a particular LLM happens to know the task.
-# The same flat-LLM regime is used by tests/test_inference.py.
+# Two backends are supported:
+#
+# * ``uniform`` -- a flat-prior synthetic LLM (entropy log K). Cleanest
+#   test bed for *what each sampler does with the verifier information*,
+#   independent of any particular language-model prior. Same regime as
+#   ``tests/test_inference.py``.
+#
+# * ``qwen3-0.6b`` / ``qwen3-1.7b`` / ``qwen3-4b`` -- a real Qwen3
+#   checkpoint via MLX. Wraps :class:`MLXLLMProposal`, which scores each
+#   action vocabulary entry by teacher-forced log-probability of its
+#   canonical text serialisation under the model. Exists to falsify
+#   the "+128x lift over standard sampling" claim from the original
+#   uniform-proxy result -- if the bare LLM already saturates a spec,
+#   the gradient-guidance contribution evaporates on that task.
+#
+# The choice of backend is exposed via the ``--llm`` flag.
 
 
 def _uniform_llm(K: int) -> LLMProposal:
@@ -214,6 +220,46 @@ def _uniform_llm(K: int) -> LLMProposal:
         return jnp.zeros(K, dtype=jnp.float32)
 
     return llm
+
+
+def _make_llm(
+    llm_name: str,
+    setup: TaskSetup,
+    vocabulary: Any,
+) -> LLMProposal:
+    """Construct the LLM proposal callable for one (task, sampler-vocab) pair.
+
+    For the synthetic backend we return a closure over the vocabulary
+    size. For the real-LLM backends we instantiate
+    :class:`MLXLLMProposal` (which loads or re-uses a cached model).
+
+    The vocabulary may differ per-sampler (beam-search overrides);
+    therefore we build one proposal per (task, sampler-vocab) pair, but
+    the underlying model weights are cached at the module level inside
+    :mod:`stl_seed.inference.mlx_llm_proposal` so the load cost is paid
+    once per process.
+    """
+    if llm_name == "uniform":
+        return _uniform_llm(int(np.asarray(vocabulary).shape[0]))
+    if llm_name in {"qwen3-0.6b", "qwen3-1.7b", "qwen3-4b"}:
+        # Lazy import so non-Apple platforms don't pay the import cost
+        # for tests + lint.
+        from stl_seed.inference.mlx_llm_proposal import MLXLLMProposal
+
+        x0 = np.asarray(setup.initial_state)
+        return MLXLLMProposal(
+            action_vocabulary=vocabulary,
+            spec=setup.spec,
+            task=setup.name,
+            initial_state=x0,
+            horizon=setup.horizon,
+            state_dim=int(x0.shape[0]),
+            model_id=llm_name,
+        )
+    raise ValueError(
+        f"Unknown LLM backend {llm_name!r}; expected one of "
+        "{uniform, qwen3-0.6b, qwen3-1.7b, qwen3-4b}."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -498,7 +544,7 @@ _TASK_BUILDERS: dict[str, callable] = {
 # ---------------------------------------------------------------------------
 
 
-def _build_sampler(name: str, setup: TaskSetup) -> Sampler:
+def _build_sampler(name: str, setup: TaskSetup, llm_name: str = "uniform") -> Sampler:
     """Construct a sampler instance for the given (sampler-name, task).
 
     The factory keeps construction in a single place so the harness
@@ -510,10 +556,16 @@ def _build_sampler(name: str, setup: TaskSetup) -> Sampler:
     task) by :func:`_vocabulary_for` — currently only the beam-search
     warmstart sampler on the repressilator uses an override (the dense
     k_per_dim=5 lattice that contains the silence-3 satisfying corner).
+
+    The ``llm_name`` argument selects the LLM backend. ``"uniform"``
+    uses the flat-prior synthetic LLM (default; identical to the
+    original v0.1 harness). ``"qwen3-{0.6b,1.7b,4b}"`` wraps the
+    corresponding mlx-community Qwen3 checkpoint via
+    :class:`MLXLLMProposal`.
     """
     vocabulary = _vocabulary_for(name, setup)
-    K = int(vocabulary.shape[0])
-    llm = _uniform_llm(K)
+    K = int(vocabulary.shape[0])  # noqa: F841 (retained for clarity / future use)
+    llm = _make_llm(llm_name, setup, vocabulary)
     # Samplers split into two API shapes: most accept ``sampling_temperature``
     # in their constructor (the original five), the four extended samplers
     # (horizon_folded, rollout_tree, cmaes_gradient, beam_search_warmstart)
@@ -623,6 +675,7 @@ def _run_one_cell(
     task: TaskSetup,
     sampler_name: str,
     seed: int,
+    llm_name: str = "uniform",
 ) -> dict[str, Any]:
     """Run one (task, sampler, seed) cell and emit a single row.
 
@@ -636,7 +689,7 @@ def _run_one_cell(
     ``satisfied`` follows the Donzé-Maler convention: ``rho > 0`` iff
     the trajectory satisfies the spec.
     """
-    sampler = _build_sampler(sampler_name, task)
+    sampler = _build_sampler(sampler_name, task, llm_name=llm_name)
     key = jax.random.key(int(seed))
     t0 = time.time()
     _, diag = sampler.sample(task.initial_state, key)
@@ -660,6 +713,7 @@ def _run_all_cells(
     samplers: list[str],
     n_seeds: int,
     seed_offset: int = 1000,
+    llm_name: str = "uniform",
 ) -> pd.DataFrame:
     """Run the full (tasks x samplers x seeds) grid.
 
@@ -679,7 +733,7 @@ def _run_all_cells(
         # neutral.
         cached: dict[str, Sampler] = {}
         for sampler_name in samplers:
-            cached[sampler_name] = _build_sampler(sampler_name, task)
+            cached[sampler_name] = _build_sampler(sampler_name, task, llm_name=llm_name)
         for sampler_name in samplers:
             sampler = cached[sampler_name]
             for s in range(int(n_seeds)):
@@ -878,6 +932,7 @@ def _write_markdown_report(
     samplers: list[str],
     fig_path: Path,
     out_path: Path,
+    llm_name: str = "uniform",
 ) -> None:
     """Auto-generate ``paper/unified_comparison_results.md``.
 
@@ -970,9 +1025,19 @@ def _write_markdown_report(
     lines.append(f"- {headline_repr}")
     lines.append(f"- {headline_hybrid}")
     lines.append("")
+    if llm_name == "uniform":
+        llm_blurb = (
+            "All cells use a flat-prior LLM (uniform logits over the action "
+            "vocabulary)"
+        )
+    else:
+        llm_blurb = (
+            f"All cells use a real Qwen3 base LLM (`mlx-community/{llm_name.replace('qwen3-', 'Qwen3-').upper()}-bf16` "
+            "via :class:`MLXLLMProposal`; token-prefix log-prob scoring of "
+            "the canonical action serialisation, no fine-tuning)"
+        )
     lines.append(
-        "All cells use a flat-prior LLM (uniform logits over the action "
-        f"vocabulary), sampling temperature {_SAMPLING_TEMPERATURE} where "
+        f"{llm_blurb}, sampling temperature {_SAMPLING_TEMPERATURE} where "
         f"applicable, and per-sampler hyperparameters: BoN N = {_BON_N}, "
         f"gradient guidance λ = {_GRADIENT_GUIDANCE_WEIGHT:g}, hybrid n = "
         f"{_HYBRID_N}, horizon-folded K_iters = {_HORIZON_FOLDED_K_ITERS} "
@@ -1181,6 +1246,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "convention for cross-tier reproducibility)."
         ),
     )
+    p.add_argument(
+        "--llm",
+        type=str,
+        default="uniform",
+        choices=["uniform", "qwen3-0.6b", "qwen3-1.7b", "qwen3-4b"],
+        help=(
+            "LLM proposal backend. 'uniform' uses a flat-prior synthetic "
+            "LLM (default; matches the original v0.1 unified-comparison "
+            "harness); the qwen3-* options wrap the corresponding "
+            "mlx-community Qwen3-bf16 checkpoint via MLXLLMProposal. "
+            "On Apple Silicon only. Default: uniform."
+        ),
+    )
     return p.parse_args(argv)
 
 
@@ -1210,6 +1288,7 @@ def main(argv: list[str] | None = None) -> int:
             f"  tasks   : {', '.join(t.name for t in tasks_built)}\n"
             f"  samplers: {', '.join(samplers)}\n"
             f"  n_seeds : {int(args.n_seeds)} (seed offset {int(args.seed_offset)})\n"
+            f"  llm     : {args.llm}\n"
             f"  out_dir : {out_dir}\n"
             f"  fig     : {fig_path}\n"
             f"  md      : {md_path}",
@@ -1222,7 +1301,12 @@ def main(argv: list[str] | None = None) -> int:
         samplers=samplers,
         n_seeds=int(args.n_seeds),
         seed_offset=int(args.seed_offset),
+        llm_name=str(args.llm),
     )
+    # Tag every row with the LLM backend used; downstream consumers
+    # (paper writeups, supplementary tables) need to disambiguate
+    # uniform-proxy from real-LLM runs in the same parquet.
+    df["llm"] = str(args.llm)
     parquet_path = out_dir / "results.parquet"
     df.to_parquet(parquet_path, index=False)
     console.print(f"[green]Wrote {len(df)} rows to {parquet_path}.[/]")
@@ -1267,6 +1351,7 @@ def main(argv: list[str] | None = None) -> int:
         samplers=samplers,
         fig_path=fig_path,
         out_path=md_path,
+        llm_name=str(args.llm),
     )
     console.print(f"[green]Wrote markdown report to {md_path}.[/]")
 

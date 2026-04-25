@@ -29,14 +29,11 @@ Differences vs. `scripts/generate_pilot.py` (Phase 1):
   task family, so the hard filter has at least 750 satisfying
   trajectories per task to feed into SFT.
 
-REDACTED firewall: this script imports only from
 `stl_seed.{generation,specs,stl,tasks}` plus stdlib + numpy + JAX +
-rich. No REDACTED artifact is touched. Mirrors the firewall posture of
 `scripts/generate_pilot.py`.
 
 Usage::
 
-    cd /Users/abdullahalghamdi/stl-seed
     uv run python scripts/generate_canonical.py 2>&1 | tee scripts/generate_canonical.log
 """
 

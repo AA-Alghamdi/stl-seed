@@ -4,9 +4,6 @@ Each test pre-registers a physiological / phase-portrait expectation
 derivable from the literature, then asserts the simulator and specs
 reproduce it. References inline.
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED. The FHN system is
-not used in any REDACTED artifact.
 """
 
 from __future__ import annotations

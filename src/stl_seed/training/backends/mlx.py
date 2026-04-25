@@ -5,8 +5,6 @@ filtered SFT dataset locally on an M-series Mac. This is the pilot path
 used during Phase 1 iteration; the canonical Phase 2 sweep runs on the
 bnb backend on RunPod.
 
-REDACTED firewall: this module is part of the SERA-style SFT loop and does
-not import REDACTED / REDACTED / REDACTED / REDACTED.
 
 mlx_lm 0.31 API contract (post-A15 patch)
 -----------------------------------------

@@ -43,12 +43,9 @@ Why we bypass `MLXBackend`:
   expects the pre-0.20 API and will need a follow-up patch — we file
   that as a Phase-2 followup at the bottom of the report.
 
-REDACTED firewall: imports only from `stl_seed.{filter,generation,specs,
 tasks,training}` plus mlx / mlx_lm / numpy / pyarrow / rich / re / json.
-No REDACTED / REDACTED / REDACTED / REDACTED.
 
 Usage:
-    cd /Users/abdullahalghamdi/stl-seed
     uv run python scripts/smoke_test_mlx.py 2>&1 | tee scripts/smoke_test_mlx.log
 """
 
@@ -97,7 +94,6 @@ _WEIGHT_DECAY = 0.01
 # mlx_lm's `linear_to_lora_layers` matches keys against module names *relative
 # to the TransformerBlock*, which for Qwen3-family models means the attention
 # projections live at `self_attn.{q,k,v,o}_proj`. The bare key form (e.g.
-# `"q_proj"`) — which the REDACTED firewall doc and the architecture spec lean on —
 # does NOT match here; that's a known mlx_lm idiom.
 _LORA_TARGETS = ["self_attn.q_proj", "self_attn.v_proj"]
 

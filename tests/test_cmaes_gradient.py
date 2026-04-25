@@ -26,8 +26,6 @@ C6. ``test_cmaes_diagnostics_well_formed`` — every diagnostic field
     length ``n_generations``; ``rho_post_refine_per_step`` is
     bounded above by ``n_refine``.
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED.
 """
 
 from __future__ import annotations

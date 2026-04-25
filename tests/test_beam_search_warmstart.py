@@ -33,8 +33,6 @@ B8. ``test_beam_search_gradient_refinement_no_regression`` — with refinement
     never make things worse because we keep the discrete winner if
     refinement does not improve it).
 
-REDACTED firewall. None of these tests import REDACTED / REDACTED /
-REDACTED / REDACTED / REDACTED.
 """
 
 from __future__ import annotations
@@ -183,7 +181,6 @@ def test_beam_search_recovers_repressilator_solution() -> None:
     finds rho > 0 on ``bio_ode.repressilator.easy`` from the canonical
     pilot IC.
 
-    The REDACTED-stripped negative-result documented in
     ``paper/cross_task_validation.md`` shows that the gradient-guided
     sampler is stuck at rho ~ -250 across all (lambda, default-action,
     seed) combinations on this configuration. The structural-search

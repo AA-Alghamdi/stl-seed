@@ -68,20 +68,15 @@ millisecond/cardiac units). One control update therefore lasts
 relaxation while still much shorter than the ~12-unit refractory window
 set by the slow ``w`` recovery.
 
-Per :file:`paper/REDACTED.md` Part B, the kinetic parameter vector
 ``theta`` is a fixed literature-sourced constant (loaded from
 :class:`FitzHughNagumoParams` in this module) and the agent optimises
 only the control schedule ``u_{1:H}``. The simulator implements the
 locked :class:`stl_seed.tasks._trajectory.Trajectory`-returning
 ``Simulator`` interface from :file:`paper/architecture.md`.
 
-REDACTED firewall
 -------------
 This module imports from ``numpy``, ``jax``, ``jax.numpy``, ``equinox``,
 ``diffrax``, ``jaxtyping``, and the in-package ``_trajectory`` module.
-It does NOT import from ``REDACTED``, ``REDACTED``, ``REDACTED``,
-``REDACTED``, or ``REDACTED``. The FitzHugh-Nagumo system is
-not used in any REDACTED artifact (the REDACTED paper studies 6-state Hill GRN
 networks); the parameters here flow exclusively from FitzHugh 1961 and
 Nagumo 1962.
 """
@@ -216,8 +211,6 @@ class FitzHughNagumoParams(eqx.Module):
 
     The defaults are the canonical values from FitzHugh (1961) §III and
     re-used by Nagumo, Arimoto & Yoshizawa (1962). Every default has an
-    inline citation; the parameters are NOT tuned to any REDACTED target
-    artifact (the REDACTED project does not use FHN).
 
     Field-by-field provenance is given inline. All values are scalar
     JAX-compatible floats so the dataclass is JIT/grad/vmap-friendly.

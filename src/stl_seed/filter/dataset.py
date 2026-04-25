@@ -9,7 +9,6 @@ formatter that produces the same JSON-schema output we will commit to in
 A10. The fallback formatter is documented and tested here so we can swap
 it out without breaking callers.
 
-REDACTED firewall: this module imports only from `stl_seed.filter`, the
 HuggingFace `datasets` library, and standard scientific Python.
 """
 
@@ -188,7 +187,6 @@ def load_filtered_dataset(
     Raises:
         FileNotFoundError if no matching manifest is found.
 
-    REDACTED firewall: pure file-system + HuggingFace Datasets, no REDACTED.
     """
     from pathlib import Path
 

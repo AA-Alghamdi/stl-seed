@@ -41,17 +41,13 @@ References
   the population-search-plus-policy-gradient pattern at scale; the
   hybrid here is a small-scale analogue.
 
-REDACTED firewall
 -------------
 
 This module imports only from JAX, jaxtyping, and in-package symbols
 (``stl_seed.inference.protocol``, ``stl_seed.specs``,
 ``stl_seed.stl.evaluator``, ``stl_seed.tasks._trajectory``). No
-``REDACTED``, ``REDACTED``, ``REDACTED``, ``REDACTED``,
-or ``REDACTED*`` symbol is referenced. The CMA-ES update
 mathematics is implemented here from Hansen 2016 directly; the
 ``cma`` PyPI package is *not* a dependency. The user's
-``baselines.CMA_ES`` in REDACTED was *consulted as a reference* for
 overall code shape but not imported or copied.
 """
 
@@ -465,7 +461,6 @@ def _cmaes_sample_population(
 # ---------------------------------------------------------------------------
 # Differentiable simulator wrapper (mirrors gradient_guided._wrap_simulator
 # verbatim — replicated rather than imported to keep this module
-# self-contained and to make the REDACTED firewall audit single-pass).
 # ---------------------------------------------------------------------------
 
 
@@ -584,11 +579,8 @@ class CMAESGradientSampler:
     refinement. For the default settings this is ``20 * 32 + 30 = 670``
     forward simulator calls and 30 backward calls.
 
-    REDACTED firewall
     -------------
 
-    No REDACTED / REDACTED / REDACTED / REDACTED /
-    REDACTED imports. The CMA-ES math is from Hansen 2016
     (arXiv:1604.00772) directly.
     """
 

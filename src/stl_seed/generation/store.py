@@ -19,8 +19,6 @@ Design notes
   caller can pull a single trajectory in O(shard) time without rescanning
   the whole corpus.
 
-REDACTED firewall: this module imports only `pyarrow`, `numpy`, and the
-locked `Trajectory` / `TrajectoryMeta` types. No REDACTED artifact appears.
 """
 
 from __future__ import annotations

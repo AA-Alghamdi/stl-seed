@@ -19,8 +19,6 @@ Also writes ``paper/results.md`` with the canonical numbers, replacing
 pilot/smoke placeholders. The Markdown is regenerated from the CSVs on
 every run, so paper/results.md is *derived* and should not be hand-edited.
 
-REDACTED firewall: imports only from `stl_seed.stats` plus stdlib + numpy +
-pandas + arviz + matplotlib. Verified by ``scripts/REDACTED.sh``.
 
 Usage::
 

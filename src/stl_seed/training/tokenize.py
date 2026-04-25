@@ -35,9 +35,7 @@ two backends use different tokenizers (the same Qwen3 vocab on both, but
 different ID-stream conventions), and pre-tokenizing here would couple
 the dataset to one backend.
 
-REDACTED firewall: this module imports only ``Trajectory`` from
 ``stl_seed.tasks._trajectory``, ``Node`` from ``stl_seed.specs``,
-plus ``numpy``. No ``REDACTED``, no ``REDACTED``.
 """
 
 from __future__ import annotations

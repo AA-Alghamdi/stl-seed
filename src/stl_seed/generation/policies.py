@@ -23,8 +23,6 @@ outside the bounds and the clip is the authoritative gate (matches the
 glucose-insulin simulator convention; see
 `tasks/glucose_insulin.py:simulate`).
 
-REDACTED firewall: this module touches `stl_seed.specs.STLSpec` only as a
-typing reference. No REDACTED artifact is imported.
 """
 
 from __future__ import annotations
@@ -381,10 +379,8 @@ class TopologyAwareController:
     * repression``). For tasks with the opposite sign (``u_i = 1`` activates
     gene i), pre-flip the action with a wrapper or extend this controller.
 
-    REDACTED firewall. The topology dict and threshold are derived from
     Elowitz & Leibler (Nature 2000;403:335) Fig. 1a and the spec's textbook
     midpoint between ``P_LOW`` and ``P_HIGH`` (specs/bio_ode_specs.py),
-    not from any REDACTED artifact. The class itself is task-family-agnostic.
     """
 
     def __init__(
