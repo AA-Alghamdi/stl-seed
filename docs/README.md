@@ -29,7 +29,7 @@ uv run python examples/03_mlx_training_minimal.py  # MLX QLoRA, ~1-2 min
 | `Policy`          | `(state, spec, history, key) -> action`                  | `src/stl_seed/generation/policies.py` |
 | `FilterCondition` | `filter(trajectories, rhos) -> (kept, weights)`          | `src/stl_seed/filter/conditions.py`   |
 
-Four task families ship today: glucose-insulin (Bergman 1979 + Dalla Man 2007), repressilator (Elowitz & Leibler 2000), toggle (Gardner-Cantor-Collins 2000), MAPK (reduced Huang-Ferrell 1996 / Markevich 2004). Six STL specs are registered (three per family, calibrated in [`paper/REDACTED.md`](../paper/REDACTED.md)). Three filter conditions: `HardFilter`, `QuantileFilter`, `ContinuousWeightedFilter` — all raise `FilterError` rather than silently degrade.
+Four task families ship today: glucose-insulin (Bergman 1979 + Dalla Man 2007), repressilator (Elowitz & Leibler 2000), toggle (Gardner-Cantor-Collins 2000), MAPK (reduced Huang-Ferrell 1996 / Markevich 2004). Three filter conditions: `HardFilter`, `QuantileFilter`, `ContinuousWeightedFilter` — all raise `FilterError` rather than silently degrade.
 
 The full per-module API surface is documented in the source docstrings; `tests/test_stl_evaluator.py` is the most pedagogical entry point for the STL evaluator (it builds tiny ASTs by hand and asserts Donzé-Maler equalities one node at a time).
 

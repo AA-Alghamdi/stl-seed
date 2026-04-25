@@ -7,7 +7,6 @@ Both backends construct :class:`TrainedCheckpoint` from the same
 hierarchical-Bayes analysis) can consume artifacts uniformly.
 
 Provenance for ``lora_target_modules`` naming convention: smoke test
-A15 (``paper/REDACTED.md``) showed that bare names like
 ``"q_proj"`` silently match zero modules under MLX's
 ``linear_to_lora_layers`` (which scopes its name match within each
 TransformerBlock). The fix is to use locally-prefixed names like
@@ -21,13 +20,10 @@ Defaults are sourced as follows (every numerical field is cited):
   ``lora_dropout``, ``warmup_ratio``, ``num_epochs``, ``weight_decay``,
   ``gradient_accumulation_steps``, ``batch_size``, ``seed``, ``weight_format``)
   mirror SERA's ``unsloth_qwen3_moe_qlora.yaml`` (see
-  ``paper/REDACTED.md`` §C.3). That file is the closest SERA analog to
   stl-seed's consumer-budget single-GPU envelope.
 * ``lora_target_modules`` mirrors SERA's all-attention + all-MLP target
   set: the q/k/v/o projections plus the gate/up/down projections of the
-  Qwen3 MLP block (paper/REDACTED.md §C.3).
 * ``max_seq_length`` is reduced from SERA's 32768 to 8192 because control
-  trajectories are far shorter than codebases (paper/REDACTED.md
   STEP-3 mapping table, "sequence_len: ADAPT").
 * ``base_model`` defaults to ``Qwen/Qwen3-0.6B-Instruct`` — the smallest
   model in stl-seed's 3×3×2 sweep (theory.md §1).
@@ -59,7 +55,6 @@ class TrainingConfig:
     """All hyperparameters consumed by a :class:`TrainingBackend`.
 
     Defaults track ``unsloth_qwen3_moe_qlora.yaml`` from SERA where possible
-    (paper/REDACTED.md §C.3); stl-seed-specific deviations are commented
     inline. Every field is immutable so that a config object can be hashed
     and used as a Hydra-resolved ``omegaconf.DictConfig`` snapshot.
     """
@@ -85,7 +80,6 @@ class TrainingConfig:
 
     # --- Sequence length -----------------------------------------------------
     # SERA QLoRA YAML uses 32768 for code; stl-seed control trajectories are
-    # far shorter (paper/REDACTED.md STEP-3 mapping, "sequence_len: ADAPT").
     # 8192 is comfortable for H ≤ 200 control horizons with an 8-token-per-step
     # serialization budget.
     max_seq_length: int = 8192
@@ -108,7 +102,6 @@ class TrainingConfig:
     #   but we standardize on the prefixed form so a single config works
     #   on both backends without per-backend rewriting.
     #
-    # Reference: ``paper/REDACTED.md`` (A15) §"Issues encountered"
     # — the smoke test caught the silent no-op when bare names were used.
     #
     # Example (working on both MLX and bnb):
@@ -176,7 +169,6 @@ class TrainingConfig:
             raise ValueError(f"warmup_ratio must be in [0, 1], got {self.warmup_ratio}")
         if not (0.0 <= self.lora_dropout < 1.0):
             raise ValueError(f"lora_dropout must be in [0, 1), got {self.lora_dropout}")
-        # MLX naming-convention guard (paper/REDACTED.md §"Issues
         # encountered"): bare names without a "." prefix silently match zero
         # modules under mlx_lm.tuner.utils.linear_to_lora_layers because the
         # matcher walks each TransformerBlock and compares against locally
@@ -193,8 +185,7 @@ class TrainingConfig:
                 "prefix. These silently match zero modules under MLX's "
                 "linear_to_lora_layers (mlx_lm 0.31) and will produce a "
                 "0-trainable-parameter LoRA. Use the locally-prefixed form "
-                "(e.g. 'self_attn.q_proj' instead of 'q_proj'). See "
-                "paper/REDACTED.md §'Issues encountered'.",
+                "(e.g. 'self_attn.q_proj' instead of 'q_proj').",
                 bare,
             )
 

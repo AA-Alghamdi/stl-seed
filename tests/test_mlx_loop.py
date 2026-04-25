@@ -1,6 +1,5 @@
 """CPU-CI integration test for the MLX SFT loop (Fix 4 / A15 followup).
 
-Source citation: ``paper/REDACTED.md`` §"Phase-2 followups" item
 3 — "Add an integration test under tests/training/ that builds a tiny
 synthetic dataset, runs 5 mlx_lm iterations, and asserts loss
 decreased". This test is the regression test for Fix 1

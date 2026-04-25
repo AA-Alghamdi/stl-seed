@@ -621,7 +621,6 @@ def test_lt_form_is_negation_of_gt_form(c: int, th: float, traj: _TrajStub) -> N
 # where τ_α has states α·τ.states. The temporal reductions G and F are
 # min and max over the active grid points; both commute with multiplication
 # by α > 0. This closes the audit-flagged "temporal-reduction scaling" gap
-# (REDACTED_final.md §3 item 7).
 # ---------------------------------------------------------------------------
 
 

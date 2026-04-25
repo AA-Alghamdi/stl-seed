@@ -63,7 +63,6 @@ class RunRecord:
     ``first_action_uniqueness`` fell below the runner's diversity
     threshold (default 0.5). Surfaced in :func:`stringify_aggregate` as
     a ``[DIVERSITY WARNING]`` annotation. Wired up in response to the
-    A15 smoke test (paper/REDACTED.md §"Issues encountered")
     where 5/5 generations produced an identical first action.
     """
 
@@ -296,7 +295,6 @@ def stringify_aggregate(records: Iterable[RunRecord]) -> str:
     Cells whose ``first_action_uniqueness`` fell below
     :data:`DIVERSITY_WARNING_THRESHOLD` are appended with
     ``[DIVERSITY WARNING: <spec1>, <spec2>, ...]`` so the A15 memorization
-    failure mode (paper/REDACTED.md) is visible at a glance.
     """
     lines = []
     for r in records:

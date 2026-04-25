@@ -348,7 +348,6 @@ def write_results_md(
     """Generate paper/results.md from the analysis outputs.
 
     The structure mirrors paper/power_analysis_empirical.md and
-    paper/REDACTED.md so the paper has a uniform format.
     """
     lines: list[str] = []
     lines.append("# Phase-2 canonical results (auto-generated)")

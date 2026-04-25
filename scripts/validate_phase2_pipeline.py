@@ -425,7 +425,6 @@ def stage_eval(
 
 # --------------------------------------------------------------------------
 # Synthetic eval-parquet fallback (so analysis can be tested even if eval
-# crashes — see Phase-2 risk analysis in paper/REDACTED.md).
 # --------------------------------------------------------------------------
 
 

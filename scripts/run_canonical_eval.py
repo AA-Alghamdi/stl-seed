@@ -108,7 +108,6 @@ def _cell_task_to_family(task_slug: str) -> str:
 
 # Diversity threshold below which we emit a warning per cell. The smoke
 # test surfaced "every held-out generation produced an identical first
-# action" as a regression mode (paper/REDACTED.md §"Issues").
 _DIVERSITY_WARN_THRESHOLD = 0.5
 
 console = Console()

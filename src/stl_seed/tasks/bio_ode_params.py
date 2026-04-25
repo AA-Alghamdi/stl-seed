@@ -25,7 +25,6 @@ to also use it as a non-dim plug-in) are resolved by applying a
 literature-justified perturbation (next decimal point inside the
 Gardner-reported uncertainty) and documenting the perturbation in the
 inline comment. Full per-parameter audit table in
-`paper/REDACTED.md`.
 
 REFERENCES
 ==========

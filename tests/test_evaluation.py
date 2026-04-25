@@ -361,7 +361,6 @@ def test_runner_resumes_existing(tmp_path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# action_diversity (Fix 3 — paper/REDACTED.md §"Issues encountered")
 # ---------------------------------------------------------------------------
 
 

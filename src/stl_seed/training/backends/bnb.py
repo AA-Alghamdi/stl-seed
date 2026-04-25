@@ -5,7 +5,6 @@ model with LoRA adapters from PEFT. This is the canonical Phase 2
 backend; the Phase 1 pilot uses ``MLXBackend`` on the M5 Pro.
 
 Hyperparameters mirror SERA's ``unsloth_qwen3_moe_qlora.yaml`` field-for-
-field where possible (paper/REDACTED.md §C.3): NF4 + bf16 compute,
 double-quant, LoRA rank 32, alpha 128, lr 5e-5, cosine + 0.1 warmup,
 3 epochs, weight_decay 0.01, adamw_8bit optimizer.
 

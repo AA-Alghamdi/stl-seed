@@ -249,7 +249,6 @@ def _make_mock_generation_callable(
     drawn from a tiny seeded RNG so different prompts get different
     rollouts (otherwise BoN would collapse to the same single sample N
     times — exactly the action-diversity regression mode flagged in
-    paper/REDACTED.md §"Issues encountered").
     """
     base_seed = (hash(base_model) ^ int(seed)) & 0xFFFF_FFFF
 

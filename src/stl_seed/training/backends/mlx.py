@@ -29,7 +29,6 @@ The pre-A15 wrapper was pinned to mlx_lm <= 0.20 and broke under 0.31:
   writes only the safetensors, so we synthesize the JSON here.
 
 The post-patch shape mirrors ``scripts/smoke_test_mlx.py::_run_mlx_training``
-which was validated end-to-end in A15 (see ``paper/REDACTED.md``).
 
 Lazy-import discipline
 ----------------------
@@ -230,7 +229,6 @@ class MLXBackend:
                 "did not match any modules under MLX's linear_to_lora_layers "
                 "(which scopes match within each TransformerBlock). Use the "
                 "locally-prefixed naming form, e.g. 'self_attn.q_proj'. "
-                "See paper/REDACTED.md §'Issues encountered'."
             )
 
         # 4) Build the chat dataset. mlx_lm.iterate_batches expects each

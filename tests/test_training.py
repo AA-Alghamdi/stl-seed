@@ -3,7 +3,6 @@
 Coverage:
 
 * Default :class:`TrainingConfig` values match SERA's ``unsloth_qwen3_moe_qlora.yaml``
-  (paper/REDACTED.md §C.3) where applicable.
 * :func:`format_trajectory_as_text` produces the documented format and
   round-trips through a regex parser.
 * Each Jinja2 prompt template renders without errors.
@@ -74,14 +73,11 @@ def _make_trajectory(T: int = 10, n: int = 3, H: int = 5, m: int = 2) -> Traject
 
 
 class TestTrainingConfigDefaults:
-    """Defaults must mirror SERA's QLoRA YAML (paper/REDACTED.md §C.3)."""
 
     def test_lora_rank_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: lora_r: 32
         assert TrainingConfig().lora_rank == 32
 
     def test_lora_alpha_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: lora_alpha: 128
         assert TrainingConfig().lora_alpha == 128.0
 
     def test_lora_alpha_to_rank_ratio_is_4x(self):
@@ -90,54 +86,41 @@ class TestTrainingConfigDefaults:
         assert cfg.lora_alpha / cfg.lora_rank == pytest.approx(4.0)
 
     def test_learning_rate_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: learning_rate: 5e-5 (LoRA rule of thumb)
         assert TrainingConfig().learning_rate == 5e-5
 
     def test_lr_schedule_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: lr_scheduler_type: cosine
         assert TrainingConfig().lr_schedule == "cosine"
 
     def test_warmup_ratio_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: warmup_ratio: 0.1
         assert TrainingConfig().warmup_ratio == 0.1
 
     def test_num_epochs_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: num_train_epochs: 3
         assert TrainingConfig().num_epochs == 3
 
     def test_batch_size_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: per_device_train_batch_size: 1
         assert TrainingConfig().batch_size == 1
 
     def test_grad_accum_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: gradient_accumulation_steps: 4
         assert TrainingConfig().gradient_accumulation_steps == 4
 
     def test_weight_decay_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: weight_decay: 0.01
         assert TrainingConfig().weight_decay == 0.01
 
     def test_seed_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: seed: 42
         assert TrainingConfig().seed == 42
 
     def test_lora_dropout_matches_sera_qlora(self):
-        # paper/REDACTED.md §C.3: lora_dropout: 0.0 (FA-compat).
         assert TrainingConfig().lora_dropout == 0.0
 
     def test_weight_format_default_is_nf4(self):
-        # paper/REDACTED.md §C.3: load_in_4bit: true (NF4).
         # Dettmers QLoRA paper (arXiv:2305.14314 §3) confirms NF4 + double-quant.
         assert TrainingConfig().weight_format == "nf4"
 
     def test_use_8bit_optimizer_default_true(self):
-        # paper/REDACTED.md §C.3: optim: adamw_8bit.
         assert TrainingConfig().use_8bit_optimizer is True
 
     def test_lora_target_modules_cover_attention_and_mlp(self):
-        # paper/REDACTED.md §C.3: target_modules = q/k/v/o + gate/up/down.
         # Names use the local-relative form (self_attn.* / mlp.*) required
-        # by mlx_lm's linear_to_lora_layers — see paper/REDACTED.md
         # §"Issues encountered" for the silent-no-op rationale.
         cfg = TrainingConfig()
         targets = set(cfg.lora_target_modules)
@@ -155,7 +138,6 @@ class TestTrainingConfigDefaults:
 
     def test_max_seq_length_is_smaller_than_sera(self):
         # SERA uses 32768 for code; stl-seed control trajectories are shorter
-        # (paper/REDACTED.md STEP-3 mapping table, "sequence_len: ADAPT").
         assert TrainingConfig().max_seq_length <= 32768
 
     def test_default_base_model_is_qwen3_smallest(self):

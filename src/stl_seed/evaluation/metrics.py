@@ -34,7 +34,6 @@ Definitions
 
 * **Action diversity**: per-prompt summary of how distinct the model's
   generations are. Added in response to the A15 smoke-test diagnostic
-  (paper/REDACTED.md §"Issues encountered"): every held-out
   generation produced an identical first action, indicating
   memorization on the dominant training pattern. This metric makes the
   failure mode falsifiable in eval.
@@ -201,7 +200,6 @@ def goodhart_gap(
 
 
 # ---------------------------------------------------------------------------
-# Action diversity (paper/REDACTED.md §"Issues encountered")
 # ---------------------------------------------------------------------------
 
 
@@ -212,7 +210,6 @@ def action_diversity(
 ) -> dict[str, float]:
     """Measure action-sequence diversity across N independent generations.
 
-    The A15 smoke test (``paper/REDACTED.md``) found that 5/5
     held-out generations produced identical first actions — a sign of
     memorization on the dominant training-set action pattern rather
     than learned control. This metric makes that regression mode

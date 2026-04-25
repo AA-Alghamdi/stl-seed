@@ -2,7 +2,6 @@
 
 Output:
 
-* ``paper/REDACTED.md`` — markdown table comparing the
   hand-set thresholds to the auto-tuned recommendations, plus per-policy
   rho summaries at the recommended thresholds.
 * ``paper/figures/spec_calibration_<task>.png`` — discriminability plot
@@ -349,7 +348,6 @@ def _format_results_markdown(
     results: Mapping[str, AutoTuneResult],
     elapsed_seconds: float,
 ) -> str:
-    """Build the REDACTED.md content."""
     lines: list[str] = []
     lines.append("# STL Spec Auto-Tuning Results")
     lines.append("")
@@ -439,7 +437,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--out-md",
         type=Path,
-        default=Path("paper/REDACTED.md"),
         help="Path to write the markdown summary.",
     )
     parser.add_argument(

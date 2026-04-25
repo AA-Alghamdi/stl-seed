@@ -159,7 +159,6 @@ def format_trajectory_as_text(
     -----
     The user turn includes the initial state and the spec; the assistant
     turn includes the full per-step trace. This matches SERA's "tool
-    transcript" pattern (paper/REDACTED.md §B.5: each assistant turn
     is loss-bearing and the agent's actions are the supervision signal).
 
     Per-step state observations in the assistant turn are taken from

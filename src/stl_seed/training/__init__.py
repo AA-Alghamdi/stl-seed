@@ -12,7 +12,6 @@ Two interchangeable backends implement the same ``TrainingBackend`` protocol
 Both backends accept the same :class:`TrainingConfig` dataclass and produce a
 :class:`TrainedCheckpoint`. Defaults mirror SERA's ``unsloth_qwen3_moe_qlora.yaml``
 where applicable (the consumer-budget QLoRA path is the closest SERA analog
-for stl-seed's hardware envelope; see ``paper/REDACTED.md`` §C.3).
 
 The backend modules import their heavy native dependencies lazily inside
 ``train(...)``; importing this package on a CPU-only laptop without

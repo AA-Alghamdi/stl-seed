@@ -52,7 +52,7 @@ Gradient guidance fails on tasks where 1-step lookahead is uninformative. `bio_o
 
 **Resolution (2026-04-25):** beam-search warmstart over the discrete action vocabulary reaches ρ ≈ +25 on 3/3 seeds on the same canonical IC. The mechanism is qualitatively different from continuous descent — the satisfying corner u=(0,0,1) is *in* the vocabulary by construction (k_per_dim=5 → K=125 contains the silence-3 corner), the model-predictive constant-extrapolation lookahead converts each candidate into a finite ρ score, and the top-B selection enumerates straight to it. Three other strategies were tried first (horizon-folded gradient, rollout-tree probing, CMA-ES + gradient refinement) and gave only partial fixes; the structural-search vs continuous-search distinction is what made C1 succeed where A1/A2/A3 did not. Full diagnosis and the four-strategy comparison in [`paper/cross_task_validation.md`](paper/cross_task_validation.md).
 
-The spec auto-tuner in [`src/stl_seed/specs/calibration.py`](src/stl_seed/specs/calibration.py) finds threshold values 10–100× more discriminative than the textbook hand-set choices ([`paper/REDACTED.md`](paper/REDACTED.md)).
+The spec auto-tuner in [`src/stl_seed/specs/calibration.py`](src/stl_seed/specs/calibration.py) finds threshold values 10–100× more discriminative than the textbook hand-set choices.
 
 ## Tests
 

@@ -138,7 +138,6 @@ class PerSpecResult:
         independent generations. Keys: ``first_action_uniqueness``,
         ``sequence_uniqueness``, ``first_action_pairwise_distance``.
         Added in response to the A15 smoke-test diagnostic
-        (``paper/REDACTED.md``): every held-out generation
         produced an identical first action — this metric makes that
         regression mode falsifiable in eval. ``first_action_uniqueness``
         below 0.5 is treated as a warning by the runner's
@@ -353,7 +352,6 @@ class EvalHarness:
         sample_keys = jax.random.split(key, n_samples)
 
         # Collect each generation's action sequence so we can compute
-        # action_diversity (paper/REDACTED.md §"Issues"). We
         # lazily allocate the buffer on the first successful sample to
         # learn the (H, m) shape from the policy itself.
         controls_buf: np.ndarray | None = None

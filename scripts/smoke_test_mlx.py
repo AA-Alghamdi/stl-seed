@@ -32,7 +32,6 @@ Pipeline:
      `mlx_lm.generate` on the 5 held-out user prompts, regex-check the
      output for at least one valid <state>...</state><action>...</action>
      block.
-  8. Write `paper/REDACTED.md` with verdict + diagnostics.
 
 Why we bypass `MLXBackend`:
   mlx_lm 0.31.3 changed `TrainingArgs` (no `learning_rate`, no
@@ -76,7 +75,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _DATA_DIR = _REPO_ROOT / "data" / "pilot"
 _FILTERED_PARQUET = _DATA_DIR / "filtered_glucose_insulin_hard.parquet"
 _RUNS_DIR = _REPO_ROOT / "runs" / "smoke_test_mlx"
-_REPORT_PATH = _REPO_ROOT / "paper" / "REDACTED.md"
+_REPORT_PATH = _RUNS_DIR / "report.md"
 
 _SEED = 20260424
 _N_TOTAL = 100  # 95 train + 5 held-out

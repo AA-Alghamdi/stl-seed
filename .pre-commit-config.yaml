@@ -44,7 +44,7 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=als,nin,ond,thes,equil,fo,nd,coul,strat,wronly,cliping,iy,trough,ther
-          - --skip=*.lock,*.svg,*.png,*.parquet,uv.lock,paper/figures/*,runs/*,data/*,docker/Dockerfile,scripts/REDACTED.sh
+          - --skip=*.lock,*.svg,*.png,*.parquet,uv.lock,paper/figures/*,runs/*,data/*,docker/Dockerfile
         additional_dependencies:
           - tomli
 

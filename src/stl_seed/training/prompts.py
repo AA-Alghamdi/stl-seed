@@ -19,7 +19,6 @@ all families:
 
     <state>v1,v2,...,vn</state><action>u1,u2,...,um</action>
 
-This matches SERA's chat-template convention (paper/REDACTED.md §B.5)
 where the assistant turn carries a per-step structured response. Keeping
 the format fixed across families means the model can transfer
 "observation → action" tokenization patterns between tasks even if the
