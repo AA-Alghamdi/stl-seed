@@ -58,6 +58,7 @@ REQUIRED_COLUMNS: tuple[str, ...] = (
     "std_rho",
     "sem_rho",
     "sat_frac",
+    "target_rho",
     "target_hit_frac",
     "n_simulator_calls_proxy",
     "sim_call_formula",
