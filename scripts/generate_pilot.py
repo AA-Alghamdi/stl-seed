@@ -33,7 +33,6 @@ Usage:
 
 from __future__ import annotations
 
-import math
 import sys
 import time
 from collections import Counter
@@ -102,9 +101,7 @@ def _consistency_check() -> dict[str, Any]:
         k = jax.random.fold_in(key, trial)
         u = jax.random.uniform(k, (sim.n_control_points, 3), minval=0.0, maxval=1.0)
         traj = sim.simulate(init, u, params, k)
-        rho_inline = float(
-            inline_eval(spec, np.asarray(traj.states), np.asarray(traj.times))
-        )
+        rho_inline = float(inline_eval(spec, np.asarray(traj.states), np.asarray(traj.times)))
         rho_canon = float(canonical_eval(spec, traj))
         diffs.append(abs(rho_inline - rho_canon))
     results["repressilator_max_abs_diff"] = float(max(diffs))
@@ -117,15 +114,9 @@ def _consistency_check() -> dict[str, Any]:
     gdiffs: list[float] = []
     for trial in range(8):
         k = jax.random.fold_in(key, trial)
-        u = jax.random.uniform(
-            k, (gsim.n_control_points,), minval=0.0, maxval=5.0
-        )
-        states, times, _ = gsim.simulate(
-            ginit, u, MealSchedule.empty(), gparams, k
-        )
-        rho_inline = float(
-            inline_eval(gspec, np.asarray(states), np.asarray(times))
-        )
+        u = jax.random.uniform(k, (gsim.n_control_points,), minval=0.0, maxval=5.0)
+        states, times, _ = gsim.simulate(ginit, u, MealSchedule.empty(), gparams, k)
+        rho_inline = float(inline_eval(gspec, np.asarray(states), np.asarray(times)))
         rho_canon = float(canonical_eval(gspec, _StatesTimes(states, times)))
         gdiffs.append(abs(rho_inline - rho_canon))
     results["glucose_insulin_max_abs_diff"] = float(max(gdiffs))
@@ -135,16 +126,11 @@ def _consistency_check() -> dict[str, Any]:
     # stays in float32. Differences below ~1e-5 on values of magnitude O(100)
     # are expected and immaterial (smallest spec threshold is 0.1).
     smallest_threshold = 0.1
-    repress_ok = (
-        results["repressilator_max_abs_diff"] < smallest_threshold * 1.0e-3
-    )
-    gi_ok = (
-        results["glucose_insulin_max_abs_diff"] < smallest_threshold * 1.0e-3
-    )
+    repress_ok = results["repressilator_max_abs_diff"] < smallest_threshold * 1.0e-3
+    gi_ok = results["glucose_insulin_max_abs_diff"] < smallest_threshold * 1.0e-3
     results["pass"] = bool(repress_ok and gi_ok)
     console.print(
-        f"  repressilator max |inline - canonical| = "
-        f"{results['repressilator_max_abs_diff']:.3e}"
+        f"  repressilator max |inline - canonical| = {results['repressilator_max_abs_diff']:.3e}"
     )
     console.print(
         f"  glucose-insulin max |inline - canonical| = "
@@ -316,9 +302,7 @@ def _generate_one_task(
     existing = _existing_per_task(store).get(task, 0)
     to_generate = max(0, _N_PER_TASK - existing)
     console.rule(f"[bold]{task}")
-    console.print(
-        f"  existing in store: {existing:,};  to generate: {to_generate:,}"
-    )
+    console.print(f"  existing in store: {existing:,};  to generate: {to_generate:,}")
     if to_generate == 0:
         # Pull existing rhos / policies for the report from disk.
         import pyarrow.parquet as pq
@@ -326,9 +310,7 @@ def _generate_one_task(
         rhos = []
         policies: list[str] = []
         for shard in sorted(store.root.glob("trajectories-*.parquet")):
-            tbl = pq.read_table(
-                shard, columns=["task", "robustness", "policy"]
-            )
+            tbl = pq.read_table(shard, columns=["task", "robustness", "policy"])
             for t, r, p in zip(
                 tbl.column("task").to_pylist(),
                 tbl.column("robustness").to_pylist(),
@@ -433,14 +415,11 @@ def main() -> int:
         seed=_SEED + 2,
     )
 
-    total_wall = (
-        repress_summary["wall_clock_s"] + glucose_summary["wall_clock_s"]
-    )
+    total_wall = repress_summary["wall_clock_s"] + glucose_summary["wall_clock_s"]
     console.rule("[bold]Summary")
     console.print(f"total wall-clock (generation only): {total_wall:.1f} s")
     console.print(
-        f"trajectories on disk under {_DATA_DIR}: "
-        f"{sum(_existing_per_task(store).values()):,}"
+        f"trajectories on disk under {_DATA_DIR}: {sum(_existing_per_task(store).values()):,}"
     )
 
     # Pre-registered NaN-rate budget per architecture.md.

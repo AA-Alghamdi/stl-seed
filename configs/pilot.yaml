@@ -1,0 +1,28 @@
+# Pilot config: Day-3 smoke test analog (Qwen3-0.6B + repressilator + hard).
+# Used by the sweep runner's --pilot flag and by the pre-Phase-2 dry run.
+#
+# References:
+#   paper/architecture.md  -- "pilot.yaml" entry in §Configuration
+
+defaults:
+  - default
+  - override model: qwen3_0.6b
+  - override filter: hard
+  - override task: bio_ode_repressilator
+  - override backend: mlx              # local iteration on M5 Pro
+  - _self_
+
+run:
+  name: pilot
+
+generation:
+  n_trajectories_per_family: 200       # reduced for fast iteration
+
+evaluation:
+  n_seeds: 2
+  n_instances_per_family: 5
+  bon_budgets: [1, 4, 16]
+  n_samples_per_spec: 16
+
+cost:
+  max_usd: 1.0

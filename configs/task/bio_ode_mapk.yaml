@@ -1,0 +1,21 @@
+# Task: bio_ode.mapk (Phase-3 stretch; not in canonical Phase-2 sweep)
+#
+# References:
+#   src/stl_seed/specs/bio_ode_specs.py    -- bio_ode.mapk.hard spec
+#   src/stl_seed/tasks/bio_ode.py          -- MAPKSimulator
+
+# @package task
+family: bio_ode.mapk
+display_name: MAPK Cascade
+simulator_module: stl_seed.tasks.bio_ode
+simulator_class: MAPKSimulator
+
+train_spec: bio_ode.mapk.hard
+eval_specs:
+  - bio_ode.mapk.hard
+
+horizon_steps: 100
+state_dim: 3
+action_dim: 1
+
+heuristic_policy: BangBangController

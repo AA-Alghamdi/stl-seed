@@ -1,0 +1,22 @@
+# Task: bio_ode.toggle (Phase-3 stretch; not in canonical Phase-2 sweep)
+#
+# References:
+#   src/stl_seed/specs/bio_ode_specs.py    -- bio_ode.toggle.medium spec
+#   src/stl_seed/tasks/bio_ode.py          -- ToggleSimulator
+#   paper/REDACTED.md                   -- toggle calibration narrative
+
+# @package task
+family: bio_ode.toggle
+display_name: Toggle Switch
+simulator_module: stl_seed.tasks.bio_ode
+simulator_class: ToggleSimulator
+
+train_spec: bio_ode.toggle.medium
+eval_specs:
+  - bio_ode.toggle.medium
+
+horizon_steps: 100
+state_dim: 2
+action_dim: 1
+
+heuristic_policy: BangBangController

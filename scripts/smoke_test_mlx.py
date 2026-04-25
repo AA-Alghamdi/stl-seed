@@ -178,8 +178,7 @@ def _load_filtered_glucose_dataset(
 
     if not _FILTERED_PARQUET.exists():
         raise SystemExit(
-            f"Missing filtered manifest at {_FILTERED_PARQUET}. "
-            f"Run scripts/filter_pilot.py first."
+            f"Missing filtered manifest at {_FILTERED_PARQUET}. Run scripts/filter_pilot.py first."
         )
 
     filtered_tbl = pq.read_table(_FILTERED_PARQUET)
@@ -193,9 +192,7 @@ def _load_filtered_glucose_dataset(
     )
 
     if n_total > n_filtered:
-        raise SystemExit(
-            f"Requested {n_total} samples but only {n_filtered} pass the filter."
-        )
+        raise SystemExit(f"Requested {n_total} samples but only {n_filtered} pass the filter.")
 
     # Deterministic without-replacement subsample.
     chosen_idx = rng.choice(n_filtered, size=n_total, replace=False)
@@ -341,9 +338,7 @@ def _run_mlx_training(
     # Optimizer with linear warmup → cosine decay schedule.
     warmup = optim.linear_schedule(0.0, _LR, _WARMUP_STEPS)
     cosine = optim.cosine_decay(_LR, _ITERS - _WARMUP_STEPS)
-    schedule = optim.join_schedules(
-        [warmup, cosine], [_WARMUP_STEPS]
-    )
+    schedule = optim.join_schedules([warmup, cosine], [_WARMUP_STEPS])
     opt = optim.AdamW(learning_rate=schedule, weight_decay=_WEIGHT_DECAY)
 
     train_args = TrainingArgs(
@@ -379,9 +374,7 @@ def _run_mlx_training(
         raise
     t_train_end = time.perf_counter()
     wall = t_train_end - t_train_start
-    console.print(
-        f"[green]training finished in {wall:.1f} s ({wall/60:.2f} min)[/]"
-    )
+    console.print(f"[green]training finished in {wall:.1f} s ({wall / 60:.2f} min)[/]")
 
     # Write `adapter_config.json` next to `adapters.safetensors` so that
     # `mlx_lm.load(adapter_path=...)` can rebuild the LoRA wrapper at eval
@@ -399,9 +392,7 @@ def _run_mlx_training(
             "keys": list(_LORA_TARGETS),
         },
     }
-    (output_dir / "adapter_config.json").write_text(
-        json.dumps(adapter_config, indent=2)
-    )
+    (output_dir / "adapter_config.json").write_text(json.dumps(adapter_config, indent=2))
 
     # Persist the LoRA adapter + a tiny manifest for the eval step.
     # The trainer already wrote `adapters.safetensors`; we add a manifest
@@ -520,7 +511,10 @@ def _parse_output(text: str) -> _ParseResult:
     matches = _BLOCK_RE.findall(text)
     if not matches:
         return _ParseResult(
-            parses=False, n_blocks=0, first_action_values=[], raw_output=text,
+            parses=False,
+            n_blocks=0,
+            first_action_values=[],
+            raw_output=text,
             error="no <state>...</state><action>...</action> block found",
         )
     # Collect first-block action values; tolerate parse failures on individual
@@ -601,8 +595,11 @@ def _heldout_eval(
             console.print(f"  [red]heldout-{i}[/] generate raised: {e}")
             results.append(
                 _ParseResult(
-                    parses=False, n_blocks=0, first_action_values=[],
-                    raw_output="", error=f"{type(e).__name__}: {e}",
+                    parses=False,
+                    n_blocks=0,
+                    first_action_values=[],
+                    raw_output="",
+                    error=f"{type(e).__name__}: {e}",
                 )
             )
             continue
@@ -626,13 +623,13 @@ def _bytes_under(path: Path) -> int:
         return 0
     if path.is_file():
         return path.stat().st_size
+    import contextlib
+
     total = 0
     for sub in path.rglob("*"):
         if sub.is_file():
-            try:
+            with contextlib.suppress(OSError):
                 total += sub.stat().st_size
-            except OSError:
-                pass
     return total
 
 
@@ -710,8 +707,10 @@ def _write_report(
     lines: list[str] = []
     lines.append("# A15 — MLX QLoRA smoke test report")
     lines.append("")
-    lines.append(f"**Date:** 2026-04-24")
-    lines.append(f"**Host:** Apple Silicon ({platform.machine()}, {platform.system()} {platform.release()})")
+    lines.append("**Date:** 2026-04-24")
+    lines.append(
+        f"**Host:** Apple Silicon ({platform.machine()}, {platform.system()} {platform.release()})"
+    )
     lines.append(f"**MLX Metal available:** {env_info.get('mlx_metal_available', 'unknown')}")
     lines.append(f"**Verdict:** **{verdict}**")
     lines.append("")
@@ -725,35 +724,43 @@ def _write_report(
         "signal at this tiny scale. The original task brief mentioned `Qwen/Qwen3-0.6B` as a fallback path; "
         "in practice mlx_lm's `load()` would re-convert that on the fly, which is wasteful when an "
         "MLX-native variant exists. Note: the MLX backend's `weight_format` field documents that NF4 kernels "
-        "are not exposed on M-series GPUs in mlx_lm 0.20+, so this is also the canonical \"fp16/bf16 LoRA on "
-        "top of base\" path the wrapper anticipates."
+        'are not exposed on M-series GPUs in mlx_lm 0.20+, so this is also the canonical "fp16/bf16 LoRA on '
+        'top of base" path the wrapper anticipates.'
     )
     lines.append("")
     lines.append("## Hyperparameters")
     lines.append("")
-    lines.append(f"| Field | Value | Source |")
-    lines.append(f"|---|---|---|")
+    lines.append("| Field | Value | Source |")
+    lines.append("|---|---|---|")
     lines.append(f"| iters | {_ITERS} | smoke-test cap |")
     lines.append(f"| batch_size | {_BATCH_SIZE} | SERA QLoRA YAML §C.3 |")
     lines.append(f"| gradient_accumulation_steps | {_GRAD_ACCUM} | SERA QLoRA YAML §C.3 |")
     lines.append(f"| max_seq_length | {_MAX_SEQ_LEN} | task brief override |")
     lines.append(f"| lora_rank | {_LORA_RANK} | smoke-test (smaller than SERA's 32) |")
     lines.append(f"| lora_alpha | {_LORA_ALPHA} | smoke-test (alpha/rank = 2×) |")
-    lines.append(f"| lora_target_modules | {_LORA_TARGETS} | smoke-test (q_proj+v_proj only for speed) |")
+    lines.append(
+        f"| lora_target_modules | {_LORA_TARGETS} | smoke-test (q_proj+v_proj only for speed) |"
+    )
     lines.append(f"| lora_dropout | {_LORA_DROPOUT} | SERA QLoRA YAML §C.3 |")
     lines.append(f"| learning_rate | {_LR} | task brief override |")
-    lines.append(f"| lr schedule | linear warmup → cosine | matches SERA cosine |")
+    lines.append("| lr schedule | linear warmup → cosine | matches SERA cosine |")
     lines.append(f"| warmup_steps | {_WARMUP_STEPS} | 10% of iters |")
     lines.append(f"| weight_decay | {_WEIGHT_DECAY} | SERA QLoRA YAML §C.3 |")
     lines.append(f"| seed | {_SEED} | A13/A14 consistency |")
-    lines.append(f"| optimizer | AdamW | mlx.optimizers default for LoRA |")
+    lines.append("| optimizer | AdamW | mlx.optimizers default for LoRA |")
     lines.append("")
     lines.append("## Dataset")
     lines.append("")
-    lines.append(f"- **Source:** `{_FILTERED_PARQUET.relative_to(_REPO_ROOT)}` (built by A14 / `scripts/filter_pilot.py`).")
+    lines.append(
+        f"- **Source:** `{_FILTERED_PARQUET.relative_to(_REPO_ROOT)}` (built by A14 / `scripts/filter_pilot.py`)."
+    )
     lines.append(f"- **Spec:** `{_SPEC_KEY}`.")
-    lines.append(f"- **Subsample:** {len(train_samples) + len(held_samples)} of 1344 filtered glucose-insulin trajectories (deterministic, seed={_SEED}).")
-    lines.append(f"- **Split:** {len(train_samples)} train + {len(held_samples)} held-out for parse-eval.")
+    lines.append(
+        f"- **Subsample:** {len(train_samples) + len(held_samples)} of 1344 filtered glucose-insulin trajectories (deterministic, seed={_SEED})."
+    )
+    lines.append(
+        f"- **Split:** {len(train_samples)} train + {len(held_samples)} held-out for parse-eval."
+    )
     lines.append("")
     lines.append("## Loss curve")
     lines.append("")
@@ -775,7 +782,9 @@ def _write_report(
     )
     lines.append("")
     lines.append(f"- **Parse-success rate:** {n_parse} / {len(held_samples)}")
-    lines.append(f"- **Mean first-action insulin rate (parsed):** {action_mean:.4e}  (range [{action_min:.4e}, {action_max:.4e}])")
+    lines.append(
+        f"- **Mean first-action insulin rate (parsed):** {action_mean:.4e}  (range [{action_min:.4e}, {action_max:.4e}])"
+    )
     lines.append("")
     lines.append("| held-out idx | parses | n_blocks | first_action |")
     lines.append("|---:|:---:|---:|:---|")
@@ -785,25 +794,35 @@ def _write_report(
             if r.first_action_values
             else "—"
         )
-        lines.append(
-            f"| {i} | {'Y' if r.parses else 'N'} | {r.n_blocks} | {first_action_str} |"
-        )
+        lines.append(f"| {i} | {'Y' if r.parses else 'N'} | {r.n_blocks} | {first_action_str} |")
     lines.append("")
     lines.append("## Wall clock and disk usage")
     lines.append("")
-    lines.append(f"- **Setup (mlx install + model download + dataset build):** {setup_seconds:.1f} s")
+    lines.append(
+        f"- **Setup (mlx install + model download + dataset build):** {setup_seconds:.1f} s"
+    )
     lines.append(f"- **Training (50 iters, batch=1×accum=4):** {wall:.1f} s ({wall / 60:.2f} min)")
     lines.append(f"- **HF cache size for {_MODEL_ID}:** {_human_bytes(model_size)}")
-    lines.append(f"- **Run directory `{_RUNS_DIR.relative_to(_REPO_ROOT)}`:** {_human_bytes(ckpt_size)}")
+    lines.append(
+        f"- **Run directory `{_RUNS_DIR.relative_to(_REPO_ROOT)}`:** {_human_bytes(ckpt_size)}"
+    )
     lines.append("")
     lines.append("## Hard-checkpoint pass criteria")
     lines.append("")
     lines.append("| criterion | met? | notes |")
     lines.append("|---|:---:|---|")
-    lines.append(f"| (a) training runs without crash | {'YES' if losses else 'NO'} | {len(losses)} loss reports captured |")
-    lines.append(f"| (b) final loss < initial loss | {'YES' if decrease_diag.get('loss_decreased') else 'NO'} | {first_mean:.4f} → {last_mean:.4f} |")
-    lines.append(f"| (c) no NaN/Inf in loss history | {'YES' if not any(math.isnan(x) or math.isinf(x) for x in losses) else 'NO'} | min={decrease_diag.get('min_loss', float('nan')):.4f}, max={decrease_diag.get('max_loss', float('nan')):.4f} |")
-    lines.append(f"| (d) parse-success rate ≥ 1/5 | {'YES' if n_parse >= 1 else 'NO'} | {n_parse}/{len(held_samples)} |")
+    lines.append(
+        f"| (a) training runs without crash | {'YES' if losses else 'NO'} | {len(losses)} loss reports captured |"
+    )
+    lines.append(
+        f"| (b) final loss < initial loss | {'YES' if decrease_diag.get('loss_decreased') else 'NO'} | {first_mean:.4f} → {last_mean:.4f} |"
+    )
+    lines.append(
+        f"| (c) no NaN/Inf in loss history | {'YES' if not any(math.isnan(x) or math.isinf(x) for x in losses) else 'NO'} | min={decrease_diag.get('min_loss', float('nan')):.4f}, max={decrease_diag.get('max_loss', float('nan')):.4f} |"
+    )
+    lines.append(
+        f"| (d) parse-success rate ≥ 1/5 | {'YES' if n_parse >= 1 else 'NO'} | {n_parse}/{len(held_samples)} |"
+    )
     lines.append("")
     lines.append(f"**VERDICT: {verdict}**")
     lines.append("")
@@ -835,13 +854,15 @@ def _write_report(
 
 
 def main() -> int:
-    console.print(Panel.fit(
-        "A15 — MLX QLoRA smoke test on Qwen3-0.6B-bf16\n"
-        f"Model: {_MODEL_ID}\n"
-        f"Iters: {_ITERS}  | batch×accum: {_BATCH_SIZE}×{_GRAD_ACCUM}  | "
-        f"LoRA rank/alpha: {_LORA_RANK}/{_LORA_ALPHA}  | targets: {_LORA_TARGETS}",
-        title="[bold]Subphase 1.4 hard checkpoint",
-    ))
+    console.print(
+        Panel.fit(
+            "A15 — MLX QLoRA smoke test on Qwen3-0.6B-bf16\n"
+            f"Model: {_MODEL_ID}\n"
+            f"Iters: {_ITERS}  | batch×accum: {_BATCH_SIZE}×{_GRAD_ACCUM}  | "
+            f"LoRA rank/alpha: {_LORA_RANK}/{_LORA_ALPHA}  | targets: {_LORA_TARGETS}",
+            title="[bold]Subphase 1.4 hard checkpoint",
+        )
+    )
 
     _check_apple_silicon()
     _seed_everything(_SEED)
@@ -854,15 +875,13 @@ def main() -> int:
     samples = _load_filtered_glucose_dataset(_N_TOTAL, rng)
     console.print(f"  built {len(samples)} chat samples; example user-turn preview:")
     console.print(f"    {samples[0].user[:160]}...")
-    console.print(f"  example assistant-turn preview:")
+    console.print("  example assistant-turn preview:")
     console.print(f"    {samples[0].assistant[:160]}...")
 
     # Reserve last 5 deterministically-shuffled samples as held-out.
     held_samples = samples[-_N_HELDOUT:]
     train_samples = samples[: len(samples) - _N_HELDOUT]
-    console.print(
-        f"  split: {len(train_samples)} train / {len(held_samples)} held-out"
-    )
+    console.print(f"  split: {len(train_samples)} train / {len(held_samples)} held-out")
     setup_seconds = time.perf_counter() - setup_start
 
     # 2) Train.
@@ -901,9 +920,7 @@ def main() -> int:
         )
         return 1
     if wall > _WALL_CLOCK_BUDGET_S:
-        issues.append(
-            f"Training exceeded {_WALL_CLOCK_BUDGET_S:.0f}s budget (took {wall:.1f}s)"
-        )
+        issues.append(f"Training exceeded {_WALL_CLOCK_BUDGET_S:.0f}s budget (took {wall:.1f}s)")
 
     # 3) Loss-decrease check.
     console.rule("[bold]Step 3 — Loss decrease verification")
@@ -975,15 +992,17 @@ def main() -> int:
 
     # Final console verdict.
     color = "green" if verdict == "PASS" else "red"
-    console.print(Panel(
-        f"[bold {color}]VERDICT: {verdict}[/]\n"
-        f"loss: {decrease_diag.get('first_window_mean', 'n/a')} → "
-        f"{decrease_diag.get('last_window_mean', 'n/a')}\n"
-        f"parse-success: {n_parse}/{len(parse_results)}\n"
-        f"wall-clock: {wall:.1f} s",
-        title="A15 hard-checkpoint result",
-        border_style=color,
-    ))
+    console.print(
+        Panel(
+            f"[bold {color}]VERDICT: {verdict}[/]\n"
+            f"loss: {decrease_diag.get('first_window_mean', 'n/a')} → "
+            f"{decrease_diag.get('last_window_mean', 'n/a')}\n"
+            f"parse-success: {n_parse}/{len(parse_results)}\n"
+            f"wall-clock: {wall:.1f} s",
+            title="A15 hard-checkpoint result",
+            border_style=color,
+        )
+    )
     return 0 if verdict == "PASS" else 1
 
 

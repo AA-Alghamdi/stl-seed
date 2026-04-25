@@ -1,0 +1,92 @@
+# stl-seed default Hydra config (Phase 2 base)
+#
+# This file is the schema-of-record for all stl-seed runs. Sweep configs
+# (sweep_main.yaml, pilot.yaml) compose over this base by overriding
+# group selections in `defaults:` and individual fields under any
+# group. Source citations live in the per-group YAMLs.
+#
+# Naming convention: lowercase keys, dot-free identifiers, group/file
+# names match the group selector strings exactly so Hydra resolution is
+# unambiguous.
+#
+# References:
+#   paper/architecture.md            -- module + config layout
+#   paper/REDACTED.md  §C.3       -- QLoRA hyperparameter spec
+#   paper/theory.md       §4, §5     -- statistical model + BoN budgets
+#   paper/reproducibility.md  §3, §6 -- seed + provenance contracts
+
+defaults:
+  - _self_
+  - task: bio_ode_repressilator        # default task; sweep overrides
+  - filter: hard                        # default filter; sweep overrides
+  - model: qwen3_0.6b                   # default model; sweep overrides
+  - backend: bnb                        # canonical Phase-2 backend (CUDA)
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+# -----------------------------------------------------------------------
+# Run identity
+# -----------------------------------------------------------------------
+# Cell id is computed by the sweep runner from (model.size, filter.name,
+# task.family); we leave it unset here so a single-cell `default.yaml`
+# run is self-describing.
+run:
+  name: ???                             # populated by sweep runner
+  output_dir: runs/${run.name}
+
+# -----------------------------------------------------------------------
+# Reproducibility (paper/reproducibility.md §3)
+# -----------------------------------------------------------------------
+seed: 20260424                          # locked-in canonical seed
+
+# -----------------------------------------------------------------------
+# Trajectory generation (paper/theory.md §2 Stage 1)
+# -----------------------------------------------------------------------
+generation:
+  n_trajectories_per_family: 2000       # paper/theory.md §2 (deliverable 5)
+  policy_mixture:                       # paper/theory.md §2: 1/3 each
+    random: 0.3334
+    heuristic: 0.3333
+    llm: 0.3333
+  llm_policy_model: Qwen/Qwen3-0.6B-Instruct  # smallest as proposal model
+  llm_temperature: 1.0
+  reuse_existing_store: true            # skip regen if parquet exists
+
+# -----------------------------------------------------------------------
+# Evaluation (paper/theory.md §4)
+# -----------------------------------------------------------------------
+evaluation:
+  bon_budgets: [1, 2, 4, 8, 16, 32, 64, 128]  # theory.md §5
+  n_seeds: 5                            # theory.md §5
+  n_instances_per_family: 25            # theory.md §5
+  n_samples_per_spec: 128               # = max(bon_budgets); sample reuse
+  held_out_spec_split: held_out         # tag in spec metadata
+
+# -----------------------------------------------------------------------
+# HuggingFace Hub upload (placeholder; user fills in repo_id)
+# -----------------------------------------------------------------------
+hf_hub:
+  enabled: false                        # gate on user supplying token + org
+  repo_org: null                        # e.g. "AA-Alghamdi"
+  repo_prefix: stl-seed-phase2          # final repo: <org>/<prefix>-<cell_id>
+  private: false
+
+# -----------------------------------------------------------------------
+# Cost guardrails (sweep runner enforces; see scripts/run_canonical_sweep.py)
+# -----------------------------------------------------------------------
+cost:
+  max_usd: 25.0
+  gpu_dollars_per_hour: 0.34            # 4090 spot, 2026-04 RunPod pricing
+  expected_hours_per_cell: 0.4          # ~25 min/cell × 18 cells ≈ 7.2h
+
+# -----------------------------------------------------------------------
+# Hydra runtime
+# -----------------------------------------------------------------------
+hydra:
+  run:
+    dir: ${run.output_dir}
+  sweep:
+    dir: runs/canonical
+    subdir: ${run.name}
+  job:
+    chdir: false

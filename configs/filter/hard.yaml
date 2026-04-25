@@ -1,0 +1,18 @@
+# Filter: hard (rho > 0)
+#
+# References:
+#   src/stl_seed/filter/conditions.py::HardFilter
+#   paper/theory.md §2 Stage 3 (filter taxonomy)
+#   paper/REDACTED.md STEP-3 (SERA's r=1 / hard-verified analog)
+
+# @package filter
+name: hard
+condition_class: HardFilter            # in stl_seed.filter.conditions
+threshold: 0.0                         # rho > threshold required
+min_kept: 10                           # below this, FilterError raised
+description: |
+  Discards every trajectory with rho <= 0. Equivalent to SERA's
+  r=1 hard-verified bucket and to the canonical RFT filter
+  (Yuan et al. 2023, arXiv:2308.01825). Edge case (D_hard empty
+  or below min_kept) raises FilterError; the sweep runner records
+  the failure and moves on to the next cell.

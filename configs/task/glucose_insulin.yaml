@@ -1,0 +1,24 @@
+# Task: glucose_insulin
+#
+# References:
+#   src/stl_seed/specs/glucose_insulin_specs.py -- 3 registered specs
+#   src/stl_seed/tasks/glucose_insulin.py       -- Bergman/Dalla Man simulator
+#   paper/REDACTED.md                        -- TIR / no-hypo / dawn calibration
+
+# @package task
+family: glucose_insulin
+display_name: Glucose-Insulin (Bergman)
+simulator_module: stl_seed.tasks.glucose_insulin
+simulator_class: GlucoseInsulinSimulator
+
+train_spec: glucose_insulin.tir.easy
+eval_specs:
+  - glucose_insulin.tir.easy
+  - glucose_insulin.no_hypo.medium
+  - glucose_insulin.dawn.hard
+
+horizon_steps: 60
+state_dim: 5
+action_dim: 1
+
+heuristic_policy: PIDController

@@ -171,21 +171,59 @@ chase (d); raise it during the canonical sweep instead.
 
 ## 6. Run the canonical Phase-2 sweep
 
-> **NOT YET WRITTEN as of 2026-04-24.** This script is the deliverable
-> for Subphase 1.7 task A25 / Subphase 2.1. The placeholder is:
->
-> ```bash
-> uv run python scripts/run_phase2_sweep.py \
->     --output-dir runs/sweep_main \
->     --hf-org <your-hf-username> \
->     --hf-repo-prefix stl-seed-phase2
-> ```
->
-> The sweep iterates the 18 cells (3 sizes × 3 filters × 2 tasks),
-> resumes via `load_done_keys` so spot interruptions do not waste work,
-> and pushes each adapter to HuggingFace Hub at
-> `<your-hf-username>/stl-seed-phase2-<size>-<filter>-<task>`.
-> Total wall-clock: ~25 hours on a 4090; ~$8.50.
+The driver is `scripts/run_canonical_sweep.py` (composed via Hydra over
+`configs/sweep_main.yaml`). The single-command Phase-2 invocation is:
+
+```bash
+cd /workspace/stl-seed
+uv run python scripts/run_canonical_sweep.py \
+    --config-name sweep_main \
+    --max-cost-usd 25 \
+    --confirm
+```
+
+The sweep iterates the 18 cells (3 sizes × 3 filters × 2 task families)
+in deterministic order, writes per-cell `provenance.json` plus a
+`done.flag`, and appends one row per cell to
+`runs/canonical/sweep_log.csv` with timing + cost telemetry. If a cell's
+`done.flag` already exists it is skipped (spot-interruption recovery).
+SIGTERM/SIGINT are trapped so pre-emption logs `INTERRUPTED` rather
+than crashing.
+
+Cost guardrails:
+- `--max-cost-usd 25` aborts before the next cell if cumulative spend
+  plus that cell's estimate would exceed the cap.
+- Per-cell estimate is read from `configs/model/qwen3_*.yaml`
+  (`expected_minutes_per_cell`).
+
+Optional HuggingFace Hub upload: set in `configs/default.yaml` under
+`hf_hub:` (`enabled: true`, `repo_org: <your-hf-username>`). Without
+those, adapters stay local in `runs/canonical/<cell_id>/adapter/`.
+
+Expected wall-clock: ~5-8 hours on a single 4090 spot (the dry-run
+prints a refined cost forecast before any GPU work). Cost: ~$3-5 in the
+default budget; $25 is the headroom-included ceiling.
+
+Then run evaluation (~1 hour on the same pod, or locally on the M5 Pro
+once adapters are downloaded):
+
+```bash
+uv run python scripts/run_canonical_eval.py --runs-dir runs/canonical
+```
+
+Then locally back on the M5 Pro (NumPyro fits in CPU minutes for
+`scripts/canonical_analysis.py`):
+
+```bash
+uv run python scripts/canonical_analysis.py \
+    --eval-results runs/canonical/eval_results.parquet \
+    --output-dir runs/canonical/analysis
+```
+
+Outputs land in `runs/canonical/analysis/` (posterior.nc, summary CSVs,
+TOST results, three figures) and the canonical numbers replace the
+pilot/smoke placeholders in `paper/results.md` (regenerated on every
+run).
 
 Recommended monitoring:
 
@@ -282,3 +320,27 @@ braces on top of it:
   config + loss curve + git SHA.
 - `runs/sweep_main/cell-<size>-<filter>-<task>/adapter/` — LoRA weights
   (also pushed to HF Hub).
+
+---
+
+## 12. Phase 2 single-command run (TL;DR)
+
+Once `bash docker/runpod_bootstrap.sh` reports `READY FOR PHASE 2`, the
+entire Phase-2 path is three commands:
+
+```bash
+# On the RunPod pod (after bootstrap.sh passes):
+python scripts/run_canonical_sweep.py --config-name sweep_main --max-cost-usd 25 --confirm
+# ~5-8 hours wall-clock on a 4090 spot
+
+python scripts/run_canonical_eval.py --runs-dir runs/canonical
+# ~1 hour
+
+# Then locally back on the M5 Pro:
+python scripts/canonical_analysis.py --eval-results runs/canonical/eval_results.parquet
+```
+
+The first command is gated by `--confirm`; without that flag the sweep
+prints the cell enumeration and cost forecast then exits. A `--dry-run`
+flag is also available for iterating on the configs locally without
+spending money.

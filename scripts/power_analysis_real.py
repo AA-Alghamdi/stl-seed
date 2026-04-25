@@ -73,12 +73,12 @@ _DATA_DIR = _REPO_ROOT / "data" / "pilot"
 _PAPER_OUT = _REPO_ROOT / "paper" / "power_analysis_empirical.md"
 
 # Locked design constants (theory.md §5).
-_N_SIZES = 3       # Qwen3-{0.6, 1.7, 4}B
-_N_FILTERS = 3     # hard, quantile, continuous
-_N_TASKS = 2       # gene-toggle (proxy: bio_ode), predator-prey (proxy: glucose-insulin)
+_N_SIZES = 3  # Qwen3-{0.6, 1.7, 4}B
+_N_FILTERS = 3  # hard, quantile, continuous
+_N_TASKS = 2  # gene-toggle (proxy: bio_ode), predator-prey (proxy: glucose-insulin)
 _N_INSTANCES = 25
 _N_SEEDS = 5
-_N_BON = 8         # BoN budgets {1, 2, 4, 8, 16, 32, 64, 128}
+_N_BON = 8  # BoN budgets {1, 2, 4, 8, 16, 32, 64, 128}
 _N_CELLS = _N_SIZES * _N_FILTERS * _N_TASKS  # 18
 
 # Fisher matrix at the prior median (A=0.6, b=0.25, N=128). Re-derived
@@ -99,7 +99,7 @@ _BON_CORRELATION = 0.7
 _ALPHA = 0.05
 _POWER = 0.80
 _Z_ALPHA = 1.6448536269514722  # one-sided
-_Z_BETA = 0.8416212335729143   # power 0.8 -> z = 0.8416
+_Z_BETA = 0.8416212335729143  # power 0.8 -> z = 0.8416
 _Z_BETA_OVER_2 = 1.2815515655446004  # power 0.8 TOST -> z = 1.2816
 
 console = Console()
@@ -115,9 +115,7 @@ def _load_rhos_by_group(store: TrajectoryStore) -> dict[tuple[str, str], np.ndar
     pairs = store.load()
     buckets: dict[tuple[str, str], list[float]] = defaultdict(list)
     for _, meta in pairs:
-        buckets[(str(meta["task"]), str(meta["policy"]))].append(
-            float(meta["robustness"])
-        )
+        buckets[(str(meta["task"]), str(meta["policy"]))].append(float(meta["robustness"]))
     return {k: np.asarray(v, dtype=np.float64) for k, v in buckets.items()}
 
 
@@ -174,9 +172,7 @@ def _icc_one_way_unbalanced(groups: list[np.ndarray]) -> dict[str, float]:
     icc_clipped = max(0.0, min(1.0, icc))  # clamp to physically meaningful range
 
     var_between_means = float(np.var(means, ddof=0))
-    var_total = float(
-        np.var(np.concatenate(groups), ddof=0)
-    )
+    var_total = float(np.var(np.concatenate(groups), ddof=0))
 
     return {
         "icc": float(icc_clipped),
@@ -377,7 +373,7 @@ def _verdict(empirical: dict[str, float]) -> tuple[bool, str, dict]:
     mde_dA = _mde_one_sided(empirical["SE_dA_prob_pool"])
     # MDE on b is on the LOG scale; transform to the probability scale at the
     # prior median by chain rule: dp/db ~= A * N^(-b) * ln N at N=128.
-    fisher = _fisher_at_median()
+    _ = _fisher_at_median()  # ensure side-effect / sanity, value unused
     mde_db_log = _mde_one_sided(empirical["SE_db_log_pool"])
     # Convert log-b MDE to delta_b on the rate scale: d(b)/d(log b) = b.
     mde_db_rate = mde_db_log * _B_PRIOR
@@ -481,7 +477,7 @@ def _write_paper(
         (A13). The original analysis used a worst-case plug-in
         `rho_ICC = 0.4` based on a 30-trajectory-per-cell synthetic pilot;
         the present analysis substitutes the empirical ICC measured on
-        N={int(icc_info['N']):,} trajectories distributed over k={int(icc_info['k'])}
+        N={int(icc_info["N"]):,} trajectories distributed over k={int(icc_info["k"])}
         (task x policy) buckets. All other design knobs are unchanged
         from the locked plan: 3 sizes x 3 filters x 2 task families x 25
         instances x 5 seeds x 8 BoN budgets = 36,000 trials.
@@ -515,8 +511,8 @@ def _write_paper(
 
         | grouping | ICC(1,1) |
         |----------|---------:|
-        | (task x policy) | {icc_taskpol['icc']:.4f}  *(inflated; sanity check only)* |
-        | (task) | **{icc_info['icc']:.4f}**  *(verdict-driving)* |
+        | (task x policy) | {icc_taskpol["icc"]:.4f}  *(inflated; sanity check only)* |
+        | (task) | **{icc_info["icc"]:.4f}**  *(verdict-driving)* |
 
         ## 3. ICC estimator
 
@@ -538,18 +534,18 @@ def _write_paper(
 
         | quantity | value |
         |----------|------:|
-        | N (total) | {int(icc_info['N']):,} |
-        | k (groups) | {int(icc_info['k'])} |
-        | n0 (unbalanced) | {icc_info['n0']:.3f} |
-        | MSB | {icc_info['MSB']:.4e} |
-        | MSW | {icc_info['MSW']:.4e} |
-        | Var(group means) | {icc_info['var_between_means']:.4e} |
-        | Var(all rhos) | {icc_info['var_total']:.4e} |
-        | **Empirical ICC** | **{icc_info['icc']:.4f}** |
+        | N (total) | {int(icc_info["N"]):,} |
+        | k (groups) | {int(icc_info["k"])} |
+        | n0 (unbalanced) | {icc_info["n0"]:.3f} |
+        | MSB | {icc_info["MSB"]:.4e} |
+        | MSW | {icc_info["MSW"]:.4e} |
+        | Var(group means) | {icc_info["var_between_means"]:.4e} |
+        | Var(all rhos) | {icc_info["var_total"]:.4e} |
+        | **Empirical ICC** | **{icc_info["icc"]:.4f}** |
 
         For comparison, theory.md §5 used `rho_ICC = 0.4` as a worst-case
         plug-in; the empirical value is
-        **{icc_info['icc']:.4f}** ({'higher' if icc_info['icc'] > 0.4 else 'lower'} than the design-time estimate).
+        **{icc_info["icc"]:.4f}** ({"higher" if icc_info["icc"] > 0.4 else "lower"} than the design-time estimate).
 
         ## 4. Recomputed power numbers
 
@@ -571,31 +567,31 @@ def _write_paper(
 
         | I_AA | I_bb | I_Ab |
         |-----:|-----:|-----:|
-        | {fisher['I_AA']:.4f} | {fisher['I_bb']:.4f} | {fisher['I_Ab']:.4f} |
+        | {fisher["I_AA"]:.4f} | {fisher["I_bb"]:.4f} | {fisher["I_Ab"]:.4f} |
 
         Side-by-side comparison of the original (ICC=0.40 plug-in) and the
         empirical recomputation:
 
-        | quantity | original (ICC=0.40) | empirical (ICC={icc_info['icc']:.3f}) |
+        | quantity | original (ICC=0.40) | empirical (ICC={icc_info["icc"]:.3f}) |
         |----------|--------------------:|--------------------------------------:|
-        | design_effect | {design_orig['design_effect']:.4f} | {design_emp['design_effect']:.4f} |
-        | n_eff_per_cell | {design_orig['n_eff_per_cell']:.2f} | {design_emp['n_eff_per_cell']:.2f} |
-        | bon_factor | {design_orig['bon_factor']:.4f} | {design_emp['bon_factor']:.4f} |
-        | I_AA_cell | {design_orig['I_AA_cell']:.4f} | {design_emp['I_AA_cell']:.4f} |
-        | SE_dA_logit_cell | {design_orig['SE_dA_logit_cell']:.4f} | {design_emp['SE_dA_logit_cell']:.4f} |
-        | SE_dA_prob_cell | {design_orig['SE_dA_prob_cell']:.4f} | {design_emp['SE_dA_prob_cell']:.4f} |
-        | SE_dA_logit_pool | {design_orig['SE_dA_logit_pool']:.4f} | {design_emp['SE_dA_logit_pool']:.4f} |
-        | SE_dA_prob_pool | {design_orig['SE_dA_prob_pool']:.4f} | {design_emp['SE_dA_prob_pool']:.4f} |
+        | design_effect | {design_orig["design_effect"]:.4f} | {design_emp["design_effect"]:.4f} |
+        | n_eff_per_cell | {design_orig["n_eff_per_cell"]:.2f} | {design_emp["n_eff_per_cell"]:.2f} |
+        | bon_factor | {design_orig["bon_factor"]:.4f} | {design_emp["bon_factor"]:.4f} |
+        | I_AA_cell | {design_orig["I_AA_cell"]:.4f} | {design_emp["I_AA_cell"]:.4f} |
+        | SE_dA_logit_cell | {design_orig["SE_dA_logit_cell"]:.4f} | {design_emp["SE_dA_logit_cell"]:.4f} |
+        | SE_dA_prob_cell | {design_orig["SE_dA_prob_cell"]:.4f} | {design_emp["SE_dA_prob_cell"]:.4f} |
+        | SE_dA_logit_pool | {design_orig["SE_dA_logit_pool"]:.4f} | {design_emp["SE_dA_logit_pool"]:.4f} |
+        | SE_dA_prob_pool | {design_orig["SE_dA_prob_pool"]:.4f} | {design_emp["SE_dA_prob_pool"]:.4f} |
         | MDE(Delta_A) (one-sided alpha=0.05, power=0.8) | {mde_orig:.4f} | {mde_emp:.4f} |
         | TOST SE threshold (Delta=0.05) | {_tost_se_threshold(_TOST_MARGIN):.4f} | {_tost_se_threshold(_TOST_MARGIN):.4f} |
-        | TOST powered at the global scale | {('YES' if design_orig['SE_dA_prob_pool'] <= _tost_se_threshold(_TOST_MARGIN) else 'NO')} | {('YES' if diag['TOST_OK_global'] else 'NO')} |
+        | TOST powered at the global scale | {("YES" if design_orig["SE_dA_prob_pool"] <= _tost_se_threshold(_TOST_MARGIN) else "NO")} | {("YES" if diag["TOST_OK_global"] else "NO")} |
 
         On the b parameter, the same chain gives MDE on the *log* scale.
         Translating to the rate scale at the prior median (b=0.25):
 
             MDE(Delta_b on rate scale) ~ MDE(log b) * b
-                                       = {diag['MDE_db_log_pool']:.4f} * {_B_PRIOR}
-                                       = {diag['MDE_db_rate_pool']:.4f}
+                                       = {diag["MDE_db_log_pool"]:.4f} * {_B_PRIOR}
+                                       = {diag["MDE_db_rate_pool"]:.4f}
 
         ## 5. Verdict
 
@@ -603,9 +599,9 @@ def _write_paper(
 
         Per-criterion breakdown:
 
-        - MDE(Delta_A) on probability scale = {mde_emp:.4f}; registered Delta_A = {_DELTA_A:.3f} -> {'POWERED' if diag['is_powered_dA_pool'] else 'UNDERPOWERED'}.
-        - MDE(Delta_b) on rate scale = {diag['MDE_db_rate_pool']:.4f}; registered Delta_b = {_DELTA_B:.3f} -> {'POWERED' if diag['is_powered_db_pool'] else 'UNDERPOWERED'}.
-        - TOST equivalence at Delta = 0.05 requires SE_dA_prob_pool <= {_tost_se_threshold(_TOST_MARGIN):.4f}; actual = {se_emp:.4f} -> {'POWERED' if diag['TOST_OK_global'] else 'UNDERPOWERED'}.
+        - MDE(Delta_A) on probability scale = {mde_emp:.4f}; registered Delta_A = {_DELTA_A:.3f} -> {"POWERED" if diag["is_powered_dA_pool"] else "UNDERPOWERED"}.
+        - MDE(Delta_b) on rate scale = {diag["MDE_db_rate_pool"]:.4f}; registered Delta_b = {_DELTA_B:.3f} -> {"POWERED" if diag["is_powered_db_pool"] else "UNDERPOWERED"}.
+        - TOST equivalence at Delta = 0.05 requires SE_dA_prob_pool <= {_tost_se_threshold(_TOST_MARGIN):.4f}; actual = {se_emp:.4f} -> {"POWERED" if diag["TOST_OK_global"] else "UNDERPOWERED"}.
 {n_seeds_block}
 
         ## 6. Caveats and scope

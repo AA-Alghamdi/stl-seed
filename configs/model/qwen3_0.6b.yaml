@@ -1,0 +1,38 @@
+# Model: Qwen3-0.6B-Instruct (smallest in the canonical sweep)
+#
+# References:
+#   paper/theory.md §1   -- M ∈ {Qwen3-0.6B, Qwen3-1.7B, Qwen3-4B}
+#   paper/REDACTED.md STEP-3, §C.3 -- QLoRA config to mimic
+#   src/stl_seed/training/backends/base.py::TrainingConfig defaults
+
+# @package model
+size: 0.6b
+hf_id: Qwen/Qwen3-0.6B-Instruct
+fallback_hf_id: Qwen/Qwen2.5-0.5B-Instruct  # used iff hf_id is unreachable
+
+# QLoRA hyperparameters (mirror SERA unsloth_qwen3_moe_qlora.yaml).
+# Each field maps to TrainingConfig in src/stl_seed/training/backends/base.py.
+training:
+  learning_rate: 5.0e-5                # SERA QLoRA YAML §C.3
+  lr_schedule: cosine
+  warmup_ratio: 0.1                    # SERA QLoRA YAML §C.3
+  num_epochs: 3                        # SERA QLoRA YAML §C.3
+  batch_size: 1                        # SERA QLoRA YAML §C.3
+  gradient_accumulation_steps: 4       # SERA QLoRA YAML §C.3
+  max_seq_length: 8192                 # paper/REDACTED.md STEP-3 (ADAPT)
+  lora_rank: 32                        # SERA QLoRA YAML §C.3
+  lora_alpha: 128.0                    # SERA QLoRA YAML §C.3 (alpha/r = 4x)
+  lora_target_modules:                 # SERA q/k/v/o + gate/up/down
+    - self_attn.q_proj
+    - self_attn.k_proj
+    - self_attn.v_proj
+    - self_attn.o_proj
+    - mlp.gate_proj
+    - mlp.up_proj
+    - mlp.down_proj
+  lora_dropout: 0.0                    # SERA QLoRA YAML §C.3 (FA-compat)
+  weight_decay: 0.01                   # SERA QLoRA YAML §C.3
+
+# Memory / wall-clock budget per cell (the smallest model is the cheapest).
+expected_minutes_per_cell: 18
+expected_vram_gb: 6

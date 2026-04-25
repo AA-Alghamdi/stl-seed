@@ -1,0 +1,15 @@
+# Backend: MLX LoRA on Apple Silicon (local iteration only)
+#
+# References:
+#   src/stl_seed/training/backends/mlx.py
+#   paper/REDACTED.md   -- A15 mlx_lm.lora wrapper
+
+# @package backend
+name: mlx
+weight_format: fp16                   # MLX 0.31 has no NF4 kernels on M-series
+double_quant: false
+compute_dtype: float16
+use_8bit_optimizer: false             # mlx_lm uses its own AdamW
+gradient_checkpointing: false
+
+requires_cuda: false

@@ -1,0 +1,30 @@
+# Task: bio_ode.repressilator
+#
+# References:
+#   src/stl_seed/specs/bio_ode_specs.py    -- registered spec(s)
+#   src/stl_seed/tasks/bio_ode.py          -- Diffrax simulator
+#   paper/REDACTED.md                   -- spec calibration narrative
+#   paper/REDACTED.md     -- BRENDA citations for theta
+
+# @package task
+family: bio_ode.repressilator
+display_name: Repressilator
+simulator_module: stl_seed.tasks.bio_ode
+simulator_class: RepressilatorSimulator
+
+# Registered spec keys for this family. The first is used at training
+# time; remaining specs (with the same family prefix) are pooled at
+# eval time as the held-out spec set.
+train_spec: bio_ode.repressilator.easy
+eval_specs:
+  - bio_ode.repressilator.easy           # used in-distribution; held-out
+                                         # instances drawn from a different x0 seed
+
+# Trajectory horizon (matches RepressilatorSimulator.horizon).
+horizon_steps: 50
+state_dim: 3
+action_dim: 1
+
+# Heuristic baseline policy (paper/theory.md §2): used as one of the
+# three legs of pi_ref during trajectory generation.
+heuristic_policy: BangBangController

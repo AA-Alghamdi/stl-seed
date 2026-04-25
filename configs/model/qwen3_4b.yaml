@@ -1,0 +1,39 @@
+# Model: Qwen3-4B-Instruct (largest in the canonical sweep)
+#
+# References:
+#   paper/theory.md §1                    -- top of the size triplet
+#   paper/REDACTED.md §C.3             -- QLoRA config to mimic
+#   docker/runpod_README.md §10           -- 4090 OOM guidance for 4B + NF4
+
+# @package model
+size: 4b
+hf_id: Qwen/Qwen3-4B-Instruct
+fallback_hf_id: Qwen/Qwen2.5-3B-Instruct
+
+training:
+  learning_rate: 5.0e-5
+  lr_schedule: cosine
+  warmup_ratio: 0.1
+  num_epochs: 3
+  batch_size: 1
+  gradient_accumulation_steps: 4
+  # Reduced from 8192 -> 4096 to fit Qwen3-4B + NF4 + LoRA on a 24 GB 4090
+  # (docker/runpod_README.md §10 "out of memory" row). Control trajectories
+  # at H<=200 with the JSON-list serialization fit comfortably below 4096
+  # tokens.
+  max_seq_length: 4096
+  lora_rank: 32
+  lora_alpha: 128.0
+  lora_target_modules:
+    - self_attn.q_proj
+    - self_attn.k_proj
+    - self_attn.v_proj
+    - self_attn.o_proj
+    - mlp.gate_proj
+    - mlp.up_proj
+    - mlp.down_proj
+  lora_dropout: 0.0
+  weight_decay: 0.01
+
+expected_minutes_per_cell: 55
+expected_vram_gb: 22

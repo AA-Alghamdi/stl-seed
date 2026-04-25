@@ -1,0 +1,17 @@
+# Backend: bitsandbytes 4-bit QLoRA on CUDA (canonical Phase-2 path)
+#
+# References:
+#   src/stl_seed/training/backends/bnb.py
+#   paper/REDACTED.md §C.3   -- NF4 / double-quant / bf16 / adamw_8bit
+
+# @package backend
+name: bnb
+weight_format: nf4                    # NF4 quant (Dettmers QLoRA, arXiv:2305.14314)
+double_quant: true                    # SERA QLoRA YAML §C.3
+compute_dtype: bfloat16               # SERA QLoRA YAML §C.3
+use_8bit_optimizer: true              # paged adamw_8bit, SERA §C.3
+gradient_checkpointing: false         # SERA §C.3 (already QLoRA-light)
+
+# RunPod-only; on macOS the backend's lazy import errors with a helpful
+# message (src/stl_seed/training/backends/bnb.py::_check_cuda).
+requires_cuda: true
