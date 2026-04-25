@@ -72,6 +72,17 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      # Codecov upload (public repos: no token required, the action uses
+      # tokenless uploads via GitHub OIDC). For private repos add a
+      # CODECOV_TOKEN secret and reference it via `token: ${{ secrets.CODECOV_TOKEN }}`.
+      # `fail_ci_if_error: false` keeps Codecov outages from breaking CI.
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.xml
+          fail_ci_if_error: false
+        if: matrix.python-version == '3.11'
+
   build:
     name: build wheel
     runs-on: ubuntu-latest

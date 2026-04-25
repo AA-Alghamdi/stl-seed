@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml)
 [![Lint](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml)
+[![codecov](https://codecov.io/gh/AA-Alghamdi/stl-seed/branch/main/graph/badge.svg)](https://codecov.io/gh/AA-Alghamdi/stl-seed)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
