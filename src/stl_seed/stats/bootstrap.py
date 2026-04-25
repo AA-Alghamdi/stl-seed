@@ -119,9 +119,7 @@ def _resample_indices(n: int, n_resamples: int, rng: np.random.Generator) -> np.
     return rng.integers(0, n, size=(n_resamples, n))
 
 
-def _percentile_endpoints(
-    boot_stats: np.ndarray, ci: float
-) -> tuple[float, float]:
+def _percentile_endpoints(boot_stats: np.ndarray, ci: float) -> tuple[float, float]:
     """Empirical-quantile percentile interval."""
     alpha = 1.0 - ci
     lo = float(np.quantile(boot_stats, alpha / 2.0, method="linear"))
@@ -129,9 +127,7 @@ def _percentile_endpoints(
     return lo, hi
 
 
-def _basic_endpoints(
-    boot_stats: np.ndarray, theta_hat: float, ci: float
-) -> tuple[float, float]:
+def _basic_endpoints(boot_stats: np.ndarray, theta_hat: float, ci: float) -> tuple[float, float]:
     """Basic / pivotal interval: ``2 θ̂ − q_{1−α/2},  2 θ̂ − q_{α/2}``."""
     alpha = 1.0 - ci
     q_hi = float(np.quantile(boot_stats, 1.0 - alpha / 2.0, method="linear"))
@@ -324,13 +320,9 @@ def bootstrap_diff_ci(
 
     if paired:
         if a.shape != b.shape:
-            raise ValueError(
-                f"paired bootstrap requires equal shapes; got {a.shape} vs {b.shape}"
-            )
+            raise ValueError(f"paired bootstrap requires equal shapes; got {a.shape} vs {b.shape}")
         diffs = a - b
-        return bootstrap_mean_ci(
-            diffs, n_resamples=n_resamples, ci=ci, method=method, key=key
-        )
+        return bootstrap_mean_ci(diffs, n_resamples=n_resamples, ci=ci, method=method, key=key)
 
     finite_a = a[np.isfinite(a)]
     finite_b = b[np.isfinite(b)]
@@ -357,9 +349,7 @@ def bootstrap_diff_ci(
         # scheme: a stack of (n_a + n_b) leave-one-outs.
         mean_b_full = float(finite_b.mean())
         mean_a_full = float(finite_a.mean())
-        jack = np.concatenate(
-            [jack_a - mean_b_full, mean_a_full - jack_b]
-        )
+        jack = np.concatenate([jack_a - mean_b_full, mean_a_full - jack_b])
     return _finalize(
         statistic=statistic,
         boot_stats=boot_stats,
@@ -400,14 +390,10 @@ def bootstrap_proportion_ci(
         raise ValueError(f"successes must be in [0, n]; got {successes}/{n}")
     arr = np.zeros(n, dtype=float)
     arr[:successes] = 1.0
-    return bootstrap_mean_ci(
-        arr, n_resamples=n_resamples, ci=ci, method=method, key=key
-    )
+    return bootstrap_mean_ci(arr, n_resamples=n_resamples, ci=ci, method=method, key=key)
 
 
-def proportion_wilson_ci(
-    successes: int, n: int, ci: float = 0.95
-) -> BootstrapCI:
+def proportion_wilson_ci(successes: int, n: int, ci: float = 0.95) -> BootstrapCI:
     """Closed-form Wilson score interval [Wilson 1927,
     DOI:10.1080/01621459.1927.10502953].
 
@@ -418,9 +404,7 @@ def proportion_wilson_ci(
     ci = _validate_ci(ci)
     if n <= 0:
         raise ValueError(f"n must be positive, got {n}")
-    res = sp_stats.binomtest(successes, n).proportion_ci(
-        confidence_level=ci, method="wilson"
-    )
+    res = sp_stats.binomtest(successes, n).proportion_ci(confidence_level=ci, method="wilson")
     p_hat = successes / n
     return BootstrapCI(
         statistic=float(p_hat),

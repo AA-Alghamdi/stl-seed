@@ -72,7 +72,7 @@ def test_bon_success_monotone_in_n() -> None:
     vals = [curve[n] for n in budgets]
     for i in range(len(vals) - 1):
         assert vals[i] <= vals[i + 1] + 1e-12, (
-            f"BoN-{budgets[i]} > BoN-{budgets[i+1]}: {vals[i]:.4f} vs {vals[i+1]:.4f}"
+            f"BoN-{budgets[i]} > BoN-{budgets[i + 1]}: {vals[i]:.4f} vs {vals[i + 1]:.4f}"
         )
 
 

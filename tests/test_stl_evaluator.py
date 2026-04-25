@@ -63,14 +63,10 @@ def _sine_traj(T: int = 200, t_max: float = 10.0) -> _TrajStub:
     return _TrajStub(states=states, times=times)
 
 
-def _two_channel_traj(
-    x: float, y: float, T: int = 50, t_max: float = 5.0
-) -> _TrajStub:
+def _two_channel_traj(x: float, y: float, T: int = 50, t_max: float = 5.0) -> _TrajStub:
     """Constant two-channel trajectory."""
     times = jnp.linspace(0.0, t_max, T)
-    states = jnp.stack(
-        [jnp.full((T,), x), jnp.full((T,), y)], axis=1
-    )
+    states = jnp.stack([jnp.full((T,), x), jnp.full((T,), y)], axis=1)
     return _TrajStub(states=states, times=times)
 
 
@@ -241,8 +237,7 @@ def test_streaming_lower_bound() -> None:
 
     # Monotone non-increasing.
     assert rho_at_2 >= rho_at_5 >= rho_at_10, (
-        f"streaming not monotone non-increasing: "
-        f"({rho_at_2}, {rho_at_5}, {rho_at_10})"
+        f"streaming not monotone non-increasing: ({rho_at_2}, {rho_at_5}, {rho_at_10})"
     )
     # Streaming at t = b equals the full rho.
     assert rho_at_10 == pytest.approx(rho_full, abs=1e-5)
@@ -453,9 +448,7 @@ def test_empty_window_eventually_returns_neg_inf() -> None:
 def test_non_uniform_times() -> None:
     """Non-uniform time grid: the masking-by-time approach must still work."""
     # Times concentrated near the start, sparse near the end.
-    times = jnp.concatenate(
-        [jnp.linspace(0.0, 1.0, 50), jnp.linspace(1.0, 10.0, 11)[1:]]
-    )
+    times = jnp.concatenate([jnp.linspace(0.0, 1.0, 50), jnp.linspace(1.0, 10.0, 11)[1:]])
     states = jnp.where(times[:, None] < 5.0, 0.0, 10.0)  # step at t = 5
     traj = _TrajStub(states=states, times=times)
     spec = Always(_gt("x", 0, 5.0), interval=Interval(6.0, 10.0))

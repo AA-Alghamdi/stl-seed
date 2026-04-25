@@ -153,9 +153,7 @@ repressilator_spec = STLSpec(
         "Mueller et al., Nucleic Acids Res. 35:5267 (2007), Table 1 (K_LacI).",
         "Milo & Phillips, Cell Biology by the Numbers (2015), BioNumbers 100037.",
     ),
-    formula_text=(
-        "G_[120,200] (p1 >= 250) AND F_[0,60] (p2 < 25)"
-    ),
+    formula_text=("G_[120,200] (p1 >= 250) AND F_[0,60] (p2 < 25)"),
     metadata={
         "subdomain": "repressilator",
         "difficulty": "easy",
@@ -254,8 +252,7 @@ toggle_spec = STLSpec(
         "avoidance clauses."
     ),
     citations=(
-        "Gardner, Cantor & Collins, Nature 403:339 (2000), "
-        "DOI 10.1038/35002131, Fig. 5a.",
+        "Gardner, Cantor & Collins, Nature 403:339 (2000), DOI 10.1038/35002131, Fig. 5a.",
         "Klumpp & Hwa, PNAS 105:20245 (2008), Fig. 4 (ribosome partitioning).",
     ),
     formula_text=(
@@ -375,16 +372,13 @@ mapk_spec = STLSpec(
         "reachability + tracking + avoidance."
     ),
     citations=(
-        "Huang & Ferrell, PNAS 93:10078 (1996), DOI 10.1073/pnas.93.19.10078, "
-        "Figs. 1, 3b, 4.",
-        "Alberts et al., Molecular Biology of the Cell, 6th ed. (2014), "
-        "Fig. 15-49.",
+        "Huang & Ferrell, PNAS 93:10078 (1996), DOI 10.1073/pnas.93.19.10078, Figs. 1, 3b, 4.",
+        "Alberts et al., Molecular Biology of the Cell, 6th ed. (2014), Fig. 15-49.",
         "Ferrell & Machleder, Science 280:895 (1998), Fig. 2A.",
         "Hornberg et al., FEBS J. 272:244 (2005), Table 2.",
     ),
     formula_text=(
-        "F_[0,30] (mapk_pp >= 0.5) AND G_[45,60] (mapk_pp < 0.1) "
-        "AND G_[0,60] (NOT (mkkk_p > 0.85))"
+        "F_[0,30] (mapk_pp >= 0.5) AND G_[45,60] (mapk_pp < 0.1) AND G_[0,60] (NOT (mkkk_p > 0.85))"
     ),
     metadata={
         "subdomain": "mapk",
@@ -396,10 +390,7 @@ mapk_spec = STLSpec(
             "MAPK_SETTLE": MAPK_SETTLE,
             "MKKK_SAFE": MKKK_SAFE,
         },
-        "allowed_form": (
-            "conjunction of reachability + tracking + avoidance "
-            "(firewall §C.1)"
-        ),
+        "allowed_form": ("conjunction of reachability + tracking + avoidance (firewall §C.1)"),
     },
 )
 register(mapk_spec)

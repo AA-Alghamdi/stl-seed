@@ -107,9 +107,7 @@ def bon_success(
     """
     arr = np.asarray(rhos_per_seed, dtype=np.float64)
     if arr.ndim != 2:
-        raise ValueError(
-            f"rhos_per_seed must be 2-D (n_seeds, K), got shape {arr.shape}"
-        )
+        raise ValueError(f"rhos_per_seed must be 2-D (n_seeds, K), got shape {arr.shape}")
     n_seeds, k_max = arr.shape
     if not (1 <= n <= k_max):
         raise ValueError(f"BoN budget n={n} must be in [1, {k_max}]")
@@ -129,9 +127,7 @@ def bon_success_curve(
     """BoN success at each budget in ``budgets`` via sample reuse."""
     arr = np.asarray(rhos_per_seed, dtype=np.float64)
     if arr.ndim != 2:
-        raise ValueError(
-            f"rhos_per_seed must be 2-D (n_seeds, K), got shape {arr.shape}"
-        )
+        raise ValueError(f"rhos_per_seed must be 2-D (n_seeds, K), got shape {arr.shape}")
     out: dict[int, float] = {}
     k_max = arr.shape[1]
     for n in budgets:
@@ -185,9 +181,7 @@ def goodhart_gap(
     a = _to_numpy(rho_proxy)
     b = _to_numpy(rho_gold)
     if a.shape != b.shape:
-        raise ValueError(
-            f"goodhart_gap requires equal shapes; got {a.shape} vs {b.shape}"
-        )
+        raise ValueError(f"goodhart_gap requires equal shapes; got {a.shape} vs {b.shape}")
     finite = np.isfinite(a) & np.isfinite(b)
     a = a[finite]
     b = b[finite]

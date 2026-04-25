@@ -212,9 +212,7 @@ def render_system_prompt(
         If a required template variable is missing (StrictUndefined).
     """
     if task not in _TEMPLATES:
-        raise KeyError(
-            f"Unknown task family {task!r}; registered: {sorted(_TEMPLATES)}"
-        )
+        raise KeyError(f"Unknown task family {task!r}; registered: {sorted(_TEMPLATES)}")
     tmpl = _ENV.from_string(_TEMPLATES[task])
     return tmpl.render(
         spec_text=spec_text,

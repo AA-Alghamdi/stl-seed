@@ -128,6 +128,7 @@ import numpy as np
 # This module reports parameters in DIMENSIONAL units; the simulator (a
 # separate module) is responsible for any nondimensionalization.
 
+
 @dataclass(frozen=True)
 class RepressilatorParams:
     """Elowitz & Leibler 2000 repressilator parameters (dimensional).
@@ -153,8 +154,8 @@ class RepressilatorParams:
     # range and matches the BioModels Gardner toggle parameterization,
     # while being distinct from Elowitz's published n=2.
     hill_n: float = 2.5  # PERTURB: Elowitz reports n=2; we use 2.5 (Tomazou
-                         # 2018 reviewed range n in [1.5, 4]; literature
-                         # midpoint of LacI/TetR/cI cooperativity).
+    # 2018 reviewed range n in [1.5, 4]; literature
+    # midpoint of LacI/TetR/cI cooperativity).
 
     # --- Production rate -----------------------------------------------------
     # Maximum transcription rate from a strong synthetic promoter (PLtetO-1
@@ -168,17 +169,17 @@ class RepressilatorParams:
     # precision; original = 216.4) to keep this distinct from any value
     # appearing verbatim in REDACTED artifacts.
     alpha_max: float = 215.0  # monomers per promoter per cell per K_M;
-                              # SOURCE: Elowitz & Leibler 2000 Box 1 /
-                              # BIOMD0000000012 (216.4); PERTURB to 215.0
-                              # for firewall margin.
+    # SOURCE: Elowitz & Leibler 2000 Box 1 /
+    # BIOMD0000000012 (216.4); PERTURB to 215.0
+    # for firewall margin.
 
     # mRNA leakage rate (basal expression in the fully repressed state).
     # Elowitz reports alpha_0 / alpha = 1e-3 (Box 1); BIOMD0000000012
     # reports alpha_0 = 0.2164. Using alpha_max=215.0 above and the
     # 1e-3 ratio gives alpha_0 = 0.215.
     alpha_leak: float = 0.215  # same units as alpha_max.
-                               # SOURCE: Elowitz & Leibler 2000 Box 1
-                               # (alpha_0/alpha = 1e-3, "leakage").
+    # SOURCE: Elowitz & Leibler 2000 Box 1
+    # (alpha_0/alpha = 1e-3, "leakage").
 
     # --- Decay rates ---------------------------------------------------------
     # Protein-to-mRNA decay rate ratio (beta in Elowitz Box 1).
@@ -188,8 +189,8 @@ class RepressilatorParams:
     # of Keiler 2008's reported 4-10 min range) which is ALSO inside the
     # literature bracket but distinct from the published nominal 0.2.
     beta: float = 0.25  # PERTURB: Elowitz reports 0.2; we use 0.25
-                        # (Keiler 2008 ssrA t_half range; corresponds to
-                        # protein t_half = 4 min, mRNA t_half = 1 min).
+    # (Keiler 2008 ssrA t_half range; corresponds to
+    # protein t_half = 4 min, mRNA t_half = 1 min).
 
     # Dimensional decay rates (1/min). Computed from beta and the
     # mRNA half-life median.
@@ -199,16 +200,16 @@ class RepressilatorParams:
     # We use 4.0 min as the median consistent with BNID 106872 and the
     # Selinger 2003 IQR 2-15 min.
     mrna_half_life_min: float = 4.0  # SOURCE: Selinger 2003 Genome Res
-                                     # (median 5 min); BNID 106872
-                                     # (4.0 min, BioNumbers).
+    # (median 5 min); BNID 106872
+    # (4.0 min, BioNumbers).
     # ssrA-tagged protein half-life: Keiler 2008 reports 4-10 min for
     # ClpXP-mediated proteolysis of ssrA-tagged substrates in E. coli.
     # Median ~6 min. PERTURB to 5.5 (within Keiler 2008 range) to keep
     # decimal distinct from Elowitz's specific 10 min default and from
     # any Repressilator BioNumbers entry.
     protein_half_life_min: float = 5.5  # SOURCE: Keiler 2008 Annu Rev
-                                        # Microbiol (ssrA t_half range
-                                        # 4-10 min); PERTURB to 5.5 min.
+    # Microbiol (ssrA t_half range
+    # 4-10 min); PERTURB to 5.5 min.
 
     # --- Repressor-operator binding ------------------------------------------
     # K_M (monomers per cell needed for half-maximal repression). For LacI
@@ -223,9 +224,9 @@ class RepressilatorParams:
     # operator-by-operator range of ~5-200 molecules/cell after volume
     # rescaling) to keep distinct from BIOMD0000000012's exact 40.
     K_M_monomers_per_cell: float = 35.0  # SOURCE: Garcia & Phillips 2011
-                                         # PNAS (LacI Kd, fold-change);
-                                         # BIOMD0000000012 (40);
-                                         # PERTURB to 35.
+    # PNAS (LacI Kd, fold-change);
+    # BIOMD0000000012 (40);
+    # PERTURB to 35.
 
     # --- Initial condition ---------------------------------------------------
     # Initial protein levels (monomers/cell) — perturbed slightly from
@@ -272,6 +273,7 @@ class RepressilatorParams:
 # Hill cooperativity exponents on the two promoters, not decay rates.
 # We rename them n_AB and n_BA below to avoid confusion with kinetics.)
 
+
 @dataclass(frozen=True)
 class ToggleParams:
     """Gardner-Cantor-Collins 2000 toggle switch parameters (dimensionless).
@@ -298,12 +300,12 @@ class ToggleParams:
     # The rounded values 160:16 sit inside the Gardner Fig. 5 phase
     # boundary by ~5% (visual inspection of their bistability curve).
     alpha_1: float = 160.0  # synthesis rate of repressor 1 (LacI) in
-                            # dimensionless units. SOURCE: Gardner 2000
-                            # Box 1 (10:1 strong/weak promoter ratio);
-                            # BIOMD0000000507 (156.25); PERTURB to 160.0.
-    alpha_2: float = 16.0   # synthesis rate of repressor 2 (cI / TetR).
-                            # SOURCE: Gardner 2000 Box 1; BIOMD0000000507
-                            # (15.6); PERTURB to 16.0.
+    # dimensionless units. SOURCE: Gardner 2000
+    # Box 1 (10:1 strong/weak promoter ratio);
+    # BIOMD0000000507 (156.25); PERTURB to 160.0.
+    alpha_2: float = 16.0  # synthesis rate of repressor 2 (cI / TetR).
+    # SOURCE: Gardner 2000 Box 1; BIOMD0000000507
+    # (15.6); PERTURB to 16.0.
 
     # --- Hill cooperativity exponents ---------------------------------------
     # Gardner 2000 reports beta = gamma = 2 (no asymmetry in the canonical
@@ -314,12 +316,12 @@ class ToggleParams:
     # bistability; either (2.5, 1.0) or (3.0, 1.5) suffices. We use
     # (3.0, 1.5) as the median of the cooperative-binding range and to
     # be cleanly distinct from the BioModels-encoded (2.5, 1.0).
-    n_AB: float = 3.0   # Hill exponent on B repressing A's promoter.
-                        # SOURCE: Gardner 2000 Eq. 1 (beta in [2, 4]);
-                        # PERTURB from BIOMD's 2.5 to 3.0.
-    n_BA: float = 1.5   # Hill exponent on A repressing B's promoter.
-                        # SOURCE: Gardner 2000 Eq. 2 (gamma >= 1);
-                        # PERTURB from BIOMD's 1.0 to 1.5.
+    n_AB: float = 3.0  # Hill exponent on B repressing A's promoter.
+    # SOURCE: Gardner 2000 Eq. 1 (beta in [2, 4]);
+    # PERTURB from BIOMD's 2.5 to 3.0.
+    n_BA: float = 1.5  # Hill exponent on A repressing B's promoter.
+    # SOURCE: Gardner 2000 Eq. 2 (gamma >= 1);
+    # PERTURB from BIOMD's 1.0 to 1.5.
 
     # --- IPTG induction (used for control intervention) ---------------------
     # IPTG inactivates LacI; Gardner Fig. 4 shows induction at 1 mM IPTG.
@@ -328,11 +330,11 @@ class ToggleParams:
     # BNID 109050).
     K_IPTG_microM: float = 13.0  # SOURCE: Oehler et al. 2006; BNID 109050.
     iptg_max_microM: float = 1000.0  # SOURCE: Gardner 2000 Fig. 4
-                                     # (1 mM = 1000 microM induction).
+    # (1 mM = 1000 microM induction).
     n_IPTG: float = 2.0  # cooperativity of IPTG-LacI binding (LacI
-                         # tetramer has 4 IPTG sites; effective n ~ 2
-                         # under standard induction conditions).
-                         # SOURCE: Oehler 2006.
+    # tetramer has 4 IPTG sites; effective n ~ 2
+    # under standard induction conditions).
+    # SOURCE: Oehler 2006.
 
     # --- Initial condition --------------------------------------------------
     # Biased toward state B (high B, low A). Gardner 2000 Fig. 5 uses
@@ -345,7 +347,7 @@ class ToggleParams:
     # the high-state expression > 100x the low-state. Their Fig. 4 shows
     # GFP fluorescence transition factor of ~70 between low/high states.
     state_separation_fold: float = 50.0  # SOURCE: Gardner 2000 Fig. 4
-                                         # (~70x separation observed).
+    # (~70x separation observed).
 
     # --- Ranges -------------------------------------------------------------
     alpha_1_range: tuple[float, float] = (50.0, 300.0)
@@ -371,6 +373,7 @@ class ToggleParams:
 # BIOMD0000000009 encodes the full set in dimensional units; we use
 # those values here (in M^-1 s^-1, s^-1, microM as in the original paper).
 
+
 @dataclass(frozen=True)
 class MAPKParams:
     """Huang & Ferrell 1996 MAPK cascade parameters (dimensional).
@@ -391,24 +394,24 @@ class MAPKParams:
     # to 1e-3 microM. We use 3.5e-5 microM as the median (slightly
     # perturbed from BIOMD's 3e-5).
     E1_total_microM: float = 3.5e-5  # SOURCE: Huang & Ferrell 1996
-                                      # Fig. 4 sweep midpoint.
+    # Fig. 4 sweep midpoint.
     # E2: MAPKKK phosphatase. HF Table II: 0.0003 microM.
     # BIOMD0000000009: 0.0003 microM.
     # PERTURB to 3.5e-4 microM (within HF Fig. 5 reported precision).
     E2_total_microM: float = 3.5e-4  # SOURCE: Huang & Ferrell 1996
-                                      # Table II; PERTURB to 3.5e-4.
+    # Table II; PERTURB to 3.5e-4.
     # MKKK total. HF Table II: 0.003 microM. BIOMD: same.
     # PERTURB to 0.0035 microM.
     MKKK_total_microM: float = 0.0035  # SOURCE: Huang & Ferrell 1996
-                                        # Table II.
+    # Table II.
     # MKK total. HF Table II: 1.2 microM. BIOMD: 1.2 microM.
     # PERTURB to 1.25 microM.
     MKK_total_microM: float = 1.25  # SOURCE: Huang & Ferrell 1996
-                                     # Table II; PERTURB to 1.25.
+    # Table II; PERTURB to 1.25.
     # MAPK total. HF Table II: 1.2 microM. BIOMD: 1.2 microM.
     # PERTURB to 1.25 microM.
     MAPK_total_microM: float = 1.25  # SOURCE: Huang & Ferrell 1996
-                                      # Table II; PERTURB to 1.25.
+    # Table II; PERTURB to 1.25.
     # MKK phosphatase. HF Table II: 0.0003 microM.
     # PERTURB to 3.5e-4 microM.
     MKK_Pase_total_microM: float = 3.5e-4  # SOURCE: HF 1996 Table II.
@@ -423,9 +426,9 @@ class MAPKParams:
     # PERTURB to 0.32 microM (Burack & Sturgill 1997 J Biol Chem refine
     # K_M for MEK1 -> ERK1 to ~0.34 microM; we use the midpoint).
     K_M_microM: float = 0.32  # uniform across cascade steps;
-                              # SOURCE: Huang & Ferrell 1996 Table I
-                              # (K_M = 0.3 uniform); refined by
-                              # Burack & Sturgill 1997 to ~0.34.
+    # SOURCE: Huang & Ferrell 1996 Table I
+    # (K_M = 0.3 uniform); refined by
+    # Burack & Sturgill 1997 to ~0.34.
 
     # --- Rate constants -----------------------------------------------------
     # Forward binding rate a_i. HF Table I: a = 1000 (microM)^-1 s^-1.
@@ -433,11 +436,11 @@ class MAPKParams:
     # PERTURB to 1100 (microM)^-1 s^-1 (within HF Methods stated 2-fold
     # uncertainty for the diffusion-limited binding rate).
     k_assoc_per_microM_s: float = 1100.0  # SOURCE: HF 1996 Table I
-                                          # (a_i = 1000); PERTURB to 1100.
+    # (a_i = 1000); PERTURB to 1100.
     # Reverse dissociation d_i. HF Table I: d = 150 s^-1. BIOMD: 150.
     # PERTURB to 165 s^-1 (within HF stated precision).
     k_dissoc_per_s: float = 165.0  # SOURCE: HF 1996 Table I
-                                    # (d_i = 150 s^-1); PERTURB to 165.
+    # (d_i = 150 s^-1); PERTURB to 165.
     # Catalytic rate k_cat for activation steps. HF Table I gives a
     # uniform k_cat = 150 s^-1 for the catalytic step in each enzyme-
     # substrate complex. BIOMD0000000009: k3 = k8 = 150 s^-1.
@@ -445,7 +448,7 @@ class MAPKParams:
     # at the perturbed values: K_M = (165 + 165) / 1100 = 0.30 microM,
     # matching HF's 0.3 to within the perturbation bracket.
     k_cat_per_s: float = 165.0  # SOURCE: HF 1996 Table I; PERTURB to
-                                 # 165; chosen so (d+k_cat)/a ~ K_M.
+    # 165; chosen so (d+k_cat)/a ~ K_M.
 
     # --- V_max for phosphatase steps ----------------------------------------
     # Huang & Ferrell 1996 derived V_max values for the phosphatase
@@ -455,7 +458,7 @@ class MAPKParams:
     # We adopt Markevich's V values directly because they were
     # measured experimentally for ERK/MEK rather than estimated.
     V_MAPK_dephos_microM_per_s: float = 0.50  # SOURCE: Markevich 2004
-                                              # J Cell Biol Table I.
+    # J Cell Biol Table I.
     V_MKK_dephos_microM_per_s: float = 0.025  # SOURCE: Markevich 2004.
     V_MKKK_dephos_microM_per_s: float = 0.25  # SOURCE: Markevich 2004.
 
@@ -465,7 +468,7 @@ class MAPKParams:
     # PERTURB to 4.5 (HF reports n_H = 4.9 in Fig. 6 caption; we use
     # the round 4.5 inside their stated uncertainty bracket).
     hill_n_effective: float = 4.5  # SOURCE: HF 1996 Fig. 6
-                                    # (n_H = 4.9); PERTURB to 4.5.
+    # (n_H = 4.9); PERTURB to 4.5.
 
     # --- Ligand input range (for control intervention) ---------------------
     # HF 1996 Fig. 4: input E1 swept over 5 decades (1e-7 to 1e-2 microM).
@@ -501,6 +504,7 @@ __all__ = [
 # Self-test
 # =============================================================================
 
+
 def _self_test() -> None:
     """Instantiate each dataclass and print the field count for sanity."""
     rp = RepressilatorParams()
@@ -511,12 +515,16 @@ def _self_test() -> None:
     n_tp = len([f for f in tp.__dataclass_fields__])
     n_mp = len([f for f in mp.__dataclass_fields__])
 
-    print(f"RepressilatorParams: {n_rp} fields, "
-          f"gamma_protein = {rp.gamma_protein_per_min():.4f} /min")
-    print(f"ToggleParams:        {n_tp} fields, "
-          f"alpha_1/alpha_2 ratio = {tp.alpha_1 / tp.alpha_2:.2f}")
-    print(f"MAPKParams:          {n_mp} fields, "
-          f"K_M = {mp.K_M_microM} microM, k_cat = {mp.k_cat_per_s} /s")
+    print(
+        f"RepressilatorParams: {n_rp} fields, gamma_protein = {rp.gamma_protein_per_min():.4f} /min"
+    )
+    print(
+        f"ToggleParams:        {n_tp} fields, alpha_1/alpha_2 ratio = {tp.alpha_1 / tp.alpha_2:.2f}"
+    )
+    print(
+        f"MAPKParams:          {n_mp} fields, "
+        f"K_M = {mp.K_M_microM} microM, k_cat = {mp.k_cat_per_s} /s"
+    )
 
 
 if __name__ == "__main__":

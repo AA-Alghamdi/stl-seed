@@ -93,9 +93,7 @@ def test_meal_glucose_rise(
     )
 
 
-def test_insulin_drop(
-    sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array
-) -> None:
+def test_insulin_drop(sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array) -> None:
     """A steady infusion at the maximum allowed rate (5 U/h) with no meal
     must drive plasma glucose below 80 mg/dL within 90 min for a normal
     subject.
@@ -150,8 +148,7 @@ def test_oscillation_stable(
     assert meta.n_nan_replacements == 0
     assert jnp.all(jnp.isfinite(ys)), "non-finite values in trajectory"
     assert jnp.all(G > 20.0) and jnp.all(G < 250.0), (
-        f"G escaped envelope: range = ({float(jnp.min(G)):.2f}, "
-        f"{float(jnp.max(G)):.2f}) mg/dL"
+        f"G escaped envelope: range = ({float(jnp.min(G)):.2f}, {float(jnp.max(G)):.2f}) mg/dL"
     )
     assert jnp.all(Ins >= 0.0) and jnp.all(Ins < 500.0), (
         f"I escaped envelope: range = ({float(jnp.min(Ins)):.2f}, "
@@ -159,9 +156,7 @@ def test_oscillation_stable(
     )
 
 
-def test_no_nan(
-    sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array
-) -> None:
+def test_no_nan(sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array) -> None:
     """Across a battery of random control sequences and meal schedules, no
     simulation should produce NaN/Inf values that escape the sentinel guard.
     """
@@ -188,9 +183,7 @@ def test_no_nan(
         _ = meta.n_nan_replacements
 
 
-def test_jit_works(
-    sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array
-) -> None:
+def test_jit_works(sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array) -> None:
     """The simulator's `simulate` method must be JIT-compilable end to end
     (including the meal schedule, which is a pytree of JAX arrays).
     """

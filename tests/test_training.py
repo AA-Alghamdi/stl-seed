@@ -57,12 +57,8 @@ from stl_seed.training.tokenize import (
 
 def _make_trajectory(T: int = 10, n: int = 3, H: int = 5, m: int = 2) -> Trajectory:
     """Construct a synthetic Trajectory pytree for testing."""
-    states = jnp.asarray(
-        np.linspace(0.1, 1.0, T * n).reshape(T, n).astype(np.float32)
-    )
-    actions = jnp.asarray(
-        np.linspace(-0.5, 0.5, H * m).reshape(H, m).astype(np.float32)
-    )
+    states = jnp.asarray(np.linspace(0.1, 1.0, T * n).reshape(T, n).astype(np.float32))
+    actions = jnp.asarray(np.linspace(-0.5, 0.5, H * m).reshape(H, m).astype(np.float32))
     times = jnp.linspace(0.0, 60.0, T)
     meta = TrajectoryMeta(
         n_nan_replacements=jnp.asarray(0.0),
@@ -338,9 +334,7 @@ class TestBackendGuards:
         """If we are NOT on Apple Silicon, MLXBackend.train must raise ImportError."""
         from stl_seed.training.backends.mlx import MLXBackend, _check_apple_silicon
 
-        is_apple_silicon = (
-            platform.system() == "Darwin" and platform.machine() == "arm64"
-        )
+        is_apple_silicon = platform.system() == "Darwin" and platform.machine() == "arm64"
         if is_apple_silicon:
             # On Apple Silicon the platform check passes; this test is N/A.
             pytest.skip("On Apple Silicon, platform check passes.")

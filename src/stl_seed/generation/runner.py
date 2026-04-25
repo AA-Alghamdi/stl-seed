@@ -61,9 +61,7 @@ from stl_seed.tasks._trajectory import Trajectory
 # -----------------------------------------------------------------------------
 
 
-def _interval_indices(
-    times_min: np.ndarray, t_lo: float, t_hi: float
-) -> np.ndarray:
+def _interval_indices(times_min: np.ndarray, t_lo: float, t_hi: float) -> np.ndarray:
     """Return integer indices `i` with `t_lo <= times_min[i] <= t_hi`."""
     mask = (times_min >= t_lo) & (times_min <= t_hi)
     idx = np.flatnonzero(mask)
@@ -75,9 +73,7 @@ def _interval_indices(
     return idx
 
 
-def _evaluate_predicate(
-    pred: Predicate, traj_states: np.ndarray, t_idx: int
-) -> float:
+def _evaluate_predicate(pred: Predicate, traj_states: np.ndarray, t_idx: int) -> float:
     return float(pred.fn(traj_states, t_idx))
 
 
@@ -124,36 +120,24 @@ def evaluate_robustness(
             idx = _interval_indices(times_min, node.interval.t_lo, node.interval.t_hi)
             inner = node.inner
             if isinstance(inner, Predicate):
-                vals = np.array(
-                    [_evaluate_predicate(inner, states, int(t)) for t in idx]
-                )
+                vals = np.array([_evaluate_predicate(inner, states, int(t)) for t in idx])
             elif isinstance(inner, Negation):
-                vals = np.array(
-                    [-_evaluate_predicate(inner.inner, states, int(t)) for t in idx]
-                )
+                vals = np.array([-_evaluate_predicate(inner.inner, states, int(t)) for t in idx])
             else:
                 # Nested Always/And/Eventually under Always — fall back to
                 # full per-step recursion. Our specs never use this nesting
                 # but the evaluator handles it for completeness.
-                vals = np.array(
-                    [_recurse_at(inner, int(t)) for t in idx]
-                )
+                vals = np.array([_recurse_at(inner, int(t)) for t in idx])
             return float(np.min(vals))
         if isinstance(node, Eventually):
             idx = _interval_indices(times_min, node.interval.t_lo, node.interval.t_hi)
             inner = node.inner
             if isinstance(inner, Predicate):
-                vals = np.array(
-                    [_evaluate_predicate(inner, states, int(t)) for t in idx]
-                )
+                vals = np.array([_evaluate_predicate(inner, states, int(t)) for t in idx])
             elif isinstance(inner, Negation):
-                vals = np.array(
-                    [-_evaluate_predicate(inner.inner, states, int(t)) for t in idx]
-                )
+                vals = np.array([-_evaluate_predicate(inner.inner, states, int(t)) for t in idx])
             else:
-                vals = np.array(
-                    [_recurse_at(inner, int(t)) for t in idx]
-                )
+                vals = np.array([_recurse_at(inner, int(t)) for t in idx])
             return float(np.max(vals))
         raise TypeError(f"unknown STL node type: {type(node).__name__}")
 
@@ -313,9 +297,7 @@ class TrajectoryRunner:
             )
         self.initial_state = jnp.asarray(initial_state)
         self.horizon = (
-            horizon
-            if horizon is not None
-            else int(getattr(simulator, "n_control_points", 0))
+            horizon if horizon is not None else int(getattr(simulator, "n_control_points", 0))
         )
         if self.horizon < 1:
             raise ValueError(f"horizon must be >= 1, got {self.horizon}")
@@ -323,8 +305,7 @@ class TrajectoryRunner:
         self.aux = aux
         if not (0.0 <= nan_fraction_threshold <= 1.0):
             raise ValueError(
-                f"nan_fraction_threshold must be in [0, 1], "
-                f"got {nan_fraction_threshold}"
+                f"nan_fraction_threshold must be in [0, 1], got {nan_fraction_threshold}"
             )
         self.nan_fraction_threshold = nan_fraction_threshold
         self.sim_params = sim_params
@@ -474,9 +455,7 @@ class TrajectoryRunner:
             factories["random"] = lambda _key, lo=lo, hi=hi: RandomPolicy(
                 action_dim=self.action_dim, action_low=lo, action_high=hi
             )
-            factories["constant"] = lambda _key: ConstantPolicy(
-                jnp.zeros((self.action_dim,))
-            )
+            factories["constant"] = lambda _key: ConstantPolicy(jnp.zeros((self.action_dim,)))
             factories["heuristic"] = lambda _key, t=task: HeuristicPolicy(t)
         else:
             factories.update(policy_factories)
@@ -502,9 +481,7 @@ class TrajectoryRunner:
                 subkey = jax.random.fold_in(key, traj_idx)
                 policy = factories[policy_name](subkey)
                 traj_id = uuid.uuid4().hex
-                generated_at = datetime.datetime.now(
-                    datetime.UTC
-                ).isoformat()
+                generated_at = datetime.datetime.now(datetime.UTC).isoformat()
                 # Pack the JAX key (two uint32s) into a SIGNED 64-bit int so
                 # downstream Parquet (Arrow int64) can store it without overflow.
                 seed_bytes = bytes(np.asarray(jax.random.key_data(subkey)))

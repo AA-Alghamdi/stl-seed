@@ -110,10 +110,7 @@ def _streaming_node(
 
     if isinstance(node, And):
         child_vals = jnp.stack(
-            [
-                _streaming_node(child, states, times, current_time)
-                for child in node.children
-            ]
+            [_streaming_node(child, states, times, current_time) for child in node.children]
         )
         return jnp.min(child_vals)
 

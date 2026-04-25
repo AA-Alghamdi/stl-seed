@@ -80,8 +80,7 @@ def test_bootstrap_diff_paired_recovers_known_mean() -> None:
 
 def test_bootstrap_diff_paired_shape_mismatch_raises() -> None:
     with pytest.raises(ValueError):
-        bootstrap_diff_ci(np.array([1.0, 2.0, 3.0]), np.array([1.0]),
-                          paired=True, key=0)
+        bootstrap_diff_ci(np.array([1.0, 2.0, 3.0]), np.array([1.0]), paired=True, key=0)
 
 
 def test_bootstrap_diff_unpaired_runs() -> None:
@@ -132,9 +131,7 @@ def test_bootstrap_ci_coverage() -> None:
     inside = 0
     for d in range(n_datasets):
         xs = rng.normal(size=n_per)
-        ci = bootstrap_mean_ci(
-            xs, n_resamples=n_resamples, ci=0.95, method="bca", key=d
-        )
+        ci = bootstrap_mean_ci(xs, n_resamples=n_resamples, ci=0.95, method="bca", key=d)
         if ci.lower <= 0.0 <= ci.upper:
             inside += 1
     coverage = inside / n_datasets
@@ -187,9 +184,7 @@ def test_tost_lakens_2017_table1_example() -> None:
     So this example is *not* equivalent, matching Lakens' interpretation
     that the 90% CI [-0.61, 0.21] crosses one of the bounds.
     """
-    res = tost_equivalence(
-        diff=-0.2, se=0.247, equivalence_margin=0.5, alpha=0.05, df=98
-    )
+    res = tost_equivalence(diff=-0.2, se=0.247, equivalence_margin=0.5, alpha=0.05, df=98)
     assert not res.equivalent
     # p_lower ≈ 0.11, p_upper ≈ 0.003
     assert 0.10 < res.p_lower < 0.13
@@ -201,9 +196,7 @@ def test_tost_lakens_2017_equivalent_example() -> None:
     t_lower = 0.55/0.10 = 5.5 → p_lower ≈ 0
     t_upper = -0.45/0.10 = -4.5 → p_upper ≈ 0
     Both below α = 0.05 → equivalent."""
-    res = tost_equivalence(
-        diff=0.05, se=0.10, equivalence_margin=0.5, alpha=0.05, df=50
-    )
+    res = tost_equivalence(diff=0.05, se=0.10, equivalence_margin=0.5, alpha=0.05, df=50)
     assert res.equivalent
     assert res.p_lower < 1e-5
     assert res.p_upper < 1e-4
@@ -270,8 +263,8 @@ def _simulate_hierarchical_data(
     # Logit A and log b
     delta_A = np.concatenate([[0.0], np.full(n_contrasts, delta_A_true)])
     delta_b = np.concatenate([[0.0], np.full(n_contrasts, delta_b_true)])
-    logit_A = (mu_A_true + alpha_A[m_idx] + phi_A[f_idx] + delta_A[v_idx])
-    log_b = (mu_b_true + alpha_b[m_idx] + phi_b[f_idx] + delta_b[v_idx])
+    logit_A = mu_A_true + alpha_A[m_idx] + phi_A[f_idx] + delta_A[v_idx]
+    log_b = mu_b_true + alpha_b[m_idx] + phi_b[f_idx] + delta_b[v_idx]
     A = 1.0 / (1.0 + np.exp(-logit_A))
     b = np.exp(log_b)
     p = A * (1.0 - np.power(np.maximum(N_obs, 1.0).astype(float), -b))
@@ -292,8 +285,10 @@ def _simulate_hierarchical_data(
         n_instances=n_instances,
     )
     truth = {
-        "mu_A": mu_A_true, "mu_b": mu_b_true,
-        "delta_A": delta_A_true, "delta_b": delta_b_true,
+        "mu_A": mu_A_true,
+        "mu_b": mu_b_true,
+        "delta_A": delta_A_true,
+        "delta_b": delta_b_true,
     }
     return data, truth
 
@@ -301,11 +296,17 @@ def _simulate_hierarchical_data(
 def test_hierarchical_data_validates_shapes() -> None:
     """``HierarchicalData`` rejects inconsistent shapes."""
     bad = dict(
-        model_idx=np.zeros(10), verifier_idx=np.zeros(10),
-        family_idx=np.zeros(10), instance_idx=np.zeros(10),
-        seed=np.zeros(10), N=np.ones(10),
+        model_idx=np.zeros(10),
+        verifier_idx=np.zeros(10),
+        family_idx=np.zeros(10),
+        instance_idx=np.zeros(10),
+        seed=np.zeros(10),
+        N=np.ones(10),
         Y=np.zeros(9),  # mismatched
-        n_models=1, n_verifiers=2, n_families=1, n_instances=1,
+        n_models=1,
+        n_verifiers=2,
+        n_families=1,
+        n_instances=1,
     )
     with pytest.raises(ValueError):
         HierarchicalData(**bad)
@@ -313,11 +314,17 @@ def test_hierarchical_data_validates_shapes() -> None:
 
 def test_hierarchical_data_rejects_single_verifier() -> None:
     bad = dict(
-        model_idx=np.zeros(2), verifier_idx=np.zeros(2),
-        family_idx=np.zeros(2), instance_idx=np.zeros(2),
-        seed=np.zeros(2), N=np.ones(2),
+        model_idx=np.zeros(2),
+        verifier_idx=np.zeros(2),
+        family_idx=np.zeros(2),
+        instance_idx=np.zeros(2),
+        seed=np.zeros(2),
+        N=np.ones(2),
         Y=np.zeros(2),
-        n_models=1, n_verifiers=1, n_families=1, n_instances=1,
+        n_models=1,
+        n_verifiers=1,
+        n_families=1,
+        n_instances=1,
     )
     with pytest.raises(ValueError, match="n_verifiers"):
         HierarchicalData(**bad)
@@ -356,8 +363,7 @@ def test_hierarchical_bayes_recovers_known_truth() -> None:
 
     # δ_A: posterior mean within ±0.15, HDI covers truth, sign correct
     assert abs(delta_A_row["mean"] - truth["delta_A"]) < 0.15, (
-        f"δ_A posterior mean {delta_A_row['mean']:.3f} too far "
-        f"from truth {truth['delta_A']}"
+        f"δ_A posterior mean {delta_A_row['mean']:.3f} too far from truth {truth['delta_A']}"
     )
     assert delta_A_row["hdi_low"] <= truth["delta_A"] <= delta_A_row["hdi_high"], (
         f"δ_A truth {truth['delta_A']} outside 95% HDI "

@@ -88,13 +88,13 @@ class HierarchicalData:
     out seed 6").
     """
 
-    model_idx: np.ndarray   # shape (R,)
+    model_idx: np.ndarray  # shape (R,)
     verifier_idx: np.ndarray  # shape (R,)
     family_idx: np.ndarray  # shape (R,)
     instance_idx: np.ndarray  # shape (R,)
-    seed: np.ndarray        # shape (R,)
-    N: np.ndarray           # shape (R,) integer
-    Y: np.ndarray           # shape (R,) {0, 1}
+    seed: np.ndarray  # shape (R,)
+    N: np.ndarray  # shape (R,) integer
+    Y: np.ndarray  # shape (R,) {0, 1}
     n_models: int
     n_verifiers: int
     n_families: int
@@ -104,18 +104,14 @@ class HierarchicalData:
     def __post_init__(self) -> None:
         # Light shape consistency check
         n = self.Y.shape[0]
-        for name in ("model_idx", "verifier_idx", "family_idx",
-                     "instance_idx", "seed", "N"):
+        for name in ("model_idx", "verifier_idx", "family_idx", "instance_idx", "seed", "N"):
             arr = getattr(self, name)
             if arr.shape[0] != n:
                 raise ValueError(
-                    f"HierarchicalData: {name} has shape {arr.shape}, "
-                    f"expected ({n},) to match Y"
+                    f"HierarchicalData: {name} has shape {arr.shape}, expected ({n},) to match Y"
                 )
         if self.n_verifiers < 2:
-            raise ValueError(
-                "n_verifiers must be >= 2 (one baseline + at least one contrast)"
-            )
+            raise ValueError("n_verifiers must be >= 2 (one baseline + at least one contrast)")
 
     @property
     def n_rows(self) -> int:
@@ -188,12 +184,8 @@ def model(data: HierarchicalData) -> None:
     alpha_A = tau_alpha_A * (alpha_A_raw - alpha_A_raw.mean())
     alpha_b = tau_alpha_b * (alpha_b_raw - alpha_b_raw.mean())
 
-    phi_A_raw = numpyro.sample(
-        "phi_A_raw", dist.Normal(0.0, 1.0).expand([n_families]).to_event(1)
-    )
-    phi_b_raw = numpyro.sample(
-        "phi_b_raw", dist.Normal(0.0, 1.0).expand([n_families]).to_event(1)
-    )
+    phi_A_raw = numpyro.sample("phi_A_raw", dist.Normal(0.0, 1.0).expand([n_families]).to_event(1))
+    phi_b_raw = numpyro.sample("phi_b_raw", dist.Normal(0.0, 1.0).expand([n_families]).to_event(1))
     phi_A = tau_phi_A * (phi_A_raw - phi_A_raw.mean())
     phi_b = tau_phi_b * (phi_b_raw - phi_b_raw.mean())
 
@@ -209,12 +201,16 @@ def model(data: HierarchicalData) -> None:
     # Center within each row and column to enforce sum-to-zero on both
     # margins (so γ is a "pure interaction").
     gamma_A = tau_gamma_A * (
-        gamma_A_raw - gamma_A_raw.mean(axis=0, keepdims=True)
-        - gamma_A_raw.mean(axis=1, keepdims=True) + gamma_A_raw.mean()
+        gamma_A_raw
+        - gamma_A_raw.mean(axis=0, keepdims=True)
+        - gamma_A_raw.mean(axis=1, keepdims=True)
+        + gamma_A_raw.mean()
     )
     gamma_b = tau_gamma_b * (
-        gamma_b_raw - gamma_b_raw.mean(axis=0, keepdims=True)
-        - gamma_b_raw.mean(axis=1, keepdims=True) + gamma_b_raw.mean()
+        gamma_b_raw
+        - gamma_b_raw.mean(axis=0, keepdims=True)
+        - gamma_b_raw.mean(axis=1, keepdims=True)
+        + gamma_b_raw.mean()
     )
 
     # ----- Cell-level idiosyncratic noise -----
@@ -223,16 +219,10 @@ def model(data: HierarchicalData) -> None:
 
     # Per-cell ε indexed by a unique (m, v, f, i) cell id constructed
     # from the input arrays. We use ``instance_idx`` as the leaf grain.
-    cell_id = (
-        ((m_idx * n_verifiers + v_idx) * n_families + f_idx) * n_instances + i_idx
-    )
+    cell_id = ((m_idx * n_verifiers + v_idx) * n_families + f_idx) * n_instances + i_idx
     n_cells = int(n_models * n_verifiers * n_families * n_instances)
-    eps_A_raw = numpyro.sample(
-        "eps_A_raw", dist.Normal(0.0, 1.0).expand([n_cells]).to_event(1)
-    )
-    eps_b_raw = numpyro.sample(
-        "eps_b_raw", dist.Normal(0.0, 1.0).expand([n_cells]).to_event(1)
-    )
+    eps_A_raw = numpyro.sample("eps_A_raw", dist.Normal(0.0, 1.0).expand([n_cells]).to_event(1))
+    eps_b_raw = numpyro.sample("eps_b_raw", dist.Normal(0.0, 1.0).expand([n_cells]).to_event(1))
     eps_A = sigma_eps_A * eps_A_raw
     eps_b = sigma_eps_b * eps_b_raw
 
@@ -356,29 +346,37 @@ def summarize(
         for v in range(n_contrasts):
             samples = flat[:, v]
             lo, hi = _hdi(samples, prob=hdi_prob)
-            rows.append({
-                "parameter": name,
-                "contrast_idx": v + 1,  # 1-indexed (0 is baseline)
-                "mean": float(samples.mean()),
-                "sd": float(samples.std(ddof=1)),
-                "hdi_low": lo,
-                "hdi_high": hi,
-                "hdi_prob": hdi_prob,
-                "P(>0)": float((samples > 0).mean()),
-                "P(<0)": float((samples < 0).mean()),
-            })
+            rows.append(
+                {
+                    "parameter": name,
+                    "contrast_idx": v + 1,  # 1-indexed (0 is baseline)
+                    "mean": float(samples.mean()),
+                    "sd": float(samples.std(ddof=1)),
+                    "hdi_low": lo,
+                    "hdi_high": hi,
+                    "hdi_prob": hdi_prob,
+                    "P(>0)": float((samples > 0).mean()),
+                    "P(<0)": float((samples < 0).mean()),
+                }
+            )
     return pd.DataFrame(rows)
 
 
 def convergence_check(
     idata: az.InferenceData,
     parameters: tuple[str, ...] = (
-        "mu_A", "mu_b",
-        "delta_v_A", "delta_v_b",
-        "tau_alpha_A", "tau_alpha_b",
-        "tau_phi_A", "tau_phi_b",
-        "tau_gamma_A", "tau_gamma_b",
-        "sigma_eps_A", "sigma_eps_b",
+        "mu_A",
+        "mu_b",
+        "delta_v_A",
+        "delta_v_b",
+        "tau_alpha_A",
+        "tau_alpha_b",
+        "tau_phi_A",
+        "tau_phi_b",
+        "tau_gamma_A",
+        "tau_gamma_b",
+        "sigma_eps_A",
+        "sigma_eps_b",
     ),
 ) -> dict[str, dict[str, float]]:
     """Compute R̂ and ESS for the supplied parameters.

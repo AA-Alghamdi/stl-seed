@@ -67,9 +67,7 @@ class Negation:
 
     def __post_init__(self) -> None:
         if not isinstance(self.inner, Predicate):
-            raise TypeError(
-                "Negation may only wrap a Predicate (firewall §C.1)."
-            )
+            raise TypeError("Negation may only wrap a Predicate (firewall §C.1).")
 
 
 @dataclass(frozen=True)

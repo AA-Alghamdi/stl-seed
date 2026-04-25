@@ -257,9 +257,7 @@ def _repressilator_initial_state(
 def _repressilator_vector_field(
     t: RealScalarLike,
     y: Float[Array, " 6"],
-    args: tuple[
-        Float[Array, "H 3"], RepressilatorParams, float
-    ],
+    args: tuple[Float[Array, "H 3"], RepressilatorParams, float],
 ) -> Float[Array, " 6"]:
     """Elowitz-Leibler 2000 vector field with per-gene control modulation.
 
@@ -319,9 +317,7 @@ class RepressilatorSimulator(eqx.Module):
         # Validated at construction time (not jit-traced) so a wrong solver
         # name surfaces immediately rather than during the first JIT call.
         if self.solver not in _VALID_SOLVERS:
-            raise ValueError(
-                f"solver must be one of {_VALID_SOLVERS}, got {self.solver!r}"
-            )
+            raise ValueError(f"solver must be one of {_VALID_SOLVERS}, got {self.solver!r}")
 
     @property
     def state_dim(self) -> int:
@@ -483,8 +479,8 @@ def _toggle_vector_field(
     A_eff = A / (1.0 + (i_A / K_iptg) ** n_iptg)
     B_eff = B / (1.0 + (i_B / K_iptg) ** n_iptg)
 
-    dA = params.alpha_1 / (1.0 + B_eff ** params.n_AB) - A
-    dB = params.alpha_2 / (1.0 + A_eff ** params.n_BA) - B
+    dA = params.alpha_1 / (1.0 + B_eff**params.n_AB) - A
+    dB = params.alpha_2 / (1.0 + A_eff**params.n_BA) - B
 
     return jnp.stack([dA, dB])
 
@@ -506,9 +502,7 @@ class ToggleSimulator(eqx.Module):
 
     def __post_init__(self) -> None:
         if self.solver not in _VALID_SOLVERS:
-            raise ValueError(
-                f"solver must be one of {_VALID_SOLVERS}, got {self.solver!r}"
-            )
+            raise ValueError(f"solver must be one of {_VALID_SOLVERS}, got {self.solver!r}")
 
     @property
     def state_dim(self) -> int:
@@ -700,11 +694,11 @@ def _mapk_initial_state(params: MAPKParams) -> Float[Array, " 6"]:
     return jnp.asarray(
         [
             f[0] * params.MKKK_total_microM,  # MKKK_P
-            0.0,                              # MKK_P  (mono)
-            f[1] * params.MKK_total_microM,   # MKK_PP (active)
-            0.0,                              # MAPK_P (mono)
+            0.0,  # MKK_P  (mono)
+            f[1] * params.MKK_total_microM,  # MKK_PP (active)
+            0.0,  # MAPK_P (mono)
             f[2] * params.MAPK_total_microM,  # MAPK_PP (active output)
-            params.E1_input_min_microM,        # E1_active
+            params.E1_input_min_microM,  # E1_active
         ],
         dtype=jnp.float32,
     )
@@ -743,21 +737,12 @@ def _mapk_vector_field(
     # Phosphatase rates scaled to balance the limiting MKKK:MAPK
     # stoichiometry; see `_MAPK_PHOSPHATASE_SCALE` docstring for the
     # literature-justified rationale and explicit calibration label.
-    V_MKKK = (
-        params.V_MKKK_dephos_microM_per_s * _S_TO_MIN * _MAPK_PHOSPHATASE_SCALE
-    )
-    V_MKK = (
-        params.V_MKK_dephos_microM_per_s * _S_TO_MIN * _MAPK_PHOSPHATASE_SCALE
-    )
-    V_MAPK = (
-        params.V_MAPK_dephos_microM_per_s * _S_TO_MIN * _MAPK_PHOSPHATASE_SCALE
-    )
+    V_MKKK = params.V_MKKK_dephos_microM_per_s * _S_TO_MIN * _MAPK_PHOSPHATASE_SCALE
+    V_MKK = params.V_MKK_dephos_microM_per_s * _S_TO_MIN * _MAPK_PHOSPHATASE_SCALE
+    V_MAPK = params.V_MAPK_dephos_microM_per_s * _S_TO_MIN * _MAPK_PHOSPHATASE_SCALE
 
     # Tier 1: MKKK <-> MKKK_P, activated by E1, dephosphorylated by E2.
-    dMKKK_P = (
-        k_cat * E1 * MKKK / (K_M + MKKK)
-        - V_MKKK * MKKK_P / (K_M + MKKK_P)
-    )
+    dMKKK_P = k_cat * E1 * MKKK / (K_M + MKKK) - V_MKKK * MKKK_P / (K_M + MKKK_P)
 
     # Tier 2: MKK -> MKK_P -> MKK_PP, both forward steps catalysed by MKKK_P;
     # both reverse dephosphorylations by MKK_Pase (rate V_MKK).
@@ -776,15 +761,12 @@ def _mapk_vector_field(
     bwd_MAPK_PP_to_P = V_MAPK * MAPK_PP / (K_M + MAPK_PP)
     bwd_MAPK_P_to_unphos = V_MAPK * MAPK_P / (K_M + MAPK_P)
 
-    dMAPK_P = (
-        fwd_MAPK_to_P - fwd_MAPK_P_to_PP + bwd_MAPK_PP_to_P - bwd_MAPK_P_to_unphos
-    )
+    dMAPK_P = fwd_MAPK_to_P - fwd_MAPK_P_to_PP + bwd_MAPK_PP_to_P - bwd_MAPK_P_to_unphos
     dMAPK_PP = fwd_MAPK_P_to_PP - bwd_MAPK_PP_to_P
 
     # E1 first-order relaxation toward control-set target.
-    E1_target = (
-        params.E1_input_min_microM
-        + u_scalar * (params.E1_input_max_microM - params.E1_input_min_microM)
+    E1_target = params.E1_input_min_microM + u_scalar * (
+        params.E1_input_max_microM - params.E1_input_min_microM
     )
     dE1 = _K_E1_RELAX_PER_MIN * (E1_target - E1)
 
@@ -815,9 +797,7 @@ class MAPKSimulator(eqx.Module):
 
     def __post_init__(self) -> None:
         if self.solver not in _VALID_SOLVERS:
-            raise ValueError(
-                f"solver must be one of {_VALID_SOLVERS}, got {self.solver!r}"
-            )
+            raise ValueError(f"solver must be one of {_VALID_SOLVERS}, got {self.solver!r}")
 
     @property
     def state_dim(self) -> int:

@@ -88,8 +88,7 @@ class HardFilter:
         rho_np = _to_numpy(robustness)
         if len(trajectories) != rho_np.size:
             raise ValueError(
-                f"trajectories ({len(trajectories)}) and robustness "
-                f"({rho_np.size}) length mismatch"
+                f"trajectories ({len(trajectories)}) and robustness ({rho_np.size}) length mismatch"
             )
         keep_mask = rho_np > self.rho_threshold
         kept_idx = np.flatnonzero(keep_mask)
@@ -151,8 +150,7 @@ class QuantileFilter:
         N = rho_np.size
         if len(trajectories) != N:
             raise ValueError(
-                f"trajectories ({len(trajectories)}) and robustness "
-                f"({N}) length mismatch"
+                f"trajectories ({len(trajectories)}) and robustness ({N}) length mismatch"
             )
         n_keep = int(np.ceil(self.top_k_pct / 100.0 * N))
         if n_keep < self.min_kept:
@@ -214,14 +212,10 @@ class ContinuousWeightedFilter:
         N = rho_np.size
         if len(trajectories) != N:
             raise ValueError(
-                f"trajectories ({len(trajectories)}) and robustness "
-                f"({N}) length mismatch"
+                f"trajectories ({len(trajectories)}) and robustness ({N}) length mismatch"
             )
         if self.min_kept > N:
-            raise FilterError(
-                f"ContinuousWeightedFilter on N={N} below "
-                f"min_kept={self.min_kept}."
-            )
+            raise FilterError(f"ContinuousWeightedFilter on N={N} below min_kept={self.min_kept}.")
         if self.temperature is not None:
             beta = float(self.temperature)
         else:

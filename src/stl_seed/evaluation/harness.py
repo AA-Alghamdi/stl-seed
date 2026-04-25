@@ -190,9 +190,7 @@ class EvalResults:
         if not self.per_spec:
             return out
         for n in self.budgets:
-            vals = [
-                r.bon_success.get(n, float("nan")) for r in self.per_spec.values()
-            ]
+            vals = [r.bon_success.get(n, float("nan")) for r in self.per_spec.values()]
             arr = np.asarray(vals, dtype=np.float64)
             arr = arr[np.isfinite(arr)]
             out[int(n)] = float(arr.mean()) if arr.size else float("nan")
@@ -266,9 +264,7 @@ class EvalHarness:
         # Validate that every spec has a simulator
         missing = [s for s in self.spec_registry if s not in self.simulator_registry]
         if missing:
-            raise KeyError(
-                f"specs missing from simulator_registry: {sorted(missing)}"
-            )
+            raise KeyError(f"specs missing from simulator_registry: {sorted(missing)}")
 
     # ------------------------------------------------------------------
     # Public entry point

@@ -145,8 +145,7 @@ def train_with_filter(
 
     backend_inst = get_backend(backend)
     log.info(
-        "Dispatching SFT: backend=%s task=%s filter=%s model=%s "
-        "n_examples=%d output=%s",
+        "Dispatching SFT: backend=%s task=%s filter=%s model=%s n_examples=%d output=%s",
         backend,
         task,
         filter_condition,

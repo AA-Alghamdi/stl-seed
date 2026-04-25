@@ -57,8 +57,7 @@ def _check_cuda() -> None:
         import torch
     except ImportError as exc:
         raise ImportError(
-            "BNBBackend requires PyTorch. Install with `uv sync --extra cuda` "
-            "on a CUDA host."
+            "BNBBackend requires PyTorch. Install with `uv sync --extra cuda` on a CUDA host."
         ) from exc
 
     if not torch.cuda.is_available():

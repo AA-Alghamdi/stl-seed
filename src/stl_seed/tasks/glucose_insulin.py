@@ -140,9 +140,7 @@ class BergmanParams(eqx.Module):
 
     # n: fractional insulin clearance rate (1/min). Sets I -> Ib relaxation
     # time tau = 1/n ≈ 3.76 min for normal subject mean 0.2659 1/min.
-    n: Float[Array, ""] = eqx.field(
-        converter=jnp.asarray, default=0.2659
-    )  # 1/min  [Bergman 1979]
+    n: Float[Array, ""] = eqx.field(converter=jnp.asarray, default=0.2659)  # 1/min  [Bergman 1979]
 
     # Gb: basal plasma glucose (mg/dL). World Health Organization fasting
     # threshold for "normal" is 70-99 mg/dL; [Bergman 1979] uses subject-

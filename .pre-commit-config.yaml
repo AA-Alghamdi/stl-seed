@@ -1,3 +1,7 @@
+# Pre-commit hooks for stl-seed.
+# Install with: uv run pre-commit install
+# Run on demand: uv run pre-commit run --all-files
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -11,8 +15,31 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.4
+    rev: v0.15.12
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+
+  # Local hooks ---------------------------------------------------------------
+  - repo: local
+    hooks:
+      # Pyright runs against the project venv (warn-only — never blocks the
+      # commit, but surfaces type regressions in the diff).
+      - id: pyright
+        name: pyright (warn-only)
+        entry: bash -c 'uv run pyright src || (echo "pyright reported issues (warn-only, not blocking commit)"; exit 0)'
+        language: system
+        pass_filenames: false
+        types: [python]
+        stages: [pre-commit]
+
+      # REDACTED firewall: blocks the commit on any forbidden import / vocabulary.
+      # See paper/REDACTED.md (Part E, Part F.1, F.5).
+      - id: l4dc-firewall
+        name: REDACTED firewall (forbidden imports + vocabulary)
+        entry: bash scripts/REDACTED.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

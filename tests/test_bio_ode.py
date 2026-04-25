@@ -78,9 +78,7 @@ def mapk_sim() -> MAPKSimulator:
 # ===========================================================================
 
 
-def test_repressilator_oscillates(
-    rep_params: RepressilatorParams, key: jax.Array
-) -> None:
+def test_repressilator_oscillates(rep_params: RepressilatorParams, key: jax.Array) -> None:
     """With no control inputs (u=0), the repressilator must oscillate with
     a classical period inside the literature range.
 
@@ -96,9 +94,7 @@ def test_repressilator_oscillates(
     result.
     """
     # Long horizon to count multiple oscillations.
-    sim_long = RepressilatorSimulator(
-        horizon_minutes=600.0, n_save_points=601
-    )
+    sim_long = RepressilatorSimulator(horizon_minutes=600.0, n_save_points=601)
     y0 = default_repressilator_initial_state(rep_params)
     u = jnp.zeros((sim_long.n_control_points, sim_long.action_dim))
 
@@ -114,8 +110,7 @@ def test_repressilator_oscillates(
     demean = p1_settled - p1_settled.mean()
     crossings = np.where(np.diff(np.sign(demean)) != 0)[0]
     assert len(crossings) >= 4, (
-        f"too few zero-crossings ({len(crossings)}); "
-        "system did not oscillate"
+        f"too few zero-crossings ({len(crossings)}); system did not oscillate"
     )
 
     period = 2.0 * np.mean(np.diff(ts_settled[crossings]))
@@ -127,9 +122,7 @@ def test_repressilator_oscillates(
 
     # Amplitude must be substantial (Elowitz Fig. 3b: peak/trough > 5x).
     amp = p1_settled.max() - p1_settled.min()
-    assert amp > 100.0, (
-        f"repressilator amplitude {amp:.1f} too small (expected > 100 nM)"
-    )
+    assert amp > 100.0, f"repressilator amplitude {amp:.1f} too small (expected > 100 nM)"
 
 
 def test_repressilator_control_breaks_oscillation(
@@ -200,13 +193,8 @@ def test_toggle_no_input_stays(
     A_final = float(traj.states[-1, 0])
     B_final = float(traj.states[-1, 1])
     # Both endpoints in the same low/high configuration as the start.
-    assert A_final < 1.0, (
-        f"A escaped low-state basin: A_final = {A_final:.3f}, expected < 1.0"
-    )
-    assert B_final > 5.0, (
-        f"B fell from high-state basin: B_final = {B_final:.3f}, "
-        f"expected > 5.0"
-    )
+    assert A_final < 1.0, f"A escaped low-state basin: A_final = {A_final:.3f}, expected < 1.0"
+    assert B_final > 5.0, f"B fell from high-state basin: B_final = {B_final:.3f}, expected > 5.0"
 
 
 def test_toggle_bistable(
@@ -240,10 +228,7 @@ def test_toggle_bistable(
         f"A failed to switch to high state: A_final = {A_final:.3f}, "
         f"expected > 50 (Gardner Fig. 5a high-state ~160)"
     )
-    assert B_final < 1.0, (
-        f"B failed to fall to low state: B_final = {B_final:.3f}, "
-        f"expected < 1.0"
-    )
+    assert B_final < 1.0, f"B failed to fall to low state: B_final = {B_final:.3f}, expected < 1.0"
 
 
 # ===========================================================================
@@ -268,9 +253,7 @@ def test_mapk_dose_response(
     final_mapk_pp = []
     for u_val in us:
         y0 = default_mapk_initial_state(mapk_params)
-        u_const = jnp.full(
-            (mapk_sim.n_control_points, mapk_sim.action_dim), float(u_val)
-        )
+        u_const = jnp.full((mapk_sim.n_control_points, mapk_sim.action_dim), float(u_val))
         traj = mapk_sim.simulate(y0, u_const, mapk_params, key)
         assert traj.meta.n_nan_replacements == 0
         final_mapk_pp.append(float(traj.states[-1, 4]))
@@ -279,8 +262,7 @@ def test_mapk_dose_response(
     # Monotone increasing in u (allow small numerical jitter).
     diffs = np.diff(final)
     assert (diffs >= -1e-3).all(), (
-        f"MAPK dose-response not monotone: max negative step = "
-        f"{float(diffs.min()):.4f}"
+        f"MAPK dose-response not monotone: max negative step = {float(diffs.min()):.4f}"
     )
     # Saturation: terminal value at u=1 should be near MAPK_total.
     assert final[-1] > 0.5 * mapk_params.MAPK_total_microM, (
@@ -298,9 +280,7 @@ def test_mapk_dose_response(
         # Permissive bound: cascade is ultrasensitive (n_eff > 1) — full
         # n_eff range bracket is (3, 6) per `MAPKParams.hill_n_effective_range`,
         # but the polyfit on a 21-point sweep is noisy.
-        assert n_eff > 1.0, (
-            f"MAPK is not ultrasensitive: n_eff = {n_eff:.2f}, expected > 1"
-        )
+        assert n_eff > 1.0, f"MAPK is not ultrasensitive: n_eff = {n_eff:.2f}, expected > 1"
 
 
 # ===========================================================================
@@ -317,8 +297,10 @@ def test_no_nan_repressilator(
     keys = jax.random.split(key, 8)
     for k in keys:
         u = jax.random.uniform(
-            k, shape=(rep_sim.n_control_points, rep_sim.action_dim),
-            minval=0.0, maxval=1.0,
+            k,
+            shape=(rep_sim.n_control_points, rep_sim.action_dim),
+            minval=0.0,
+            maxval=1.0,
         )
         y0 = default_repressilator_initial_state(rep_params)
         traj = rep_sim.simulate(y0, u, rep_params, k)
@@ -336,8 +318,10 @@ def test_no_nan_toggle(
     keys = jax.random.split(key, 8)
     for k in keys:
         u = jax.random.uniform(
-            k, shape=(toggle_sim.n_control_points, toggle_sim.action_dim),
-            minval=0.0, maxval=1.0,
+            k,
+            shape=(toggle_sim.n_control_points, toggle_sim.action_dim),
+            minval=0.0,
+            maxval=1.0,
         )
         y0 = default_toggle_initial_state(toggle_params)
         traj = toggle_sim.simulate(y0, u, toggle_params, k)
@@ -346,21 +330,19 @@ def test_no_nan_toggle(
         )
 
 
-def test_no_nan_mapk(
-    mapk_sim: MAPKSimulator, mapk_params: MAPKParams, key: jax.Array
-) -> None:
+def test_no_nan_mapk(mapk_sim: MAPKSimulator, mapk_params: MAPKParams, key: jax.Array) -> None:
     """Random control sequences must never produce non-finite states."""
     keys = jax.random.split(key, 8)
     for k in keys:
         u = jax.random.uniform(
-            k, shape=(mapk_sim.n_control_points, mapk_sim.action_dim),
-            minval=0.0, maxval=1.0,
+            k,
+            shape=(mapk_sim.n_control_points, mapk_sim.action_dim),
+            minval=0.0,
+            maxval=1.0,
         )
         y0 = default_mapk_initial_state(mapk_params)
         traj = mapk_sim.simulate(y0, u, mapk_params, k)
-        assert jnp.all(jnp.isfinite(traj.states)), (
-            "non-finite state escaped sentinel guard (mapk)"
-        )
+        assert jnp.all(jnp.isfinite(traj.states)), "non-finite state escaped sentinel guard (mapk)"
 
 
 def test_jit_works_repressilator(
@@ -404,9 +386,7 @@ def test_jit_works_toggle(
     assert jnp.all(jnp.isfinite(states))
 
 
-def test_jit_works_mapk(
-    mapk_sim: MAPKSimulator, mapk_params: MAPKParams, key: jax.Array
-) -> None:
+def test_jit_works_mapk(mapk_sim: MAPKSimulator, mapk_params: MAPKParams, key: jax.Array) -> None:
     """MAPK simulator runs under jax.jit end to end."""
     y0 = default_mapk_initial_state(mapk_params)
     u = jnp.zeros((mapk_sim.n_control_points, mapk_sim.action_dim))
@@ -506,9 +486,7 @@ def test_solver_validation() -> None:
         MAPKSimulator(solver="dopri5")
 
 
-def test_kvaerno5_solver_runs(
-    rep_params: RepressilatorParams, key: jax.Array
-) -> None:
+def test_kvaerno5_solver_runs(rep_params: RepressilatorParams, key: jax.Array) -> None:
     """The Kvaerno5 stiff fallback solver runs and produces a valid
     trajectory on the repressilator (which is non-stiff but still
     integrable by an implicit method).

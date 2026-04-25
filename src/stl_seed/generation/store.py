@@ -106,8 +106,7 @@ class TrajectoryStore:
         meta_list = list(metadata)
         if len(traj_list) != len(meta_list):
             raise ValueError(
-                f"trajectories ({len(traj_list)}) and metadata "
-                f"({len(meta_list)}) length mismatch"
+                f"trajectories ({len(traj_list)}) and metadata ({len(meta_list)}) length mismatch"
             )
         if not traj_list:
             raise ValueError("save() requires at least one trajectory")
@@ -135,12 +134,8 @@ class TrajectoryStore:
             rows["horizon"].append(int(H))
             rows["state_dim"].append(int(n_state))
             rows["action_dim"].append(int(m))
-            rows["final_solver_result"].append(
-                int(np.asarray(traj.meta.final_solver_result))
-            )
-            rows["used_stiff_fallback"].append(
-                int(np.asarray(traj.meta.used_stiff_fallback))
-            )
+            rows["final_solver_result"].append(int(np.asarray(traj.meta.final_solver_result)))
+            rows["used_stiff_fallback"].append(int(np.asarray(traj.meta.used_stiff_fallback)))
 
         table = pa.table(rows)
         shard_path = (
@@ -158,7 +153,8 @@ class TrajectoryStore:
     # ------------------------------------------------------------------- read
     def _shard_paths(self) -> list[Path]:
         return sorted(
-            p for p in self.root.iterdir()
+            p
+            for p in self.root.iterdir()
             if p.name.startswith(_SHARD_PREFIX) and p.suffix == _SHARD_SUFFIX
         )
 
@@ -239,9 +235,7 @@ class TrajectoryStore:
             ):
                 per_task[task] = per_task.get(task, 0) + 1
                 per_policy[policy] = per_policy.get(policy, 0) + 1
-                per_task_policy[(task, policy)] = (
-                    per_task_policy.get((task, policy), 0) + 1
-                )
+                per_task_policy[(task, policy)] = per_task_policy.get((task, policy), 0) + 1
                 rhos.append(float(rho))
                 nan_counts.append(int(n_nan))
                 _ = T
@@ -259,9 +253,7 @@ class TrajectoryStore:
             "n_total": n_total,
             "per_task": per_task,
             "per_policy": per_policy,
-            "per_task_policy": {
-                f"{t}/{p}": c for (t, p), c in per_task_policy.items()
-            },
+            "per_task_policy": {f"{t}/{p}": c for (t, p), c in per_task_policy.items()},
             "rho_histogram_bins": bins.tolist(),
             "rho_histogram_counts": counts,
             "rho_mean": float(rhos_arr.mean()) if rhos_arr.size else 0.0,
@@ -283,12 +275,8 @@ def _row_to_trajectory(row: Any) -> Trajectory:
     times = jnp.asarray(_array_from_bytes(row["times"]))
     meta = TrajectoryMeta(
         n_nan_replacements=jnp.asarray(int(row["nan_count"]), dtype=jnp.int32),
-        final_solver_result=jnp.asarray(
-            int(row["final_solver_result"]), dtype=jnp.int32
-        ),
-        used_stiff_fallback=jnp.asarray(
-            int(row["used_stiff_fallback"]), dtype=jnp.int32
-        ),
+        final_solver_result=jnp.asarray(int(row["final_solver_result"]), dtype=jnp.int32),
+        used_stiff_fallback=jnp.asarray(int(row["used_stiff_fallback"]), dtype=jnp.int32),
     )
     return Trajectory(states=states, actions=actions, times=times, meta=meta)
 

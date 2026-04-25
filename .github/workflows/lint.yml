@@ -1,0 +1,44 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint + firewall
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      # Install only the lint toolchain — avoids syncing the full dev env so
+      # the workflow finishes well under 30 s on a warm cache.
+      - name: Install lint tools
+        run: uv pip install --system ruff==0.7.4 pre-commit==4.0.1
+
+      - name: Ruff check
+        run: ruff check src tests
+
+      - name: Ruff format check
+        run: ruff format --check src tests
+
+      - name: REDACTED firewall (forbidden imports + vocabulary)
+        run: bash scripts/REDACTED.sh
+
+      - name: Pre-commit (all files)
+        run: pre-commit run --all-files --show-diff-on-failure

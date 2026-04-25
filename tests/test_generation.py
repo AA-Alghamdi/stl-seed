@@ -53,9 +53,7 @@ def gi_params() -> BergmanParams:
 
 
 @pytest.fixture
-def runner(
-    gi_sim: GlucoseInsulinSimulator, gi_params: BergmanParams
-) -> TrajectoryRunner:
+def runner(gi_sim: GlucoseInsulinSimulator, gi_params: BergmanParams) -> TrajectoryRunner:
     return TrajectoryRunner(
         simulator=gi_sim,
         spec_registry=REGISTRY,
@@ -129,16 +127,12 @@ def test_pid_controller_converges(
     spec = REGISTRY["glucose_insulin.tir.easy"]
     traj = runner._rollout_one(pid, spec, key)
     G_final = float(np.asarray(traj.states[-1, 0]))
-    assert G_final < 180.0, (
-        f"PID failed to lower elevated glucose: G_final={G_final} mg/dL"
-    )
+    assert G_final < 180.0, f"PID failed to lower elevated glucose: G_final={G_final} mg/dL"
 
 
 def test_bang_bang_controller_switches() -> None:
     """BangBangController emits high_action when observed < threshold."""
-    bb = BangBangController(
-        threshold=50.0, low_action=0.0, high_action=1.0, action_dim=1
-    )
+    bb = BangBangController(threshold=50.0, low_action=0.0, high_action=1.0, action_dim=1)
     spec = next(iter(REGISTRY.values()))
     key = jax.random.key(0)
 
@@ -195,9 +189,7 @@ def test_runner_generates_n(runner: TrajectoryRunner, key: jax.Array) -> None:
     assert runner.last_stats.n_nan_dropped == 0
 
 
-def test_runner_robustness_in_metadata(
-    runner: TrajectoryRunner, key: jax.Array
-) -> None:
+def test_runner_robustness_in_metadata(runner: TrajectoryRunner, key: jax.Array) -> None:
     """Each metadata row must include a finite robustness value."""
     _, meta = runner.generate_trajectories(
         task="glucose_insulin",
@@ -296,9 +288,7 @@ def test_policy_mix_proportions(runner: TrajectoryRunner, key: jax.Array) -> Non
     assert counts["heuristic"] == 10, counts
 
 
-def test_policy_mix_proportions_uneven(
-    runner: TrajectoryRunner, key: jax.Array
-) -> None:
+def test_policy_mix_proportions_uneven(runner: TrajectoryRunner, key: jax.Array) -> None:
     """Three-way mix (5/3/2) with N=10 should split exactly 5/3/2 when all
     three policies are NaN-free deterministic."""
     n = 10
@@ -366,9 +356,7 @@ def tmp_store_path() -> Path:
     shutil.rmtree(d, ignore_errors=True)
 
 
-def test_store_roundtrip(
-    runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path
-) -> None:
+def test_store_roundtrip(runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path) -> None:
     """Save N trajectories, load them back, compare states/actions/times."""
     store = TrajectoryStore(tmp_store_path)
     traj_orig, meta_orig = runner.generate_trajectories(
@@ -384,27 +372,17 @@ def test_store_roundtrip(
 
     # Compare arrays element-wise. Order is by-shard-then-by-row, which here
     # equals insertion order because we have a single shard.
-    for (traj_l, meta_l), traj_o, meta_o in zip(
-        loaded, traj_orig, meta_orig, strict=True
-    ):
-        np.testing.assert_allclose(
-            np.asarray(traj_l.states), np.asarray(traj_o.states)
-        )
-        np.testing.assert_allclose(
-            np.asarray(traj_l.actions), np.asarray(traj_o.actions)
-        )
-        np.testing.assert_allclose(
-            np.asarray(traj_l.times), np.asarray(traj_o.times)
-        )
+    for (traj_l, meta_l), traj_o, meta_o in zip(loaded, traj_orig, meta_orig, strict=True):
+        np.testing.assert_allclose(np.asarray(traj_l.states), np.asarray(traj_o.states))
+        np.testing.assert_allclose(np.asarray(traj_l.actions), np.asarray(traj_o.actions))
+        np.testing.assert_allclose(np.asarray(traj_l.times), np.asarray(traj_o.times))
         assert meta_l["id"] == meta_o["id"]
         assert meta_l["task"] == meta_o["task"]
         assert meta_l["spec_key"] == meta_o["spec_key"]
         assert meta_l["policy"] == meta_o["policy"]
 
 
-def test_store_filter_query(
-    runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path
-) -> None:
+def test_store_filter_query(runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path) -> None:
     """Filter-by-policy and filter-by-task should restrict the loaded set."""
     store = TrajectoryStore(tmp_store_path)
     traj, meta = runner.generate_trajectories(
@@ -424,9 +402,7 @@ def test_store_filter_query(
     assert len(only_glucose) == 10
 
 
-def test_store_get_by_id(
-    runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path
-) -> None:
+def test_store_get_by_id(runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path) -> None:
     """get_by_id returns the exact trajectory for a known ID."""
     store = TrajectoryStore(tmp_store_path)
     traj, meta = runner.generate_trajectories(
@@ -441,16 +417,12 @@ def test_store_get_by_id(
     assert pulled is not None
     pulled_traj, pulled_meta = pulled
     assert pulled_meta["id"] == target
-    np.testing.assert_allclose(
-        np.asarray(pulled_traj.states), np.asarray(traj[1].states)
-    )
+    np.testing.assert_allclose(np.asarray(pulled_traj.states), np.asarray(traj[1].states))
 
     assert store.get_by_id("does_not_exist") is None
 
 
-def test_store_stats(
-    runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path
-) -> None:
+def test_store_stats(runner: TrajectoryRunner, key: jax.Array, tmp_store_path: Path) -> None:
     """stats() reports per-task / per-policy counts and a ρ histogram."""
     store = TrajectoryStore(tmp_store_path)
     traj, meta = runner.generate_trajectories(

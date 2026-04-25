@@ -212,9 +212,7 @@ def calibrate_spec(
 
     # Sweep mode.
     if candidates is None or apply is None:
-        raise ValueError(
-            "Sweep mode requires both `candidates` and `apply` to be provided."
-        )
+        raise ValueError("Sweep mode requires both `candidates` and `apply` to be provided.")
     sweep = scan_threshold(
         spec=spec,
         sampler=sampler,

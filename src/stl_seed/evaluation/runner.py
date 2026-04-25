@@ -264,9 +264,7 @@ def stringify_aggregate(records: Iterable[RunRecord]) -> str:
         if not r.success:
             lines.append(f"  {r.checkpoint_name:<40s}  FAILED: {r.error}")
             continue
-        agg_str = "  ".join(
-            f"BoN-{n}={v:.3f}" for n, v in sorted(r.aggregate_bon.items())
-        )
+        agg_str = "  ".join(f"BoN-{n}={v:.3f}" for n, v in sorted(r.aggregate_bon.items()))
         lines.append(f"  {r.checkpoint_name:<40s}  n_specs={r.n_specs}  {agg_str}")
     return "\n".join(lines)
 

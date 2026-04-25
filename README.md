@@ -1,5 +1,10 @@
 # stl-seed
 
+[![CI](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/ci.yml)
+[![Lint](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml/badge.svg)](https://github.com/AA-Alghamdi/stl-seed/actions/workflows/lint.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 > **Soft-verified SFT for scientific control. STL robustness as a formal process verifier on small open-weights LLMs.**
 >
 > Phase 1 release (theory + library + local pilot), 2026-04-24. Phase 2 (canonical RunPod sweep) targets v0.1.0.

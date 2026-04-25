@@ -197,9 +197,7 @@ class PIDController:
         # We rebuild it from history so the controller is stateless and
         # therefore safe to vmap over instances.
         if history:
-            past_errors = jnp.stack(
-                [s[0] - self.setpoint for (s, _) in history]
-            )
+            past_errors = jnp.stack([s[0] - self.setpoint for (s, _) in history])
             integral = jnp.sum(past_errors)
             # Derivative: backward difference between current and previous error.
             prev_error = past_errors[-1]
@@ -259,9 +257,7 @@ class BangBangController:
         if action_dim < 1:
             raise ValueError(f"action_dim must be >= 1, got {action_dim}")
         self.action_dim = action_dim
-        self.threshold = jnp.broadcast_to(
-            jnp.asarray(threshold, dtype=jnp.float32), (action_dim,)
-        )
+        self.threshold = jnp.broadcast_to(jnp.asarray(threshold, dtype=jnp.float32), (action_dim,))
         self.low_action = jnp.broadcast_to(
             jnp.asarray(low_action, dtype=jnp.float32), (action_dim,)
         )
@@ -272,9 +268,7 @@ class BangBangController:
             self.observation_indices = list(range(action_dim))
         else:
             if len(observation_indices) != action_dim:
-                raise ValueError(
-                    "observation_indices length must equal action_dim"
-                )
+                raise ValueError("observation_indices length must equal action_dim")
             self.observation_indices = list(observation_indices)
 
     def __call__(
@@ -411,9 +405,7 @@ class MLXModelPolicy:
                 raise ValueError("no JSON list found in completion")
             parsed = json.loads(match.group(0))
             if not isinstance(parsed, list) or len(parsed) != self.action_dim:
-                raise ValueError(
-                    f"expected list of {self.action_dim} floats, got {parsed!r}"
-                )
+                raise ValueError(f"expected list of {self.action_dim} floats, got {parsed!r}")
             return jnp.asarray(parsed, dtype=jnp.float32)
         except Exception:
             # Defensive: a malformed completion should not poison the run.
@@ -451,7 +443,7 @@ _HEURISTIC_DEFAULTS: dict[str, dict[str, Any]] = {
         "controller": "bangbang",
         "kwargs": {
             "threshold": 137.5,  # nM, midway between P_LOW=25 and P_HIGH=250
-            "low_action": 1.0,   # protein HIGH → silence gene (drive u high)
+            "low_action": 1.0,  # protein HIGH → silence gene (drive u high)
             "high_action": 0.0,  # protein LOW → release inducer (u=0)
             "action_dim": 3,
             "observation_indices": [3, 4, 5],  # observe proteins, not mRNA

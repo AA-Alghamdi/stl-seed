@@ -119,14 +119,10 @@ def build_sft_dataset(
     weights_np = np.asarray(weights, dtype=np.float32).reshape(-1)
     if len(filtered) != weights_np.size:
         raise ValueError(
-            f"filtered ({len(filtered)}) and weights ({weights_np.size}) "
-            f"length mismatch"
+            f"filtered ({len(filtered)}) and weights ({weights_np.size}) length mismatch"
         )
     if metadata is not None and len(metadata) != len(filtered):
-        raise ValueError(
-            f"metadata length ({len(metadata)}) must match filtered "
-            f"({len(filtered)})"
-        )
+        raise ValueError(f"metadata length ({len(metadata)}) must match filtered ({len(filtered)})")
 
     formatter = _resolve_formatter()
     rows = {

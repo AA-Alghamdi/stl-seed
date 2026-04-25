@@ -143,13 +143,10 @@ tir_spec = STLSpec(
     citations=(
         "ADA 2024 Standards of Care, Recommendation 6.5b, "
         "Diabetes Care 47(Suppl. 1):S111 (2024), DOI 10.2337/dc24-S006.",
-        "Battelino et al., Diabetes Care 42:1593 (2019), Table 1, "
-        "DOI 10.2337/dci19-0028.",
+        "Battelino et al., Diabetes Care 42:1593 (2019), Table 1, DOI 10.2337/dci19-0028.",
         "Dalla Man, Rizza & Cobelli, IEEE TBME 54:1740 (2007), Fig. 4.",
     ),
-    formula_text=(
-        "G_[30,120] (G >= 70) AND G_[30,120] (G < 180)"
-    ),
+    formula_text=("G_[30,120] (G >= 70) AND G_[30,120] (G < 180)"),
     metadata={
         "difficulty": "easy",
         "horizon_min": GI_T,
@@ -216,8 +213,7 @@ no_hypo_spec = STLSpec(
         "avoidance clauses."
     ),
     citations=(
-        "ADA 2024 Standards of Care, Recommendation 6.5b, "
-        "Diabetes Care 47(Suppl. 1):S111 (2024).",
+        "ADA 2024 Standards of Care, Recommendation 6.5b, Diabetes Care 47(Suppl. 1):S111 (2024).",
         "Battelino et al., Diabetes Care 42:1593 (2019), Table 1.",
         "Whipple, J. Int. Chir. 3:237 (1938).",
     ),
@@ -235,10 +231,7 @@ no_hypo_spec = STLSpec(
             "HYPO_SEVERE": G_HYPO_SEVERE,
             "HYPER_LEVEL2": G_HYPER_LEVEL2,
         },
-        "allowed_form": (
-            "conjunction of tracking + avoidance "
-            "(firewall §C.1)"
-        ),
+        "allowed_form": ("conjunction of tracking + avoidance (firewall §C.1)"),
     },
 )
 register(no_hypo_spec)
@@ -345,10 +338,7 @@ dawn_spec = STLSpec(
             "I_BOLUS_MIN": I_BOLUS_MIN,
             "I_HYPER_HIGH": I_HYPER_HIGH,
         },
-        "allowed_form": (
-            "conjunction of reachability + tracking + avoidance "
-            "(firewall §C.1)"
-        ),
+        "allowed_form": ("conjunction of reachability + tracking + avoidance (firewall §C.1)"),
     },
 )
 register(dawn_spec)

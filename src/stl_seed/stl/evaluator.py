@@ -180,9 +180,7 @@ def _predicate_jax_fn(
         import numpy as np
 
         s_np = np.asarray(states)
-        out = np.array(
-            [float(fn(s_np, t)) for t in range(s_np.shape[0])], dtype=np.float64
-        )
+        out = np.array([float(fn(s_np, t)) for t in range(s_np.shape[0])], dtype=np.float64)
         return jnp.asarray(out)
 
     return fallback_fn, False
