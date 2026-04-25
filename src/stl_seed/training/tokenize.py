@@ -42,6 +42,7 @@ plus ``numpy``. No ``REDACTED``, no ``REDACTED``.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -212,6 +213,144 @@ def format_for_chat(conversation: dict[str, str]) -> list[dict[str, str]]:
     ]
 
 
+_TASK_FAMILY_TO_PROMPT: dict[str, str] = {
+    # Dotted spec-registry family names.
+    "bio_ode.repressilator": "repressilator",
+    "bio_ode.toggle": "toggle",
+    "bio_ode.mapk": "mapk",
+    "glucose_insulin": "glucose_insulin",
+    # Hydra-slug forms (as stored in the eval cell IDs).
+    "bio_ode_repressilator": "repressilator",
+    "bio_ode_toggle": "toggle",
+    "bio_ode_mapk": "mapk",
+    # Bare task names (legacy training-time form).
+    "repressilator": "repressilator",
+    "toggle": "toggle",
+    "mapk": "mapk",
+}
+
+
+def format_prompt_for_eval(
+    spec: STLSpec,
+    initial_state: Any,
+    task: str,
+    horizon: int | None = None,
+) -> str:
+    """Render the (system + user) eval-time prompt for a single rollout.
+
+    Mirrors the (system, user) halves of :func:`format_trajectory_as_text`
+    but without the assistant turn — the model is expected to *generate*
+    the assistant turn at inference time. The resulting text is what the
+    bnb / mlx generation pipelines see as the prompt.
+
+    Parameters
+    ----------
+    spec:
+        The STL spec to evaluate against. Used for ``formula_text``,
+        ``horizon_minutes``, and to seed the system prompt.
+    initial_state:
+        Either a 1-D array-like (the ``x_0`` vector to feed to the agent)
+        or a 2-D ``(T, n)`` trajectory whose first row is the initial
+        state. We tolerate both because some callers (the legacy harness
+        path) pass the JAX scalar/array, while the mock path passes a
+        plain numpy vector.
+    task:
+        Task family. Accepts both the dotted form (``"bio_ode.repressilator"``)
+        and the underscored form (``"bio_ode_repressilator"``) so callers
+        do not have to remember which one is canonical.
+    horizon:
+        Number of control steps to request. If ``None``, the spec's
+        ``metadata["horizon_steps"]`` is used; if absent, falls back to
+        the simulator-canonical ``50`` (paper/architecture.md task table).
+
+    Returns
+    -------
+    A single string formatted exactly like
+    ``format_trajectory_as_text(...)["system"] + "\\n\\n" + ["user"]`` —
+    the agent sees the same prompt at training and eval time.
+    """
+    arr = np.asarray(initial_state)
+    if arr.ndim == 0:
+        arr = arr.reshape(1)
+    if arr.ndim == 2:
+        arr = arr[0]
+    initial_state_str = _fmt_vec(arr.tolist())
+
+    # Resolve task family to prompt key.
+    canonical = _TASK_FAMILY_TO_PROMPT.get(task)
+    if canonical is None:
+        raise KeyError(
+            f"Unknown task family {task!r}; expected one of {sorted(set(_TASK_FAMILY_TO_PROMPT))}."
+        )
+
+    # Resolve horizon.
+    if horizon is None:
+        meta_h = spec.metadata.get("horizon_steps") if hasattr(spec, "metadata") else None
+        horizon = int(meta_h) if isinstance(meta_h, int) else 50
+    horizon = int(horizon)
+
+    duration_minutes = float(spec.horizon_minutes)
+    system = render_system_prompt(
+        task=canonical,
+        spec_text=spec.formula_text,
+        horizon=horizon,
+        duration_minutes=duration_minutes,
+    )
+    user = (
+        f"Initial state: <state>{initial_state_str}</state>\n"
+        f"Specification: {spec.formula_text}\n"
+        f"Emit exactly {horizon} (state, action) blocks."
+    )
+    return f"{system}\n\n{user}"
+
+
+# Action regex: tolerates whitespace inside the tag and after commas. Used by
+# parse_action_sequence and by tests that need to inspect the model output.
+_ACTION_BLOCK_RE = re.compile(r"<action>([^<]+)</action>")
+
+
+def parse_action_sequence(text: str) -> np.ndarray:
+    """Parse a model-emitted ``<action>...</action>`` stream into ``(H, m)``.
+
+    Inverse of :func:`serialize_assistant_turn` (action half). The model is
+    instructed (via the system prompt) to emit one
+    ``<state>...</state><action>...</action>`` block per control step; this
+    function walks the ``<action>`` blocks, parses each comma-separated
+    vector to floats, and returns the stacked ``(H, m)`` numpy array.
+
+    Robustness contract
+    -------------------
+
+    * Tolerates extraneous whitespace, newlines, and unparseable trailing
+      text after the last valid block.
+    * Raises ``ValueError`` if zero ``<action>`` blocks are found, so the
+      eval harness's exception path (catch + record NaN) fires cleanly.
+    * Raises ``ValueError`` if action vectors have inconsistent dimension
+      across blocks — silent shape coercion would mask a real model bug.
+
+    Returns
+    -------
+    Array of shape ``(H, m)``, ``dtype=float64``.
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    matches = _ACTION_BLOCK_RE.findall(text)
+    if not matches:
+        raise ValueError("No <action>...</action> blocks found in model output.")
+    rows: list[list[float]] = []
+    for raw in matches:
+        parts = [p.strip() for p in raw.split(",") if p.strip()]
+        try:
+            row = [float(p) for p in parts]
+        except ValueError as exc:
+            raise ValueError(f"Could not parse action vector {raw!r} as floats.") from exc
+        rows.append(row)
+    widths = {len(r) for r in rows}
+    if len(widths) != 1:
+        raise ValueError(f"Inconsistent action-vector widths across blocks: {sorted(widths)}.")
+    return np.asarray(rows, dtype=np.float64)
+
+
 def trajectory_to_record(
     trajectory: Trajectory,
     spec: STLSpec,
@@ -246,4 +385,6 @@ __all__ = [
     "format_for_chat",
     "trajectory_to_record",
     "serialize_assistant_turn",
+    "format_prompt_for_eval",
+    "parse_action_sequence",
 ]

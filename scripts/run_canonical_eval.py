@@ -29,6 +29,13 @@ REDACTED firewall: imports only `stl_seed.{evaluation,specs,tasks,training}`
 plus stdlib + numpy + pandas + pyarrow + omegaconf + hydra + rich.
 Verified by `scripts/REDACTED.sh`.
 
+Mock-backend opt-in (Phase-2 dry-run validation)
+-------------------------------------------------
+Setting ``STL_SEED_USE_MOCK_BACKEND=1`` in the environment causes the
+eval runner to load adapters via :class:`MockBNBBackend`, which returns
+a deterministic-text generator that the eval harness can drive without
+a GPU. Used by ``scripts/validate_phase2_pipeline.py``.
+
 Usage::
 
     # On RunPod, after sweep completes:
@@ -65,6 +72,41 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CONFIG_DIR = _REPO_ROOT / "configs"
 _DEFAULT_RUNS_DIR = _REPO_ROOT / "runs" / "canonical"
 _RESULTS_PARQUET_NAME = "eval_results.parquet"
+
+# Mock-backend opt-in env var (see scripts/validate_phase2_pipeline.py).
+import os as _os  # noqa: E402
+
+_MOCK_ENV = "STL_SEED_USE_MOCK_BACKEND"
+
+
+def _mock_backend_enabled() -> bool:
+    """Return True iff STL_SEED_USE_MOCK_BACKEND is truthy in the environment."""
+    return _os.environ.get(_MOCK_ENV, "").strip() in {"1", "true", "True", "TRUE", "yes"}
+
+
+# Cell-task slug → dotted family name. The slugs are the Hydra task-group
+# basenames (configs/task/*.yaml); the dotted form is what the spec
+# registry uses for cross-family dispatch. Kept here (not imported from
+# the sweep runner) to avoid a script-to-script import dependency.
+_CELL_TASK_TO_FAMILY: dict[str, str] = {
+    "bio_ode_repressilator": "bio_ode.repressilator",
+    "bio_ode_toggle": "bio_ode.toggle",
+    "bio_ode_mapk": "bio_ode.mapk",
+    "glucose_insulin": "glucose_insulin",
+}
+
+
+def _cell_task_to_family(task_slug: str) -> str:
+    """Map a Hydra task-group slug to the dotted spec-registry family.
+
+    Naive ``str.replace("_", ".")`` is wrong: ``"bio_ode_repressilator"``
+    becomes ``"bio.ode.repressilator"`` (3 dots), not the expected
+    ``"bio_ode.repressilator"`` (1 dot). The lookup table here is the
+    authoritative mapping; unknown slugs fall through unchanged so a new
+    task family can be added without touching this resolver.
+    """
+    return _CELL_TASK_TO_FAMILY.get(task_slug, task_slug)
+
 
 # Diversity threshold below which we emit a warning per cell. The smoke
 # test surfaced "every held-out generation produced an identical first
@@ -154,6 +196,70 @@ def load_cell_config(model: str, filter_: str, task: str) -> DictConfig:
 # ---------------------------------------------------------------------------
 
 
+class _SimWithDefaultParams:
+    """Adapter that supplies the missing ``params`` arg to a simulator.
+
+    The eval harness calls ``sim.simulate(initial_state, control_sequence,
+    key)``, but the native bio-ode simulators take a positional ``params``
+    between ``control_sequence`` and ``key``. This wrapper closes over a
+    literature-default ``params`` instance so the harness's call shape
+    works unchanged. The wrapper preserves the simulator's ``state_dim``,
+    ``action_dim``, and ``horizon`` properties (read off the wrapped
+    instance via __getattr__).
+    """
+
+    def __init__(self, sim: Any, params: Any) -> None:
+        self._sim = sim
+        self._params = params
+
+    def __getattr__(self, name: str) -> Any:
+        # Forward attribute access (state_dim, action_dim, horizon, ...) to
+        # the wrapped simulator. Note: __getattr__ is only called when the
+        # normal attribute lookup fails, so explicitly-named attrs on
+        # _SimWithDefaultParams (sim, params, simulate) shadow forwarding.
+        return getattr(self._sim, name)
+
+    def simulate(self, initial_state: Any, control_sequence: Any, key: Any) -> Any:
+        return self._sim.simulate(
+            initial_state=initial_state,
+            control_sequence=control_sequence,
+            params=self._params,
+            key=key,
+        )
+
+
+class _GlucoseSimAdapter:
+    """Adapter for :class:`GlucoseInsulinSimulator` (extra ``meal_schedule`` arg).
+
+    Bridges the harness's 3-arg call shape to the simulator's 4-positional-arg
+    signature ``simulate(initial_state, control_sequence, meal_schedule,
+    params)``. Uses an empty meal schedule (no exogenous glucose load) so the
+    Bergman model integrates from the basal state under the agent's insulin
+    sequence — the right contract for this validation since the agent's job
+    is to keep glucose in band.
+    """
+
+    def __init__(self, sim: Any, params: Any, meal_schedule: Any) -> None:
+        self._sim = sim
+        self._params = params
+        self._meal = meal_schedule
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._sim, name)
+
+    def simulate(self, initial_state: Any, control_sequence: Any, key: Any) -> Any:
+        # GlucoseInsulinSimulator.simulate(initial_state, control_sequence,
+        # meal_schedule, params, key=...) — note key is keyword-only in some
+        # versions; pass positionally + keyword to stay compatible.
+        return self._sim.simulate(
+            initial_state,
+            control_sequence,
+            self._meal,
+            self._params,
+            key=key,
+        )
+
+
 def _build_registries(task_family: str) -> tuple[dict[str, Any], dict[str, Any], Any, Any]:
     """Construct simulator / spec / evaluator / x0_fn registries for one family.
 
@@ -170,22 +276,47 @@ def _build_registries(task_family: str) -> tuple[dict[str, Any], dict[str, Any],
 
     # Build a simulator instance per spec key. Different families have
     # different simulators; we pick by the family prefix.
+    #
+    # The native simulator signatures are
+    # ``simulate(initial_state, control_sequence, params, key)``, but the
+    # eval harness's :class:`SimulatorProtocol` calls
+    # ``simulate(initial_state, control_sequence, key)``. We wrap each
+    # simulator in :class:`_SimWithDefaultParams` so the missing ``params``
+    # is supplied from the literature-default class constructor — keeping
+    # the harness call shape unchanged.
     if task_family.startswith("bio_ode."):
         from stl_seed.tasks.bio_ode import (  # noqa: PLC0415
             MAPKSimulator,
             RepressilatorSimulator,
             ToggleSimulator,
         )
+        from stl_seed.tasks.bio_ode_params import (  # noqa: PLC0415
+            MAPKParams,
+            RepressilatorParams,
+            ToggleParams,
+        )
 
         sim_lookup: dict[str, Any] = {
-            "bio_ode.repressilator": RepressilatorSimulator(),
-            "bio_ode.toggle": ToggleSimulator(),
-            "bio_ode.mapk": MAPKSimulator(),
+            "bio_ode.repressilator": _SimWithDefaultParams(
+                RepressilatorSimulator(), RepressilatorParams()
+            ),
+            "bio_ode.toggle": _SimWithDefaultParams(ToggleSimulator(), ToggleParams()),
+            "bio_ode.mapk": _SimWithDefaultParams(MAPKSimulator(), MAPKParams()),
         }
     elif task_family == "glucose_insulin":
-        from stl_seed.tasks.glucose_insulin import GlucoseInsulinSimulator
+        from stl_seed.tasks.glucose_insulin import (  # noqa: PLC0415
+            BergmanParams,
+            GlucoseInsulinSimulator,
+            MealSchedule,
+        )
 
-        sim_lookup = {"glucose_insulin": GlucoseInsulinSimulator()}
+        sim_lookup = {
+            "glucose_insulin": _GlucoseSimAdapter(
+                GlucoseInsulinSimulator(),
+                BergmanParams(),
+                MealSchedule.empty(),
+            )
+        }
     else:
         raise ValueError(f"unknown task family {task_family!r}")
 
@@ -197,10 +328,15 @@ def _build_registries(task_family: str) -> tuple[dict[str, Any], dict[str, Any],
                 break
 
     # The harness expects a callable ``stl_evaluator(spec, trajectory) -> float``.
-    # ``evaluate_robustness`` in ``stl_seed.generation.runner`` already has
-    # the right signature.
+    # ``evaluate_robustness`` in ``stl_seed.generation.runner`` takes the
+    # *unpacked* (spec, states, times_min) signature, so we adapt by reading
+    # ``trajectory.states`` and ``trajectory.times`` here. (Trajectory is
+    # ``stl_seed.tasks._trajectory.Trajectory``; both fields are JAX arrays
+    # which np.asarray accepts.)
     def _stl_eval(spec: Any, trajectory: Any) -> float:
-        return float(evaluate_robustness(spec, trajectory))
+        states_np = np.asarray(trajectory.states)
+        times_np = np.asarray(trajectory.times)
+        return float(evaluate_robustness(spec, states_np, times_np))
 
     # A no-op x0 function: every spec uses a deterministic initial state
     # supplied by the simulator itself. Sweep-time per-instance variation
@@ -209,12 +345,38 @@ def _build_registries(task_family: str) -> tuple[dict[str, Any], dict[str, Any],
     def _x0_fn(spec_name: str, key: Any) -> Any:
         sim = sim_registry[spec_name]
         # Most simulators expose ``default_initial_state``; fall back to
-        # a zero vector of the right dim if not.
+        # a zero vector of the right dim if not. Several simulators
+        # (GlucoseInsulinSimulator, Equinox modules) do not surface
+        # ``state_dim`` either, so we walk a small list of fallbacks
+        # before giving up.
         if hasattr(sim, "default_initial_state"):
             return sim.default_initial_state()
+
         import jax.numpy as jnp  # noqa: PLC0415
 
-        return jnp.zeros((sim.state_dim,))
+        # Direct attr.
+        for attr in ("state_dim", "n_states", "n_state"):
+            try:
+                n = int(getattr(sim, attr))
+                return jnp.zeros((n,))
+            except (AttributeError, TypeError, ValueError):
+                continue
+
+        # Family-specific fallbacks. Hard-coded so a missing simulator
+        # attribute does not crash the entire eval; values follow the
+        # canonical task table in paper/architecture.md.
+        family_default = {
+            "bio_ode.repressilator": 6,
+            "bio_ode.toggle": 2,
+            "bio_ode.mapk": 6,
+            "glucose_insulin": 2,
+        }
+        for prefix, n in family_default.items():
+            if spec_name.startswith(prefix):
+                return jnp.zeros((n,))
+        # Last resort: 1-D zero. The harness will record NaN if the
+        # simulator subsequently rejects the shape.
+        return jnp.zeros((1,))
 
     return sim_registry, spec_registry, _stl_eval, _x0_fn
 
@@ -230,18 +392,31 @@ def _make_checkpoint_proxy(cell: TrainedCell, cfg: DictConfig) -> Any:
     the model's text output via the same regex used in
     ``scripts/smoke_test_bnb.py`` (``<state>...</state><action>...</action>``)
     and returns the action sequence.
+
+    When ``STL_SEED_USE_MOCK_BACKEND=1`` is set, the backend resolved here
+    is the :class:`MockBNBBackend` regardless of ``cfg.backend.name``;
+    this lets the validation pipeline drive the eval harness end-to-end
+    without a GPU.
     """
     from stl_seed.training.backends.base import TrainedCheckpoint
     from stl_seed.training.loop import get_backend
 
-    backend_name = str(cfg.backend.name)
+    backend_name = "mock_bnb" if _mock_backend_enabled() else str(cfg.backend.name)
     backend = get_backend(backend_name)
+    # When dispatching to the mock, persist the recorded backend label as
+    # "bnb" inside the TrainedCheckpoint so PEFT-style consumers do not
+    # bare-trip on a Literal["mlx", "bnb"] type-check. The mock's
+    # provenance.json already records mock=true.
+    recorded_backend = "bnb" if backend_name == "mock_bnb" else backend_name
     chk = TrainedCheckpoint(
-        backend=backend_name,  # type: ignore[arg-type]
+        backend=recorded_backend,  # type: ignore[arg-type]
         model_path=cell.adapter_dir,  # type: ignore[arg-type]
         base_model=str(cfg.model.hf_id),
         training_loss_history=[],
         wall_clock_seconds=0.0,
+        # Pass through the mock-loss seed so the load() callable is
+        # deterministic across re-runs.
+        metadata={"mock_loss_curve_seed": int(cfg.seed)} if backend_name == "mock_bnb" else {},
     )
     inference_callable = backend.load(chk)
 
@@ -283,7 +458,13 @@ def evaluate_cell(
     """Evaluate a single cell; return a long-form DataFrame ready for parquet."""
     from stl_seed.evaluation.harness import EvalHarness
 
-    sim_registry, spec_registry, stl_eval, x0_fn = _build_registries(cell.task.replace("_", "."))
+    # Map Hydra task slug (e.g. "bio_ode_repressilator") to the dotted spec-
+    # registry family ("bio_ode.repressilator"). The naive str.replace path
+    # had a bug where "bio_ode_repressilator" → "bio.ode.repressilator"
+    # (3 dots) and produced an empty spec_registry; fixed by table lookup.
+    sim_registry, spec_registry, stl_eval, x0_fn = _build_registries(
+        _cell_task_to_family(cell.task)
+    )
 
     # Restrict to the configured eval-spec list (per task config).
     held_out = list(cfg.task.eval_specs)

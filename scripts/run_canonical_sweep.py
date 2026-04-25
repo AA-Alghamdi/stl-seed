@@ -30,6 +30,18 @@ REDACTED firewall: imports only from `stl_seed.{filter,generation,specs,
 tasks,training,evaluation}` and stdlib + numpy + pandas + omegaconf +
 hydra + rich. Verified by `scripts/REDACTED.sh`.
 
+Mock-backend opt-in (Phase-2 dry-run validation)
+-------------------------------------------------
+Setting ``STL_SEED_USE_MOCK_BACKEND=1`` in the environment causes the
+sweep runner to instantiate :class:`~stl_seed.training.backends.mock.MockBNBBackend`
+in place of the real :class:`BNBBackend` for every cell. The mock writes
+artifacts in the same on-disk layout as the real path but does no actual
+training — used by ``scripts/validate_phase2_pipeline.py`` to exercise
+the whole pipeline (sweep + eval + analysis) without spending RunPod
+GPU time. The substitution happens inside ``run_cell`` via
+``stl_seed.training.loop.train_with_filter``'s lazy backend dispatch
+(see :mod:`stl_seed.training.backends.mock`).
+
 Usage examples
 --------------
 Dry run (no GPU, no spend, no training): produces the cell enumeration
@@ -78,8 +90,25 @@ from rich.table import Table
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CONFIG_DIR = _REPO_ROOT / "configs"
-_RUNS_DIR = _REPO_ROOT / "runs" / "canonical"
+
+# Mock-backend / runs-dir env vars (see scripts/validate_phase2_pipeline.py).
+import os as _os  # noqa: E402
+
+_MOCK_ENV = "STL_SEED_USE_MOCK_BACKEND"
+_RUNS_DIR_ENV = "STL_SEED_RUNS_DIR_OVERRIDE"
+
+_RUNS_DIR = (
+    Path(_os.environ[_RUNS_DIR_ENV]).resolve()
+    if _os.environ.get(_RUNS_DIR_ENV)
+    else _REPO_ROOT / "runs" / "canonical"
+)
 _SWEEP_LOG = _RUNS_DIR / "sweep_log.csv"
+
+
+def _mock_backend_enabled() -> bool:
+    """Return True iff STL_SEED_USE_MOCK_BACKEND is truthy in the environment."""
+    return _os.environ.get(_MOCK_ENV, "").strip() in {"1", "true", "True", "TRUE", "yes"}
+
 
 # Trajectory store roots searched in priority order. Canonical first
 # (Phase-2 full-scale 2,500-traj/task store from
@@ -296,18 +325,29 @@ def load_config(config_name: str) -> DictConfig:
 
 
 def load_cell_config(cell: Cell) -> DictConfig:
-    """Compose a single-cell config: default + per-cell group overrides."""
+    """Compose a single-cell config: default + per-cell group overrides.
+
+    When the ``STL_SEED_RUNS_DIR_OVERRIDE`` env var is set, the per-cell
+    ``run.output_dir`` is also redirected to ``<override>/<cell_id>`` so
+    the training-side artifacts land in the same tree as the runner-
+    side provenance + sweep log. This keeps the validation pipeline's
+    output entirely under one redirectable root.
+    """
     abs_config_dir = str(_CONFIG_DIR.resolve())
+    overrides = [
+        f"model={cell.model}",
+        f"filter={cell.filter}",
+        f"task={cell.task}",
+        f"run.name={cell.cell_id}",
+    ]
+    runs_dir_override = _os.environ.get(_RUNS_DIR_ENV)
+    if runs_dir_override:
+        # Absolute path so the override survives Hydra's ${run.name}
+        # interpolation (which would otherwise re-prefix with "runs/").
+        target = Path(runs_dir_override).resolve() / cell.cell_id
+        overrides.append(f"run.output_dir={target}")
     with initialize_config_dir(version_base="1.3", config_dir=abs_config_dir):
-        cfg = compose(
-            config_name="default",
-            overrides=[
-                f"model={cell.model}",
-                f"filter={cell.filter}",
-                f"task={cell.task}",
-                f"run.name={cell.cell_id}",
-            ],
-        )
+        cfg = compose(config_name="default", overrides=overrides)
     return cfg
 
 
@@ -488,7 +528,12 @@ def run_cell(cell: Cell, dry_run: bool = False) -> CellResult:
         from stl_seed.training.loop import train_with_filter
 
         config = _build_training_config(cell_cfg)
-        backend_name = str(cell_cfg.backend.name)
+        # Mock-backend opt-in: when STL_SEED_USE_MOCK_BACKEND=1 is set, dispatch
+        # to MockBNBBackend instead of the real bnb path. The mock honors the
+        # bnb interface so this is a one-line switch (see
+        # src/stl_seed/training/backends/mock.py and
+        # scripts/validate_phase2_pipeline.py).
+        backend_name = "mock_bnb" if _mock_backend_enabled() else str(cell_cfg.backend.name)
         # Filter/task family strings are passed to load_filtered_dataset
         # inside train_with_filter; the function handles the data plumbing.
         checkpoint = train_with_filter(

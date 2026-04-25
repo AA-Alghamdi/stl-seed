@@ -31,13 +31,20 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def get_backend(name: Literal["mlx", "bnb"]) -> TrainingBackend:
+def get_backend(name: Literal["mlx", "bnb", "mock_bnb"]) -> TrainingBackend:
     """Construct the named backend.
 
     Construction itself does NOT import the heavy native deps; the
     deferred imports happen on the first :meth:`train` / :meth:`load`
     call. This means tests on CPU machines can call ``get_backend("mlx")``
     or ``get_backend("bnb")`` to verify dispatch logic without crashing.
+
+    The ``"mock_bnb"`` value is the Phase-2 dry-run validation backend
+    (:class:`stl_seed.training.backends.mock.MockBNBBackend`). It
+    impersonates the bnb backend's surface contract but does no actual
+    training — used by ``scripts/validate_phase2_pipeline.py`` to
+    exercise the full sweep + eval + analysis pipeline without spending
+    GPU time.
     """
     if name == "mlx":
         from stl_seed.training.backends.mlx import MLXBackend
@@ -47,7 +54,11 @@ def get_backend(name: Literal["mlx", "bnb"]) -> TrainingBackend:
         from stl_seed.training.backends.bnb import BNBBackend
 
         return BNBBackend()
-    raise ValueError(f"Unknown backend {name!r}; expected 'mlx' or 'bnb'.")
+    if name == "mock_bnb":
+        from stl_seed.training.backends.mock import MockBNBBackend
+
+        return MockBNBBackend()
+    raise ValueError(f"Unknown backend {name!r}; expected 'mlx', 'bnb', or 'mock_bnb'.")
 
 
 # ---------------------------------------------------------------------------
@@ -62,12 +73,51 @@ def _load_filtered_dataset(filter_condition: str, task: str) -> Any:
     A8 (parallel agent). We import lazily so that this module does not
     fail to import when the filter package is not yet present.
 
+    When ``STL_SEED_USE_MOCK_BACKEND=1`` is set in the environment, this
+    function short-circuits to a tiny synthetic dataset (16 rows of
+    well-formed records) so that the validation pipeline
+    (``scripts/validate_phase2_pipeline.py``) can exercise the sweep
+    runner end-to-end without requiring real filtered trajectories on
+    disk. The mock backend does no real training, so the dataset content
+    only needs to be schema-valid, not semantically meaningful.
+
     Returns
     -------
-    A HuggingFace ``datasets.Dataset`` with at minimum the columns
-    ``messages``, ``prompt``, ``completion``, ``weight``, ``task`` (see
-    :mod:`stl_seed.training.tokenize`).
+    A HuggingFace ``datasets.Dataset`` (or list-of-dicts in mock mode)
+    with at minimum the columns ``messages``, ``prompt``, ``completion``,
+    ``weight``, ``task`` (see :mod:`stl_seed.training.tokenize`).
     """
+    import os as _os
+
+    if _os.environ.get("STL_SEED_USE_MOCK_BACKEND", "").strip() in {
+        "1",
+        "true",
+        "True",
+        "TRUE",
+        "yes",
+    }:
+        # Synthetic stub dataset for pipeline validation only. 16 rows is
+        # enough to exercise ceil(n * num_epochs / (batch_size * grad_accum))
+        # > 0 in the mock loss-curve estimator without slowing the
+        # validation script.
+        return [
+            {
+                "messages": [
+                    {"role": "system", "content": f"mock system prompt for {task}"},
+                    {"role": "user", "content": "Initial state: <state>0.000e+00</state>"},
+                    {
+                        "role": "assistant",
+                        "content": "<state>0.000e+00</state><action>0.000e+00</action>",
+                    },
+                ],
+                "prompt": f"mock prompt for {task} / {filter_condition}",
+                "completion": "<state>0.000e+00</state><action>0.000e+00</action>",
+                "weight": 1.0,
+                "task": task,
+            }
+            for _ in range(16)
+        ]
+
     try:
         from stl_seed.filter.dataset import load_filtered_dataset  # type: ignore[import-not-found]
     except ImportError as exc:
@@ -90,7 +140,7 @@ def train_with_filter(
     filter_condition: str,
     task: str,
     model: str,
-    backend: Literal["mlx", "bnb"],
+    backend: Literal["mlx", "bnb", "mock_bnb"],
     config: TrainingConfig | None = None,
     *,
     dataset: Any = None,
