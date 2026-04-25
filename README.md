@@ -9,11 +9,16 @@ Differentiable STL robustness as inference-time guidance for small open-weights 
 
 ## Headline
 
-Gradient-guided STL decoding lifts mean ρ on `glucose_insulin.tir.easy` from +0.16 (standard sampling) to +19.91 (saturating the spec) at matched compute. The hybrid sampler hits the +20.0 ceiling on every seed. On `bio_ode.repressilator.easy` the same method floors at ρ ≈ −250: gradient guidance does not transfer when the satisfying region requires multi-step coordinated planning.
+**Different samplers dominate different task structures**, and the artifact characterises which sampler wins which class of task with reproducible per-seed evidence.
+
+* On `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients), gradient-guided STL decoding lifts mean ρ from +0.16 (standard sampling) to +19.91 — saturating the spec at matched compute. The hybrid sampler hits the +20.0 ceiling on every seed.
+* On `bio_ode.repressilator.easy` (narrow vocabulary attractor: a single corner of the action box satisfies the spec, every other corner fails by ~275 ρ units), the gradient-guided sampler floors at ρ ≈ −250 — the satisfying region is measure-near-zero in the continuous action space. **Beam-search warmstart** resolves this: discrete enumeration over the dense action lattice scored under a model-predictive constant-extrapolation lookahead reaches ρ ≈ +25 on 3/3 seeds (vs gradient-guided's 0/3) on the same canonical IC. The xfail for the gradient-guided sampler stays in place — it is still a true statement about that sampler — and a positive resolution test now stands beside it.
+
+The headline is therefore not "one sampler that wins everywhere" but "continuous-gradient methods for smooth, locally-informative landscapes; discrete enumeration for narrow vocabulary attractors." Resolution analysis: [`paper/cross_task_validation.md`](paper/cross_task_validation.md), Resolution (2026-04-25) section.
 
 ![Unified sampler comparison](paper/figures/unified_comparison.png)
 
-N=8 seeds, 95% bootstrap CIs. Per-cell numbers in [`paper/unified_comparison_results.md`](paper/unified_comparison_results.md). Reproduce with `uv run python scripts/run_unified_comparison.py`.
+N=8 seeds, 95% bootstrap CIs, 9 samplers × 2 tasks. Per-cell numbers in [`paper/unified_comparison_results.md`](paper/unified_comparison_results.md). Reproduce with `uv run python scripts/run_unified_comparison.py`.
 
 ## What and why
 
@@ -39,11 +44,13 @@ final_rho = 19.9100
 steps_changed_by_guidance = 12 / 12
 ```
 
-Available samplers: `standard`, `bon`, `bon_continuous`, `gradient_guided`, `hybrid`.
+Available samplers: `standard`, `bon`, `bon_continuous`, `gradient_guided`, `hybrid`, `horizon_folded`, `rollout_tree`, `cmaes_gradient`, `beam_search_warmstart`.
 
-## What doesn't work
+## What doesn't work — and what resolves it
 
-Gradient guidance fails on tasks where 1-step lookahead is uninformative. `bio_ode.repressilator.easy` requires sustained silencing of gene-3 across 10 control steps; the local gradient does not point toward this attractor. A sweep over default-action initializations × λ ∈ {0, 5, 50} confirms the failure is structural, not tuning. Hybrid recovers part of the gap on glucose, none on repressilator. Full diagnosis in [`paper/cross_task_validation.md`](paper/cross_task_validation.md).
+Gradient guidance fails on tasks where 1-step lookahead is uninformative. `bio_ode.repressilator.easy` requires sustained silencing of gene-3 across 10 control steps; the local gradient does not point toward this attractor. A sweep over default-action initializations × λ ∈ {0, 5, 50} confirms the failure is structural, not tuning. Hybrid recovers part of the gap on glucose, none on repressilator.
+
+**Resolution (2026-04-25):** beam-search warmstart over the discrete action vocabulary reaches ρ ≈ +25 on 3/3 seeds on the same canonical IC. The mechanism is qualitatively different from continuous descent — the satisfying corner u=(0,0,1) is *in* the vocabulary by construction (k_per_dim=5 → K=125 contains the silence-3 corner), the model-predictive constant-extrapolation lookahead converts each candidate into a finite ρ score, and the top-B selection enumerates straight to it. Three other strategies were tried first (horizon-folded gradient, rollout-tree probing, CMA-ES + gradient refinement) and gave only partial fixes; the structural-search vs continuous-search distinction is what made C1 succeed where A1/A2/A3 did not. Full diagnosis and the four-strategy comparison in [`paper/cross_task_validation.md`](paper/cross_task_validation.md).
 
 The spec auto-tuner in [`src/stl_seed/specs/calibration.py`](src/stl_seed/specs/calibration.py) finds threshold values 10–100× more discriminative than the textbook hand-set choices ([`paper/REDACTED.md`](paper/REDACTED.md)).
 

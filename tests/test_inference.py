@@ -698,6 +698,87 @@ def test_gradient_guided_improves_rho_repressilator() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Resolution (2026-04-25): beam-search warmstart resolves the repressilator
+# failure that defeated the gradient-guided sampler above. The xfail above
+# is kept in place because it is a true statement about the gradient-guided
+# sampler on this configuration; the test below documents the positive
+# result on the same configuration via discrete vocabulary enumeration.
+# ---------------------------------------------------------------------------
+
+
+def test_beam_search_solves_repressilator() -> None:
+    """Beam-search warmstart reaches rho > 0 on the repressilator on at
+    least 2/3 fixed seeds.
+
+    Resolution test for the negative result documented in
+    `paper/cross_task_validation.md`. The mechanism: discrete enumeration
+    over the dense `k_per_dim=5` (K=125) action vocabulary, scored under
+    the model-predictive `tail_strategy="repeat_candidate"` lookahead,
+    finds the satisfying constant silence-3 policy `u = (0, 0, 1)` that
+    the continuous gradient probe cannot reach. The pure-beam endpoint
+    (no gradient refinement) is sufficient for this test, matching the
+    hypothesis that the failure is structural-search vs continuous-search
+    rather than a refinement-step issue.
+
+    Pre-registered acceptance criterion: at least 2 of 3 fixed seeds
+    must produce ``final_rho > 0``. The headline pilot in
+    ``tests/test_beam_search_warmstart.py`` already checks the seed-0
+    case at ρ ≈ +25; this test asserts robustness across seeds.
+    """
+    # Local import so the test_inference module's import block does not
+    # have to grow with every new sampler. The sampler is exposed at the
+    # ``stl_seed.inference`` package level via __init__.py.
+    from stl_seed.inference import BeamSearchWarmstartSampler
+
+    sim = RepressilatorSimulator()
+    params = RepressilatorParams()
+    x0 = _repressilator_initial_state(params)
+    spec = REGISTRY["bio_ode.repressilator.easy"]
+    # k_per_dim=5 -> K=125 vocabulary on [0,1]^3. Includes the silence-3
+    # corner [0,0,1] that yields rho ~ +25 when held constant; the 8-corner
+    # vocabulary used by the gradient sampler also contains that corner,
+    # but the per-step continuous probe cannot find it. Beam search on the
+    # denser lattice with the constant-extrapolation lookahead enumerates
+    # straight to it.
+    V = make_uniform_action_vocabulary(
+        [0.0] * REPRESSILATOR_ACTION_DIM,
+        [1.0] * REPRESSILATOR_ACTION_DIM,
+        k_per_dim=5,
+    )
+    K = int(V.shape[0])
+    sampler = BeamSearchWarmstartSampler(
+        _uniform_llm(K),
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        beam_size=8,
+        gradient_refine_iters=0,  # pure-beam endpoint suffices for the assertion
+        tail_strategy="repeat_candidate",
+    )
+
+    n_seeds = 3
+    rhos: list[float] = []
+    for s in range(n_seeds):
+        # Seed offset 1000 mirrors the convention used by
+        # test_gradient_guided_improves_rho (and the unified-comparison harness),
+        # so cross-test reproducibility is preserved when desired.
+        k = jax.random.key(1000 + s)
+        _, diag = sampler.sample(x0, k)
+        rhos.append(float(diag["final_rho"]))
+
+    n_satisfying = sum(r > 0.0 for r in rhos)
+    assert n_satisfying >= 2, (
+        f"beam-search warmstart did not solve the repressilator: "
+        f"per-seed rhos = {rhos}, satisfying seeds = {n_satisfying}/{n_seeds}; "
+        f"expected at least 2 of 3 with rho > 0. This is the resolution "
+        f"test for paper/cross_task_validation.md; a regression here means "
+        f"the beam-search fix has been broken."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Hybrid sampler — protocol & beats-pure-guidance.
 # ---------------------------------------------------------------------------
 

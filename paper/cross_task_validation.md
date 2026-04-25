@@ -72,10 +72,51 @@ The pre-registered interpretation, written before the result was in:
 
 The post-hoc result confirmed this. We have not edited the framing to make it tighter retroactively.
 
+## Resolution (2026-04-25)
+
+The negative result documented above stands as a true statement about the *gradient-guided* sampler on this configuration, but it no longer represents the artifact's overall position on the repressilator task. Four candidate fixes were implemented and benchmarked against the same canonical pilot IC. Three were partial; one resolves the failure deterministically.
+
+**A1 — Horizon-folded gradient.** `src/stl_seed/inference/horizon_folded.py`. Differentiate ρ with respect to the *entire* control sequence $u_{1:H}$ end-to-end and run K Adam steps on the joint 30-D action vector, instead of decomposing into H per-step gradient probes. Removes the myopic-default-action assumption. Result on the canonical IC: still cliff-trapped — full-horizon ∇ρ inherits the same near-zero local gradient norm at the box centre that defeated the per-step probe, because the cliff geometry is a property of ρ on this configuration, not of the decomposition. Partial fix (helps on some seeds; mean ρ remains negative).
+
+**A2 — Rollout-tree probing.** `src/stl_seed/inference/rollout_tree.py`. At each step branch over the top-`branch_k` LLM candidates, simulate `lookahead_h` steps under a fixed continuation policy, score the leaf ρ, and pick argmax. AlphaGo-style finite-depth tree search with continuous STL leaves. Result on the canonical IC with default `continuation_policy="zero"`: no improvement — the leaf ρ on the partial+continuation trajectory is dominated by the spec's saturated −250 floor, so the branch ranking is uninformative. The `"heuristic"` continuation policy with the silence-3 default action does help, but only because the heuristic *is* the answer; that is not a fix, that is the tester telling the algorithm the answer.
+
+**A3 — CMA-ES + gradient refinement.** `src/stl_seed/inference/cmaes_gradient.py`. Population search (Hansen 2016) over the joint 30-D action box with covariance adaptation, then gradient-ascent polishing of the best survivor. Escapes basins that local methods cannot. Result on the canonical IC: partial fix — CMA-ES does occasionally find seeds whose mean migrates toward a satisfying corner, but the population variance has to be high enough that the box-reflection clamp dominates the dynamics, and the gradient refinement in the cliff regime is again uninformative. Per-seed it sometimes hits ρ > 0; on aggregate it is not robust.
+
+**C1 — Beam-search warmstart.** `src/stl_seed/inference/beam_search_warmstart.py`. **Resolves the failure.** The mechanism is qualitatively different from A1/A2/A3: instead of trying to find the satisfying region via a continuous descent on ρ, beam search *enumerates* the discrete vocabulary V ∈ ℝ^{125 × 3} (k_per_dim = 5 on the [0, 1]^3 action box, which contains the silence-3 corner u = (0, 0, 1) by construction). At each step t, every (beam-member, vocabulary-item) pair is evaluated under a model-predictive `tail_strategy="repeat_candidate"` lookahead — score = ρ on "do prefix, then hold the candidate constant for the rest of the horizon." The constant silence-3 policy gives ρ ≈ +25, so this score is finite and differentiating from the sea of −250 candidates from step 0. The top-B candidates survive; B = 8 is enough to keep silence-3 in the active beam through every step. After the discrete pass, an optional 30-step gradient refinement polishes the continuous control around the discrete winner. Result on the canonical IC: ρ ≈ +25 on 3/3 seeds in `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution` and on the `n=8`-seed cross-sampler harness; the negative result for gradient-guided at ρ ≈ −250 is unchanged.
+
+### Why C1 succeeds where A1/A2/A3 do not
+
+The repressilator's ρ landscape on $[0, 1]^{30}$ has *one* satisfying basin (the constant silence-3 corner) embedded in a sea of saturated −250. The basin's measure under any continuous distribution is near zero; the basin's *vocabulary measure* under the k_per_dim = 5 lattice is 1 / 125 — small but enumerable. The four strategies map onto two qualitatively different fixes for the original myopic-gradient diagnosis:
+
+* A1/A2/A3 try to *find the basin via continuous search*. They differ in how they search (joint gradient, lookahead tree, population evolution + gradient) but share the assumption that ρ's gradient or finite differences carry useful directional information. On this configuration that assumption fails: the cliff is sharp and the floor is flat.
+* C1 *bypasses continuous search entirely*. The vocabulary is a finite set; iterate over it. The model-predictive constant-extrapolation lookahead converts each vocabulary item into a finite-ρ scalar, the top-B selection is a trivial sort, and the satisfying corner survives the beam from step 0 because its lookahead-ρ is +25 while every other candidate's is ≈ −250.
+
+The distinction is structural-search vs. continuous-search, not "better hyperparameters." The pre-registered diagnosis ("the partial-then-extrapolated probe is the bottleneck") was correct in identifying *the* bottleneck as the partial-extrapolation, but the right fix was not a smarter extrapolation — it was to stop using a continuous gradient and start using a discrete enumeration.
+
+### Updated framing for the paper
+
+Before today the artifact's paper-level position on the repressilator was a single-sentence negative result. After today the position is:
+
+> Different inference-time samplers dominate different task structures. Gradient-guided sampling lifts mean ρ from +0.16 to +19.91 on `glucose_insulin.tir.easy` (smooth dynamics, locally-informative gradients); beam-search warmstart hits ρ ≈ +25 on `bio_ode.repressilator.easy` (3/3 seeds, vs gradient-guided's 0/3). The artifact characterises which sampler wins which task class, with reproducible per-seed evidence. There is no single best sampler.
+
+This is the honest version. There is no claim of universal dominance; there is a calibration of which method to reach for under which structural assumptions. The negative result for gradient-guided on the canonical IC is preserved (and the `xfail` remains in place); we now also have a positive result for beam-search-warmstart on the same IC that was the negative-result counter-example.
+
+### Provenance and reproducibility
+
+* C1 implementation: `src/stl_seed/inference/beam_search_warmstart.py`.
+* C1 unit tests (3-seed pilot): `tests/test_beam_search_warmstart.py::test_beam_search_recovers_repressilator_solution`, plus the new explicit `tests/test_inference.py::test_beam_search_solves_repressilator`.
+* Cross-sampler harness with all four extended samplers (A1, A2, A3, C1) on both task families: `scripts/run_unified_comparison.py`; results in `runs/unified_comparison/results.parquet`, headline figure in `paper/figures/unified_comparison.png`, summary in `paper/unified_comparison_results.md`.
+* `tests/test_inference.py::test_gradient_guided_improves_rho_repressilator` remains marked `xfail(strict=False)` — it is still a true statement about the gradient-guided sampler on this configuration.
+
 ## References
 
 Aksaray et al. "Q-learning for robust satisfaction of signal temporal logic specifications." CDC 2016.
+Amos & Kolter. "OptNet: Differentiable Optimization as a Layer in Neural Networks." NeurIPS 2017, arXiv:1703.00443.
 Brown et al. "Large Language Monkeys: scaling inference compute with repeated sampling." arXiv:2407.21787, 2024.
 Donzé & Maler. "Robust satisfaction of temporal logic over real-valued signals." FORMATS 2010, DOI 10.1007/978-3-642-15297-9_9.
 Elowitz & Leibler. "A synthetic oscillatory network of transcriptional regulators." Nature 403, 335–338 (2000), DOI 10.1038/35002125.
+Hansen. "The CMA Evolution Strategy: A Tutorial." arXiv:1604.00772, 2016.
+Reddy. "Speech Recognition by Machine: A Review." Proc. IEEE 64:4, 1977.
+Silver et al. "Mastering the game of Go with deep neural networks and tree search." Nature 529:484–489, 2016, DOI 10.1038/nature16961.
 Snell et al. "Scaling LLM test-time compute optimally." arXiv:2408.03314, 2024.
+Vijayakumar et al. "Diverse Beam Search." arXiv:1610.02424, 2018.
