@@ -1,20 +1,10 @@
-"""Example 02 — Generating a corpus and filtering by STL robustness.
+"""Example 02 — Generate a corpus and filter by STL robustness.
 
-Builds on example 01. Generates 50 glucose-insulin trajectories under a
-mix of random and heuristic policies, scores each with the registered
-ADA 2024 Time-in-Range spec, then applies all three filter conditions
-from ``stl_seed.filter`` and prints a side-by-side comparison.
+50 glucose-insulin trajectories under a 50/50 random+heuristic policy
+mix, scored under the ADA 2024 Time-in-Range spec, then compared
+side-by-side under all three filter conditions (`HardFilter`,
+`QuantileFilter`, `ContinuousWeightedFilter`). Run from the repo root:
 
-The three filter conditions correspond to the three SFT-density variants
-in ``paper/theory.md`` §2:
-
-* ``HardFilter``               — keep ``rho > threshold``, weights uniform.
-* ``QuantileFilter``           — keep top-K%,                weights uniform.
-* ``ContinuousWeightedFilter`` — keep all, weights = ``N * softmax(rho/beta)``.
-
-Usage
------
-    cd /path/to/stl-seed
     uv run python examples/02_stl_filtering.py
 """
 
@@ -77,9 +67,7 @@ def main() -> int:
     # the policy; the simulator integrates the resulting open-loop
     # schedule end-to-end. The 50/50 random+heuristic mix gives a useful
     # spread of rho values for the filter comparison.
-    print(
-        f"Generating N={_N_TRAJECTORIES} trajectories under policy_mix={_POLICY_MIX} ..."
-    )
+    print(f"Generating N={_N_TRAJECTORIES} trajectories under policy_mix={_POLICY_MIX} ...")
     key = jax.random.key(_SEED)
     trajectories, metadata = runner.generate_trajectories(
         task="glucose_insulin",
@@ -91,8 +79,9 @@ def main() -> int:
     rhos = np.array([m["robustness"] for m in metadata], dtype=np.float64)
     policies = [m["policy"] for m in metadata]
     print(f"  generated {len(trajectories)} trajectories.")
-    print(f"  policy split: random={policies.count('random')} "
-          f"heuristic={policies.count('heuristic')}")
+    print(
+        f"  policy split: random={policies.count('random')} heuristic={policies.count('heuristic')}"
+    )
     print()
 
     # 3. Per-policy summary so the reader can sanity-check the heuristic
@@ -141,13 +130,6 @@ def main() -> int:
             f"max={weights_np.max():.3f}  "
             f"mean={weights_np.mean():.3f}  sum={weights_np.sum():.3f}"
         )
-    print()
-    print(
-        "Read across the rows: HardFilter discards every below-threshold trajectory;\n"
-        "QuantileFilter keeps the top quartile regardless of sign; ContinuousWeighted\n"
-        "keeps every trajectory but assigns vanishing weight to the worst ones. Each\n"
-        "feeds a different SFT loss via stl_seed.filter.dataset.build_sft_dataset."
-    )
     return 0
 
 

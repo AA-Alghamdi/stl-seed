@@ -1,28 +1,9 @@
-"""Example 01 — Basic glucose-insulin simulation + STL robustness.
+"""Example 01 — Glucose-insulin simulation + STL robustness.
 
-A reader who has never seen ``stl-seed`` should be able to run this file
-top-to-bottom and read off:
+Three open-loop schedules (zero infusion, constant 1.5 U/h, fasting
+baseline) on the Bergman 1979 + Dalla Man 2007 model, each scored under
+the registered ADA 2024 Time-in-Range spec. Run from the repo root:
 
-  1. How to construct a simulator (Bergman 1979 minimal model with a
-     Dalla Man 2007 oral-meal disturbance).
-  2. How to drive it with two open-loop control schedules: a zero-infusion
-     baseline and a constant low-rate infusion.
-  3. How to score each resulting trajectory under the registered ADA 2024
-     Time-in-Range (TIR) STL specification.
-
-The example is fully self-contained — no external data, no dataset
-download. It runs in well under a second on M-series Apple Silicon and
-on any CUDA / CPU host that has a working ``jax`` install.
-
-Open-loop, not closed-loop, is the SERA setting. The agent (LLM policy)
-emits a full control schedule ``u_{1:H}`` once at the start of the
-trajectory; the simulator integrates the entire horizon in one shot. The
-trajectory is then scored end-to-end with the STL evaluator. This file
-mirrors that contract so the next examples can extend it directly.
-
-Usage
------
-    cd /path/to/stl-seed
     uv run python examples/01_basic_simulation.py
 """
 
@@ -58,9 +39,7 @@ def _simulate_open_loop(
     do the same wrapping here so the STL evaluator can consume the
     output via the duck-typed Trajectory protocol.
     """
-    states, times, meta = sim.simulate(
-        initial_state, control_sequence, meals, params, key
-    )
+    states, times, meta = sim.simulate(initial_state, control_sequence, meals, params, key)
     return Trajectory(
         states=states,
         actions=control_sequence.reshape(-1, 1),
@@ -91,7 +70,7 @@ def main() -> int:
 
     print("Bergman 1979 + Dalla Man 2007 (single-meal challenge)")
     print(f"  horizon         : {sim.horizon_min} min, {sim.n_control_points} control points")
-    print(f"  action bounds   : [0.0, 5.0] U/h insulin infusion")
+    print("  action bounds   : [0.0, 5.0] U/h insulin infusion")
     print(f"  STL spec        : {spec.name}")
     print(f"  formula         : {spec.formula_text}")
     print()
@@ -121,20 +100,10 @@ def main() -> int:
     print("Open-loop schedule C: zero infusion AND no meal (fasting baseline)")
     from stl_seed.tasks.glucose_insulin import MealSchedule
 
-    traj_fast = _simulate_open_loop(
-        sim, params, initial_state, MealSchedule.empty(), u_zero, key
-    )
+    traj_fast = _simulate_open_loop(sim, params, initial_state, MealSchedule.empty(), u_zero, key)
     _report("u = 0 U/h, no meal", traj_fast, spec)
     print()
 
-    print(
-        "Interpretation: the spec rho is the signed margin (mg/dL) by which the\n"
-        "ADA 2024 Time-in-Range band [70, 180] is satisfied or violated on [30,\n"
-        "120] min. Schedule A overshoots the upper bound (rho < 0); schedule B\n"
-        "improves the margin; schedule C, with no meal disturbance, is the easy\n"
-        "case. Examples 02 and 03 sweep this with random + heuristic policies\n"
-        "and feed filtered trajectories into the SFT loop."
-    )
     return 0
 
 

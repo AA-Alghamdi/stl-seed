@@ -1,30 +1,14 @@
 """Example 03 — Minimal MLX QLoRA training pipeline (Apple Silicon only).
 
-The smallest end-to-end loop that produces a saved adapter:
+End-to-end loop: generate 50 glucose-insulin trajectories, filter with
+`HardFilter`, render as chat, run 10 LoRA iterations on
+`mlx-community/Qwen3-0.6B-bf16`, reload + decode one sample.
 
-  1. Generate ~50 glucose-insulin trajectories (random + heuristic).
-  2. Filter them via HardFilter and emit a HuggingFace Dataset.
-  3. Render each kept trajectory as a chat (system / user / assistant)
-     conversation using ``stl_seed.training.tokenize.format_trajectory_as_text``.
-  4. Run 10 LoRA iterations on ``mlx-community/Qwen3-0.6B-bf16`` via
-     ``mlx_lm.tuner.trainer.train``.
-  5. Reload the adapter and decode one sample to verify round-tripping.
+Apple Silicon only (Darwin / arm64). Non-arm64 hosts get a clear error
+before any model download. Wall clock ~1-2 min on M5 Pro; disk ~1.2 GB
+HF cache + ~5 MB adapter under `runs/example_03/`. Run from the repo
+root:
 
-Hardware. This script REQUIRES Apple Silicon (Darwin / arm64). On
-non-Apple hosts it exits with a clear error before downloading any
-model. The corresponding Linux/CUDA path is the ``BNBBackend`` —
-covered in ``scripts/`` and the ``stl_seed.training`` module reference.
-
-Wall clock. ~1-2 min on M5 Pro: ~30 s for trajectory generation, ~30 s
-for the first model load + LoRA wiring, ~20 s for 10 training iters,
-~10 s for reload + one decode.
-
-Disk usage. ~1.2 GB for the Qwen3-0.6B-bf16 base model in the
-HuggingFace cache + ~5 MB for the adapter under ``runs/example_03/``.
-
-Usage
------
-    cd /path/to/stl-seed
     uv run python examples/03_mlx_training_minimal.py
 """
 
@@ -65,17 +49,16 @@ def _require_apple_silicon() -> None:
             "[example 03] Requires Apple Silicon (Darwin / arm64); "
             f"detected {platform.system()} / {platform.machine()}.\n"
             "On Linux / CUDA, use the BNBBackend instead — see "
-            "docs/api_reference.md#stl_seedtraining for the equivalent path.\n"
+            "docs/README.md and src/stl_seed/training/backends/bnb.py for the equivalent path.\n"
         )
         raise SystemExit(1)
     try:
         import mlx_lm  # noqa: F401
-    except ImportError:
+    except ImportError as err:
         sys.stderr.write(
-            "[example 03] The `mlx` extra is not installed.\n"
-            "Run: uv sync --extra mlx --extra dev\n"
+            "[example 03] The `mlx` extra is not installed.\nRun: uv sync --extra mlx --extra dev\n"
         )
-        raise SystemExit(1)
+        raise SystemExit(1) from err
 
 
 def _generate_corpus():
@@ -112,8 +95,10 @@ def _generate_corpus():
         spec_key=_SPEC_KEY,
     )
     rhos = np.array([m["robustness"] for m in metadata], dtype=np.float64)
-    print(f"  generated {len(trajectories)} (rho range "
-          f"[{rhos.min():+.3f}, {rhos.max():+.3f}], sat={(rhos > 0).mean():.0%}).")
+    print(
+        f"  generated {len(trajectories)} (rho range "
+        f"[{rhos.min():+.3f}, {rhos.max():+.3f}], sat={(rhos > 0).mean():.0%})."
+    )
     filt = HardFilter(rho_threshold=0.0, min_kept=1)
     kept_traj, weights = filt.filter(trajectories, rhos)
     print(f"  HardFilter kept {len(kept_traj)} trajectories (weights uniform).")
@@ -141,7 +126,6 @@ def _render_chat(kept_traj, spec) -> list[dict]:
 
 def _run_lora(samples: list[dict]) -> tuple[Path, list[float]]:
     """Run 10 LoRA iterations and write the adapter under _RUN_DIR."""
-    import mlx.core as mx
     import mlx.optimizers as optim
     from mlx_lm import load as mlx_load
     from mlx_lm.tuner.datasets import ChatDataset
@@ -176,7 +160,9 @@ def _run_lora(samples: list[dict]) -> tuple[Path, list[float]]:
     linear_to_lora_layers(model, num_layers=n_blocks, config=lora_config, use_dora=False)
     print_trainable_parameters(model)
 
-    samples_list = [json.loads(line) for line in dataset_path.read_text().splitlines() if line.strip()]
+    samples_list = [
+        json.loads(line) for line in dataset_path.read_text().splitlines() if line.strip()
+    ]
     train_dataset = CacheDataset(ChatDataset(samples_list, tokenizer, mask_prompt=False))
     val_dataset = CacheDataset(ChatDataset(samples_list, tokenizer, mask_prompt=False))
 
@@ -276,8 +262,7 @@ def main() -> int:
     print("\nStep 3 — LoRA training")
     adapter_dir, losses = _run_lora(samples)
     if losses:
-        print(f"  loss curve: first={losses[0]:.4f}  last={losses[-1]:.4f}  "
-              f"min={min(losses):.4f}")
+        print(f"  loss curve: first={losses[0]:.4f}  last={losses[-1]:.4f}  min={min(losses):.4f}")
     else:
         print("  no loss reports captured (iters may have been too few).")
 

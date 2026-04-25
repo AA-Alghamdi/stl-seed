@@ -1,19 +1,6 @@
-# stl-seed default Hydra config (Phase 2 base)
-#
-# This file is the schema-of-record for all stl-seed runs. Sweep configs
-# (sweep_main.yaml, pilot.yaml) compose over this base by overriding
-# group selections in `defaults:` and individual fields under any
-# group. Source citations live in the per-group YAMLs.
-#
-# Naming convention: lowercase keys, dot-free identifiers, group/file
-# names match the group selector strings exactly so Hydra resolution is
-# unambiguous.
-#
-# References:
-#   paper/architecture.md            -- module + config layout
-#   paper/REDACTED.md  §C.3       -- QLoRA hyperparameter spec
-#   paper/theory.md       §4, §5     -- statistical model + BoN budgets
-#   paper/reproducibility.md  §3, §6 -- seed + provenance contracts
+# stl-seed default Hydra config (Phase 2 base).
+# Schema-of-record for all runs; sweep_main.yaml + pilot.yaml compose over it.
+# Source citations: paper/{architecture,theory,REDACTED,reproducibility}.md.
 
 defaults:
   - _self_
