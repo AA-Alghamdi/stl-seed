@@ -20,6 +20,14 @@ On a 100-trajectory glucose-insulin pilot, MLX QLoRA on Qwen3-0.6B-bf16 drove tr
 
 ---
 
+## Headline figure — gradient guidance is asymmetric across task families
+
+![Unified sampler comparison](paper/figures/unified_comparison.png)
+
+On `glucose_insulin.tir.easy`, gradient-guided decoding lifts mean ρ from **+0.16** (standard sampling) to **+19.91** (saturating the spec) and the hybrid sampler hits the **+20.0** ceiling on every seed; continuous BoN (N=8) reaches only **+11.54**. On `bio_ode.repressilator.easy`, every sampler floors at ρ ≈ **−250** (continuous BoN −244.96, hybrid −249.84) — gradient guidance does not transfer across task families when the satisfying region is a multi-step planning problem. Full numbers and per-seed wall-clock in [`paper/unified_comparison_results.md`](paper/unified_comparison_results.md); reproduce with `uv run python scripts/run_unified_comparison.py`.
+
+---
+
 ## 1. Why I built this
 
 I'm Abdullah AlGhamdi: UC Berkeley chemistry '26, four years in [Omar REDACTED's](https://yaghi.berkeley.edu/) MOF lab, two semesters in [Murat Arcak's](https://people.eecs.berkeley.edu/~arcak/) BAIR group on STL formal methods, matriculating into [CMU MS-AIE](https://www.cs.cmu.edu/aie) August 2026. I came to STL through Arcak; I came to STL on biomolecular ODEs through [Hanna REDACTED's REDACTED line](https://arxiv.org/abs/2412.15227), where I'm a co-author on a separate parameter-synthesis paper that is firewalled from this artifact ([paper/REDACTED.md](paper/REDACTED.md)).
