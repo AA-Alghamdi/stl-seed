@@ -52,10 +52,11 @@ def sample(
         "gradient_guided",
         "--sampler",
         help=(
-            "One of {standard, bon, bon_continuous, gradient_guided}. "
+            "One of {standard, bon, bon_continuous, gradient_guided, hybrid}. "
             "'standard' is vanilla LLM decoding; 'bon' is binary-STL "
             "Best-of-N; 'bon_continuous' is argmax-rho BoN; "
-            "'gradient_guided' is the gradient-guided contribution."
+            "'gradient_guided' is the gradient-guided contribution; "
+            "'hybrid' runs n gradient-guided draws and selects argmax-rho."
         ),
     ),
     n: int = typer.Option(
@@ -107,6 +108,7 @@ def sample(
     from stl_seed.inference import (
         BestOfNSampler,
         ContinuousBoNSampler,
+        HybridGradientBoNSampler,
         StandardSampler,
         STLGradientGuidedSampler,
     )
@@ -201,10 +203,12 @@ def sample(
         s = ContinuousBoNSampler(n=n, **common)
     elif sampler == "gradient_guided":
         s = STLGradientGuidedSampler(guidance_weight=guidance_weight, **common)
+    elif sampler == "hybrid":
+        s = HybridGradientBoNSampler(n=n, guidance_weight=guidance_weight, **common)
     else:
         typer.echo(
             f"unknown sampler: {sampler!r}; choose one of "
-            "{standard, bon, bon_continuous, gradient_guided}",
+            "{standard, bon, bon_continuous, gradient_guided, hybrid}",
             err=True,
         )
         raise typer.Exit(code=2)

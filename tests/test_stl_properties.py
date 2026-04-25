@@ -615,3 +615,73 @@ def test_lt_form_is_negation_of_gt_form(c: int, th: float, traj: _TrajStub) -> N
     assert _close(rho_lt, -rho_gt), (
         f"_lt form != -_gt form: th={th}, rho_gt={rho_gt}, rho_lt={rho_lt}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Property 12: Temporal-reduction scaling.
+#   ρ(G[a,b](α·x ≥ α·c), τ_α) == α · ρ(G[a,b](x ≥ c), τ),  α > 0
+#   ρ(F[a,b](α·x ≥ α·c), τ_α) == α · ρ(F[a,b](x ≥ c), τ),  α > 0
+# where τ_α has states α·τ.states. The temporal reductions G and F are
+# min and max over the active grid points; both commute with multiplication
+# by α > 0. This closes the audit-flagged "temporal-reduction scaling" gap
+# (REDACTED_final.md §3 item 7).
+# ---------------------------------------------------------------------------
+
+
+@PROPERTY_SETTINGS
+@given(
+    c=_channel,
+    th=_finite_threshold,
+    alpha=st.floats(min_value=0.1, max_value=5.0, allow_nan=False, allow_infinity=False),
+    interval=random_interval(),
+    traj=random_trajectory(),
+    op=st.sampled_from(["always", "eventually"]),
+)
+def test_temporal_reduction_scaling(
+    c: int,
+    th: float,
+    alpha: float,
+    interval: Interval,
+    traj: _TrajStub,
+    op: str,
+) -> None:
+    """For G[a,b]/F[a,b](α·x ≥ α·c) with positive α, ρ scales by exactly α.
+
+    Predicate-level scaling (Property 11) lifts to G/F because
+
+        min_t (α · v_t) = α · min_t v_t        when α > 0,
+        max_t (α · v_t) = α · max_t v_t        when α > 0.
+
+    The Donzé-Maler 2010 space-robustness semantics implements G as min
+    and F as max over the in-window grid points; this test verifies that
+    the recursive evaluator preserves the linearity-in-α invariant for
+    temporal reductions over any random window and trajectory drawn by
+    Hypothesis.
+
+    Falsification criterion
+    -----------------------
+    A failing example would expose a bug in the windowing reduction
+    (e.g. masking ``-inf`` instead of ``-jnp.inf`` so the min picks
+    spurious values, or scaling the predicate signal but not the
+    threshold inside the temporal reduction).
+    """
+    pred_orig = _gt(f"x{c}", c, th)
+    pred_scaled = _gt(f"x{c}_scaled", c, float(alpha * th))
+    if op == "always":
+        spec_orig = Always(pred_orig, interval=interval)
+        spec_scaled = Always(pred_scaled, interval=interval)
+    else:  # "eventually"
+        spec_orig = Eventually(pred_orig, interval=interval)
+        spec_scaled = Eventually(pred_scaled, interval=interval)
+
+    rho_orig = float(evaluate_robustness(spec_orig, traj))
+    scaled_traj = _TrajStub(states=traj.states * float(alpha), times=traj.times)
+    rho_scaled = float(evaluate_robustness(spec_scaled, scaled_traj))
+    expected = alpha * rho_orig
+    # Tolerance scales with alpha because each reduction propagates ~ulp
+    # error and the scaled value's magnitude inflates by alpha.
+    assert _close(rho_scaled, expected, atol=ATOL * (1.0 + abs(alpha))), (
+        f"temporal-reduction scaling violated for op={op}: alpha={alpha}, "
+        f"th={th}, c={c}, interval={interval}, "
+        f"rho_orig={rho_orig}, rho_scaled={rho_scaled}, expected={expected}"
+    )

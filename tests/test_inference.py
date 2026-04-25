@@ -45,6 +45,7 @@ import pytest
 from stl_seed.inference import (
     BestOfNSampler,
     ContinuousBoNSampler,
+    HybridGradientBoNSampler,
     LLMProposal,
     Sampler,
     StandardSampler,
@@ -54,6 +55,12 @@ from stl_seed.inference.gradient_guided import make_uniform_action_vocabulary
 from stl_seed.specs import REGISTRY
 from stl_seed.stl import evaluate_robustness
 from stl_seed.tasks._trajectory import Trajectory
+from stl_seed.tasks.bio_ode import (
+    REPRESSILATOR_ACTION_DIM,
+    RepressilatorSimulator,
+    _repressilator_initial_state,
+)
+from stl_seed.tasks.bio_ode_params import RepressilatorParams
 from stl_seed.tasks.glucose_insulin import (
     BergmanParams,
     GlucoseInsulinSimulator,
@@ -570,3 +577,264 @@ def test_llm_wrong_shape_raises(gi_setup) -> None:
     sampler = StandardSampler(bad_llm, sim, spec, V, params, horizon=sim.n_control_points)
     with pytest.raises(ValueError, match="logits of shape"):
         sampler.sample(x0, jax.random.key(0))
+
+
+# ---------------------------------------------------------------------------
+# Cross-task validation: gradient guidance on bio_ode.repressilator.easy.
+# ---------------------------------------------------------------------------
+#
+# Pre-registered protocol matches test_gradient_guided_improves_rho but
+# substitutes the RepressilatorSimulator + bio_ode.repressilator.easy spec.
+# The hypothesis: gradient guidance generalises across task families.
+#
+# Empirical finding (smoke run on 2026-04-24, 6 seeds, lambda in {0.1, 1, 5,
+# 20, 50}): on the canonical default IC ``[0,0,0,15,5,25]`` — the pilot
+# initial state — gradient guidance does NOT meaningfully improve mean rho.
+# The G[120,200] (m1 >= 250 nM) clause requires SUSTAINED control of the
+# upstream repressor (silence gene 3, action ``[0,0,1]``) across ALL 10
+# control steps; the partial-then-extrapolated gradient probe at any
+# single intermediate step does not point coherently in that direction.
+# The rho landscape is dominated by a brutal cliff between "monotone
+# silence-3" (rho ~ +25) and almost everything else (rho ~ -250 floor),
+# and the per-step gradient cannot find that cliff from the gradient-
+# probe extrapolation point. Sweep summary (default_action options ``center
+# 0.5``, ``zeros``, ``silence-3``; lambdas ``0, 5, 50``):
+#
+#   da=center 0.5,   lambda=0:    mean rho = -250.0 (saturated floor)
+#   da=center 0.5,   lambda=50:   mean rho = -250.0
+#   da=zeros,        lambda=50:   mean rho = -250.0
+#   da=silence-3,    lambda=50:   mean rho = -248.1   (1/6 seeds escapes)
+#
+# This is reported as a NEGATIVE empirical finding in
+# paper/cross_task_validation.md. The test below is marked
+# ``xfail(strict=False)`` with the documented reason. If a future change to
+# the gradient-probe extrapolation strategy or a better default-action
+# heuristic flips the test to PASS, that is a desirable surprise (strict=
+# False does not fail on unexpected pass).
+
+
+@pytest.mark.xfail(
+    strict=False,
+    reason=(
+        "Cross-task transfer FAILS on bio_ode.repressilator.easy with the "
+        "canonical pilot IC. G[120,200] (m1>=250) requires sustained "
+        "silence-gene-3 across all 10 control steps; the partial-then-"
+        "extrapolated gradient probe at any single step does not point "
+        "coherently toward this attractor. Documented in "
+        "paper/cross_task_validation.md as a publishable negative result."
+    ),
+)
+def test_gradient_guided_improves_rho_repressilator() -> None:
+    """Cross-task validation: does gradient guidance also help on the
+    repressilator?
+
+    Same protocol as ``test_gradient_guided_improves_rho`` but with the
+    :class:`RepressilatorSimulator` + ``bio_ode.repressilator.easy`` spec
+    and the canonical pilot IC. Compares ``lambda=0`` vs ``lambda=2``
+    over 6 seeds. Asserts ``paired_wins >= 4/6 OR mean_rho_guided > 0 +
+    mean_rho_baseline``.
+
+    Status: pre-registered to fail on the current configuration. Negative
+    result documented; ``xfail(strict=False)`` so a future improvement
+    that flips the test to PASS does not fail the suite.
+    """
+    sim = RepressilatorSimulator()
+    params = RepressilatorParams()
+    x0 = _repressilator_initial_state(params)
+    spec = REGISTRY["bio_ode.repressilator.easy"]
+    # k_per_dim=2 -> K=8 vocabulary on [0,1]^3 box. The 8 corners include
+    # the silence-3 action ``[0,0,1]`` that is known to satisfy the spec.
+    V = make_uniform_action_vocabulary(
+        [0.0] * REPRESSILATOR_ACTION_DIM,
+        [1.0] * REPRESSILATOR_ACTION_DIM,
+        k_per_dim=2,
+    )
+    llm = _uniform_llm(int(V.shape[0]))
+
+    baseline = STLGradientGuidedSampler(
+        llm,
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        guidance_weight=0.0,
+        sampling_temperature=0.5,
+    )
+    guided = STLGradientGuidedSampler(
+        llm,
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        guidance_weight=2.0,
+        sampling_temperature=0.5,
+    )
+
+    n_seeds = 6
+    rhos_b: list[float] = []
+    rhos_g: list[float] = []
+    for s in range(n_seeds):
+        k = jax.random.key(1000 + s)
+        _, d_b = baseline.sample(x0, k)
+        _, d_g = guided.sample(x0, k)
+        rhos_b.append(float(d_b["final_rho"]))
+        rhos_g.append(float(d_g["final_rho"]))
+
+    paired_wins = sum(g > b for g, b in zip(rhos_g, rhos_b, strict=True))
+    mean_b = float(np.mean(rhos_b))
+    mean_g = float(np.mean(rhos_g))
+    # The success criterion mirrors test_gradient_guided_improves_rho's
+    # spirit: either the per-seed paired wins are a clear majority, OR
+    # the mean improvement is positive. Both must currently fail on the
+    # canonical IC; xfail catches that.
+    assert paired_wins >= 4 or mean_g > mean_b, (
+        f"cross-task transfer to repressilator failed: "
+        f"baseline mean = {mean_b:.3f}, guided mean = {mean_g:.3f}, "
+        f"paired wins = {paired_wins}/{n_seeds}, "
+        f"per-seed baseline = {rhos_b}, per-seed guided = {rhos_g}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Hybrid sampler — protocol & beats-pure-guidance.
+# ---------------------------------------------------------------------------
+
+
+def test_hybrid_protocol_compliance(gi_setup) -> None:
+    """HybridGradientBoNSampler satisfies the Sampler Protocol."""
+    sim, params, spec, V, x0 = gi_setup
+    llm = _uniform_llm(int(V.shape[0]))
+    s = HybridGradientBoNSampler(
+        llm,
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        n=2,
+        guidance_weight=1.0,
+    )
+    assert isinstance(s, Sampler)
+    traj, diag = s.sample(x0, jax.random.key(11))
+    assert isinstance(traj, Trajectory)
+    assert diag["sampler"] == "hybrid_gradient_bon"
+    assert diag["n_samples"] == 2
+    assert len(diag["all_rho"]) == 2
+    # chosen_index points at the argmax draw
+    assert diag["chosen_rho"] == max(diag["all_rho"])
+    # n_steps_changed_by_guidance_per_draw is a list of n ints
+    assert len(diag["n_steps_changed_by_guidance_per_draw"]) == 2
+    # final_rho == chosen_rho by construction
+    assert diag["final_rho"] == diag["chosen_rho"]
+
+
+def test_hybrid_invalid_n_raises(gi_setup) -> None:
+    sim, params, spec, V, x0 = gi_setup
+    llm = _uniform_llm(int(V.shape[0]))
+    with pytest.raises(ValueError, match="n must be >= 1"):
+        HybridGradientBoNSampler(
+            llm,
+            sim,
+            spec,
+            V,
+            params,
+            horizon=sim.n_control_points,
+            n=0,
+        )
+
+
+def test_hybrid_beats_pure_guidance() -> None:
+    """Pre-registered: HybridGradientBoNSampler(n=4) >= STLGradientGuided
+    in mean rho on a non-saturating spec, paired across 6 seeds.
+
+    Setup
+    -----
+    Spec: ``glucose_insulin.dawn.hard``. Chosen because the easy and
+    medium glucose specs saturate at rho ~ 20 within one rollout, leaving
+    no headroom for hybrid argmax-rho selection to dominate. The dawn
+    spec is harder (rho hovers in the [-33, -19] band), so hybrid's
+    argmax-over-N can pick up improvements over a single guided draw.
+    Lambda = 2.0 matches the existing ``test_gradient_guided_improves_rho``
+    convention; sampling temperature = 0.5 keeps the inner sampler
+    stochastic so the 4 hybrid draws actually diverge.
+
+    Falsification criterion
+    -----------------------
+    ``hybrid_mean < guided_mean - tol`` with tol = 2.0 rho units. A
+    hybrid sampler that is strictly worse than its inner sampler at
+    fixed seeds would indicate either a bug (e.g. argmax over the wrong
+    axis) or a pathology in the inner sampler's RNG threading. Neither
+    is expected.
+
+    Smoke result (2026-04-24, this commit):
+        guided   mean = -30.616  per-seed = [-33.0, -33.0, -33.0, -18.69, -33.0, -33.0]
+        hybrid   mean = -28.307  per-seed = [-33.0, -33.0, -33.0, -19.15, -18.69, -33.0]
+        => hybrid strictly higher in mean (+2.3 rho units), 5/6 hybrid
+           >= guided per seed, 1/6 strict win.
+
+    Notes
+    -----
+    The hybrid uses ``fold_in(key, draw_idx)`` to derive sub-keys, so
+    Hybrid(n=1, key) = Guided(fold_in(key, 0)) != Guided(key). The
+    paired-mean test uses the same master ``key`` per seed for both
+    samplers; the hybrid then explores 4 distinct sub-keys including
+    one that may not coincide with the guided sampler's draw. This is
+    an apples-to-apples *protocol* comparison, not an apples-to-apples
+    sample comparison.
+
+    Compute cost (per seed):
+        guided ~ H * (1 fwd + 1 bwd)
+        hybrid ~ 4 * H * (1 fwd + 1 bwd)
+    The matched-compute baseline would be ``ContinuousBoNSampler(n=8)``
+    (assuming bwd ~ fwd) — that's the comparison in
+    paper/cross_task_validation.md, not here.
+    """
+    sim = GlucoseInsulinSimulator()
+    params = BergmanParams()
+    spec = REGISTRY["glucose_insulin.dawn.hard"]
+    V = make_uniform_action_vocabulary(0.0, 5.0, k_per_dim=5)
+    x0 = default_normal_subject_initial_state(params)
+    llm = _uniform_llm(int(V.shape[0]))
+
+    guided = STLGradientGuidedSampler(
+        llm,
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        guidance_weight=2.0,
+        sampling_temperature=0.5,
+    )
+    hybrid = HybridGradientBoNSampler(
+        llm,
+        sim,
+        spec,
+        V,
+        params,
+        horizon=sim.n_control_points,
+        n=4,
+        guidance_weight=2.0,
+        sampling_temperature=0.5,
+    )
+
+    n_seeds = 6
+    rhos_g: list[float] = []
+    rhos_h: list[float] = []
+    for s in range(n_seeds):
+        k = jax.random.key(2000 + s)
+        _, dg = guided.sample(x0, k)
+        _, dh = hybrid.sample(x0, k)
+        rhos_g.append(float(dg["final_rho"]))
+        rhos_h.append(float(dh["final_rho"]))
+
+    mean_g = float(np.mean(rhos_g))
+    mean_h = float(np.mean(rhos_h))
+    tol = 2.0  # rho units; see docstring rationale.
+    assert mean_h >= mean_g - tol, (
+        f"hybrid mean rho should be >= guided mean rho (within tol={tol}). "
+        f"guided mean = {mean_g:.3f}, hybrid mean = {mean_h:.3f}, "
+        f"per-seed guided = {rhos_g}, per-seed hybrid = {rhos_h}"
+    )

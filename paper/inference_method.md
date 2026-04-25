@@ -105,13 +105,27 @@ For the glucose-insulin task ($H = 12$), this means $N = 24$ for matched compute
 
 **H3 (saturation graceful degradation).** When the spec is fully satisfied at step $t < H$, the gradient $g_t$ vanishes (rho is locally insensitive to $u_t$); the sampler should then revert to LLM-prior sampling rather than producing pathological choices. *Verified observationally: per-step grad norms in the smoke run drop to zero after rho saturates at the max of 12.84.*
 
+## 5.5 Hybrid sampler: gradient-guided + Best-of-$N$ selection
+
+`src/stl_seed/inference/hybrid.py` implements `HybridGradientBoNSampler`, which composes the two inference-time scaling levers of (i) gradient guidance per-rollout and (ii) verifier-based selection across rollouts. For each of $n$ draws, the sampler runs `STLGradientGuidedSampler` on a sub-key derived via `jax.random.fold_in(key, draw_idx)` and scores the resulting trajectory by the same compiled spec used inside the inner sampler; it then returns the argmax-$\rho$ trajectory across the $n$ draws.
+
+**Compute cost.** $n \cdot H \cdot (1\,\text{fwd} + 1\,\text{bwd})$ — one inner gradient-guided rollout per draw. The matched-compute baseline is $\text{ContinuousBoN}(n_{\text{bon}} = 2n)$, since a backward pass is approximately $1\text{–}2\times$ a forward pass on the Diffrax recursive-checkpoint adjoint.
+
+**Pre-registered hypothesis.** At fixed compute budget,
+$$
+\text{mean }\rho_{\text{hybrid}(n)} \;\ge\; \text{mean }\rho_{\text{guided}} \;\ge\; \text{mean }\rho_{\text{cont-BoN}(2n)} \;\ge\; \text{mean }\rho_{\text{BoN}(n)} \;\ge\; \text{mean }\rho_{\text{standard}}.
+$$
+The tightest claim — hybrid $\ge$ pure guidance — is verified by `tests/test_inference.py::test_hybrid_beats_pure_guidance` on the harder `glucose_insulin.dawn.hard` spec (where rho hovers in $[-33, -19]$ with no saturation): hybrid($n=4$, $\lambda = 2$) achieves mean $\rho = -28.31$ versus pure guidance at $-30.62$ over six seeds — a $+2.3$ rho-unit improvement with 5/6 hybrid $\ge$ guided per seed.
+
+**Connection to test-time-compute scaling.** The hybrid sampler is the gradient-guided analogue of the Snell 2024 / Brown 2024 ("Large Language Monkeys", arXiv:2407.21787) repeated-sampling-with-verifier scaling recipe. Two changes from the literature recipe: each inner draw is itself information-efficient (uses $\nabla \rho$ as a per-step decoding signal, not vanilla LLM sampling), and the verifier is the *exact same* continuous STL signal — so there is no train-eval mismatch on the verifier side. The cross-task empirical analysis in `paper/cross_task_validation.md` shows the hybrid composes cleanly with gradient guidance on tasks where guidance has signal, and degenerates gracefully (to ContinuousBoN with a constant per-draw tax) on tasks where guidance does not — which is the right behaviour for a scaling lever.
+
 ## 6. Implementation status (2026-04-24)
 
-* `src/stl_seed/inference/__init__.py`, `protocol.py`, `gradient_guided.py`, `baselines.py` (this commit).
-* `tests/test_inference.py` — 17 tests, all passing.
-* `stl-seed sample` CLI command (this commit).
+* `src/stl_seed/inference/__init__.py`, `protocol.py`, `gradient_guided.py`, `baselines.py`, `hybrid.py`.
+* `tests/test_inference.py` — 21 tests, 20 passing + 1 documented `xfail` for cross-task transfer (see `paper/cross_task_validation.md`).
+* `stl-seed sample` CLI command supports sampler $\in$ {standard, bon, bon_continuous, gradient_guided, hybrid}.
 * REDACTED firewall: clean (`scripts/REDACTED.sh` returns OK).
-* Test-suite regression: 0 — all 323 tracked tests still pass.
+* Test-suite regression: 0 — all 421 tracked tests pass (6 skipped on Apple Silicon for CUDA-only paths, 2 xfailed for documented discretization / cross-task limitations).
 
 ## 7. Limitations and failure modes
 

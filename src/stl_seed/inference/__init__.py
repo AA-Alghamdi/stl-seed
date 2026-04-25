@@ -59,12 +59,14 @@ from stl_seed.inference.gradient_guided import (
     GuidanceDiagnostics,
     STLGradientGuidedSampler,
 )
+from stl_seed.inference.hybrid import HybridGradientBoNSampler
 from stl_seed.inference.protocol import LLMProposal, Sampler, SamplerResult
 
 __all__ = [
     "BestOfNSampler",
     "ContinuousBoNSampler",
     "GuidanceDiagnostics",
+    "HybridGradientBoNSampler",
     "LLMProposal",
     "STLGradientGuidedSampler",
     "Sampler",
