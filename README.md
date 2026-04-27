@@ -40,8 +40,8 @@ uv sync --extra cuda    # CUDA / RunPod (canonical sweep)
 ```bash
 $ stl-seed sample --task glucose_insulin --sampler gradient_guided --guidance-weight 2
 task=glucose_insulin spec=glucose_insulin.tir.easy sampler=gradient_guided
-final_rho = 19.9100
-steps_changed_by_guidance = 12 / 12
+final_rho = 20.0000
+steps_changed_by_guidance = 8 / 12
 ```
 
 Available samplers: `standard`, `bon`, `bon_continuous`, `gradient_guided`, `hybrid`, `horizon_folded`, `rollout_tree`, `cmaes_gradient`, `beam_search_warmstart`.
@@ -56,7 +56,7 @@ The spec auto-tuner in [`src/stl_seed/specs/calibration.py`](src/stl_seed/specs/
 
 ## Tests
 
-426 passed, 6 platform-skipped, 2 expected-fails (cross-task transfer + STL discretization edge case). 91% line coverage on `src/stl_seed/`. Property-based tests in [`tests/test_stl_properties.py`](tests/test_stl_properties.py) verify 13 algebraic invariants of the Donzé–Maler robustness semantics ([FORMATS 2010](https://doi.org/10.1007/978-3-642-15297-9_9)): negation antisymmetry, conjunction-as-min, De Morgan dualities, interval-shrinkage monotonicity, predicate scaling, others.
+510 passed, 2 platform-skipped, 2 expected-fails (cross-task transfer on `bio_ode.repressilator.easy` + STL time-shift discretization edge case). 91% line coverage on `src/stl_seed/`. Property-based tests in [`tests/test_stl_properties.py`](tests/test_stl_properties.py) verify 13 algebraic invariants of the Donzé–Maler robustness semantics ([FORMATS 2010](https://doi.org/10.1007/978-3-642-15297-9_9)): negation antisymmetry, conjunction-as-min, De Morgan dualities, interval-shrinkage monotonicity, predicate scaling, others.
 
 ## Status
 
