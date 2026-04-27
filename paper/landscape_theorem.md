@@ -95,9 +95,65 @@ This is a *characterization* theorem, not a tight rate bound.
 
 Future work would tighten constants (Hessian-based bounds on the per-step success rate; finite-difference relaxations of the PL constant); identify a *checkable* a-priori certificate for ($\\star$) from spec syntax and simulator Jacobian; and bridge the regime separation in (2) toward the $\\lambda \\to \\infty$ limit. The point of the present statement is to make the empirical pattern legible, not to nail every constant.
 
+## Section 5: Tightness of the regime-I rate bound
+
+The bound (1) is a *characterization*: it describes a regime in which gradient guidance provably reaches $S\_+$ with a specific dependence on $(L, T, \\lambda, \\cos\\theta\_\\text{cov}, \\eta\_\\star)$. It is not a tight constant. This section quantifies *when* (1) is achieved up to constants, *when* it is loose, and *where each empirical task family sits* on the smooth-narrow spectrum.
+
+### 5.1 Tightness instance
+
+**Setup.** Take $H = 1$, $m = 1$, action box $U = \[0, 1\]$, vocabulary $V = \\{0, 1\\}$ (so $K = 2$, the 2-corner vocabulary required by A4 and the simplest setting where ($\\dagger$) holds with $\\cos\\theta\_\\text{cov} = 1$ for any non-zero $\\nabla J$). Let the simulator be the identity on the action axis and let $J(u) = 1 - 2(u - 1)^2$ on $U$, a quadratic with optimum $u^\\star = 1$ and $J(u^\\star) = 1 > 0$. Then:
+
+- $L = \\sup\_{u \\in U} |J'(u)| = 4$ (Lipschitz constant of $J$ on $U$).
+- $\\kappa = 1/(2 \\cdot \\sup_u |u - u^\\star|^2) = 1/2$ (the global PL constant of a $1$-strongly-concave quadratic on a unit interval; here $\\kappa = \\alpha / (2 L\_\\text{H})$ with Hessian $|J''| = 4$, so $\\kappa = 1/4$ in the convention of Karimi–Nutini–Schmidt 2016 §2.1).
+- $\\eta\_\\star \\in (0, 1\]$ arbitrary; pick $\\eta\_\\star = 1/2$.
+- $\\cos\\theta\_\\text{cov} = 1$ (vocabulary is $\\\\{0, 1\\\\}$, $\\nabla J = -4(u - 1) > 0$ on $u \< 1$, so $V_2 = 1$ is exactly aligned).
+- Flat LLM prior $p_k = 1/2$, decoding temperature $T = 1$.
+
+**Rate computed.** From the proof sketch, the per-step success probability is $\\Pr\[a = 1\] = 1/(1 + e^{-\\lambda \\eta\_\\star \\cos\\theta\_\\text{cov}/(LT)}) = 1/(1 + e^{-\\lambda/8})$. The expected first-hit time is $1/\\Pr\[\\text{hit}\] = 1 + e^{-\\lambda/8}$, and inverting the geometric tail to probability $\\delta$ gives $\\lceil \\log(1/\\delta) / \\log(1 + e^{\\lambda/8}) \\rceil$ rollouts. For $\\lambda \\ge 8$ this equals $\\Theta(\\log(1/\\delta))$ with the leading constant $LT / (\\lambda \\cos\\theta\_\\text{cov} \\eta\_\\star) = 8/\\lambda$, matching (1) up to a multiplicative constant of $\\le 2$. Numerical check: $\\lambda = 8$, $\\delta = 0.05$ gives $\\le 5$ rollouts both in the upper bound (1) and in direct geometric-distribution simulation, matching to $\\pm 1$ rollout. The instance is tight.
+
+### 5.2 Improving $\\kappa$ to $\\alpha$-strong convexity along the feasible direction
+
+The PL relaxation ($\\star$) is weaker than full convexity but does not exploit local curvature. If $J$ is *additionally* $\\alpha$-strongly concave along the feasible direction $u^\\star - u$ — i.e.\\ $\\langle \\nabla J(u) - \\nabla J(u^\\star), u^\\star - u\\rangle \\le -\\alpha\\,\\\\|u^\\star - u\\\\|^2$ — then Karimi–Nutini–Schmidt 2016 Theorem 1 gives gradient methods linear convergence at rate $1 - \\alpha/L$ per step on the *continuous* problem, and the per-rollout success probability under the softmax-bias relaxation inherits this: the bound (1) tightens to $$ \\mathbb{E}\[\\,\\text{rollouts to first hit}\\,\] \\;\\le\\; \\frac{L}{\\alpha} \\log(1/\\delta) \\;+\\; O(1) \\tag{1'}$$ removing the $T$ and $\\cos\\theta\_\\text{cov}$ factors when $V$ contains the $\\alpha$-direction (the alignment is automatic under strong convexity along $u^\\star - u$). For the §5.1 quadratic instance, $\\alpha = 4$ and $L = 4$, so $L/\\alpha = 1$ and a single rollout suffices — strictly tighter than (1)'s $LT/(\\lambda \\eta\_\\star) \\ge 1$ for any finite $\\lambda$.
+
+### 5.3 Tail-probability refinement
+
+The bound (1) treats rollouts as i.i.d.\\ Bernoulli$(p\_\\text{hit})$ trials and bounds the *expected* first-hit time by the geometric mean. Markov's inequality then converts this to a $\\log(1/\\delta)$ tail. The refinement: under PL$(\\kappa)$ with bounded gradient noise, Bottou–Curtis–Nocedal 2018 \[arXiv:1606.04838\] §4.4 (Theorem 4.10 for non-convex SGD under PL) give a non-asymptotic tail for SGD in the PL regime; the analogous statement here uses Azuma–Hoeffding on the partial-success martingale to replace $\\log(1/\\delta)$ with $O(\\log\\log(1/\\delta))$ for the *high-probability* tail when $p\_\\text{hit}$ is bounded away from $0$ uniformly across rollouts. Specifically, if $p\_\\text{hit} \\ge p_0 > 0$ for all rollouts (which follows from ($\\star$)+($\\dagger$) with $\\lambda \\ge \\lambda^\\star$), then $$ \\Pr\\bigl\[\\,\\text{first hit} > N\\,\\bigr\] \\;\\le\\; \\exp\\bigl(- N p_0^2 / 2\\bigr) \\tag{1''}$$ by Azuma–Hoeffding on the martingale $M_n = \\sum\_{i \\le n}(\\\\mathbb{1}\[\\text{hit}\_i\] - p_0)$. The tail bound (1'') gives $N = O(p_0^{-2} \\log(1/\\delta))$ for failure probability $\\delta$, and the doubly-logarithmic refinement comes from the *dependence of $p_0$ on $\\lambda$* under PL: as $\\lambda \\to \\infty$, $p_0 \\to 1$ exponentially, so a fixed $\\delta$ requires only $\\lambda = \\Omega(\\log\\log(1/\\delta))$ to push $N \\to 1$.
+
+### 5.4 STLCG++ comparison
+
+Hashemi et al.\\ 2025 \[arXiv:2501.04194\] prove convergence for trajectory optimisation in continuous control under STL-as-loss. Their setting and ours differ on three axes:
+
+- **Decision space.** STLCG++: continuous $u \\in U^H \\subset \\mathbb{R}^{Hm}$ optimised end-to-end (the single $u$ is a trajectory). Ours: discrete $u \\in V^H$ via a per-step softmax over $K$ vocabulary items, with the LLM prior in the loop.
+- **Smoothness.** STLCG++ uses masking to give $\\rho$ a $C^1$-a.e.\\ structure on the trajectory space; the loss is smooth along the optimisation iterates. Our $J$ is composed with a discrete decoding step (categorical sample), so even with smooth $\\rho$ the *sampler dynamics* are non-smooth. The price: a noise term $\\propto T$ in the per-step success probability.
+- **Objective.** STLCG++: full-trajectory robustness is the optimisation target. Ours: streaming-rho probe at each step $t$, used as a *gradient* into the bias on a discrete categorical.
+
+The two settings are not directly comparable. STLCG++'s setting is *harder* on the optimisation side (continuous, full-sequence) but their objective is *smoother*. Our setting is *easier* per step (only a categorical decision over $K \\le 256$ items) but the discrete decoding adds a $T$- and $K$-dependent noise floor. Different regimes; both can fail, in different ways.
+
+### 5.5 Per-empirical-cell regime placement
+
+Using `runs/cost_benchmark/results.parquet` (5 task families × 9 samplers × 4 seeds; gradient-guided and beam-search-warmstart rows are the diagnostic):
+
+| Cell                    | $\\overline{\\rho}\_\\text{gg}$ | $\\overline{\\rho}\_\\text{beam}$ | sat$\_\\text{gg}$ | sat$\_\\text{beam}$ | Regime placement                                                                                                                                                                                                                                                                            |
+| ----------------------- | ------------------------------- | --------------------------------- | ----------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `glucose_insulin`       | $+20.000$                       | $+20.747$                         | $1.00$            | $1.00$              | **Regime I (smooth).** Both sampler families saturate; gradient-guided matches beam-search-warmstart to $\< 1$ ρ-unit. ($\\star$)+($\\dagger$) hold; ceiling-clipping at $+20$ in the spec accounts for the equality.                                                                       |
+| `cardiac_ap`            | $+1.076$                        | $+1.161$                          | $1.00$            | $1.00$              | **Regime I (smooth).** Gradient-guided reaches $1.00$ sat-frac with $\\sigma\_\\rho \\approx 0.10$, suggesting $\\eta\_\\star \\sim 1.0$ ρ-unit and finite $\\kappa > 0$; beam-search adds only $0.085$ ρ-units, so the smooth bound (1) is near-tight.                                     |
+| `bio_ode.mapk`          | $-1.174$                        | $+0.002$                          | $0.00$            | $1.00$              | **Regime II (narrow).** Gradient-guided is statistically indistinguishable from `standard` ($\\overline{\\rho}\_\\text{std} = -1.174$, $\\sigma = 0.008$); ($\\flat$) holds (gradient too small to point through the basin gap). The cliff bound (2) applies.                               |
+| `bio_ode.toggle`        | $-100.000$                      | $+29.992$                         | $0.00$            | $1.00$              | **Regime II (narrow).** Gradient-guided saturated at the spec floor of $-100$; beam-search finds the $(0,1)$ corner. The largest gradient-vs-beam separation in the cell ($\\Delta\\overline{\\rho} \\approx 130$), and the *loosest fit* to the regime-I bound (it does not apply at all). |
+| `bio_ode.repressilator` | $-250.000$                      | $+25.000$                         | $0.00$            | $1.00$              | **Regime II (narrow).** Same separation pattern as toggle, with the spec-floor signature; ($\\sharp$)+($\\flat$) hold and corollary (III) succeeds via constant $(0,0,1)^{\\otimes H}$.                                                                                                     |
+
+Backed-out structural constants. From `glucose_insulin` at $\\overline{\\rho} = +20.000 \\pm 0.000$ across $4$ seeds with $\\lambda = 2$, $T = 1$, $K = k\_\\text{per_dim}^1 \\le 5$, and $H = 12$ control steps over $T\_\\text{end} = 480\\,\\text{min}$: the empirical hit-rate of $1.00/1.00$ implies the per-rollout success probability is $\\ge 1 - \\delta$ for $\\delta = 4^{-1} = 0.25$, so (1) requires $\\lambda \\eta\_\\star \\cos\\theta\_\\text{cov} / (LT) \\gtrsim \\log K \\cdot \\log(1/\\delta) \\approx 1.6 \\cdot 1.4 \\approx 2.2$, consistent with $L \\approx 1$ ρ-unit per (U/h)-step, $\\eta\_\\star \\approx 5$, $\\cos\\theta\_\\text{cov} \\approx 0.7$, giving $\\lambda \\gtrsim 0.6$ — well below the $\\lambda = 2$ used. Cardiac AP backs out similarly with smaller $\\eta\_\\star \\approx 0.3$. For repressilator, $\\overline{\\rho}\_\\text{gg} = -250$ at the spec floor implies $|\\nabla J(\\bar{u}\_0)| \\le \\eta\_\\flat / D$ holds with $\\eta\_\\flat \\approx 25$ (the corner gap) and $D = \\sqrt{30}$, so $|\\nabla J| \\lesssim 5$ at the box centre, consistent with the cliff diagnosis.
+
+### 5.6 Open questions
+
+- **Five free parameters is too many.** The bound (1) has $L, T, \\lambda, \\cos\\theta\_\\text{cov}, \\eta\_\\star$ explicit and $\\kappa$ implicit. A tighter version would compress $(L, \\kappa, \\eta\_\\star)$ into a single *effective curvature* $\\alpha\_\\text{eff} := \\eta\_\\star^2 / (L \\cdot D^2)$ and $(\\cos\\theta\_\\text{cov}, T)$ into a *geometric-discretisation* factor; whether such a 2-parameter reduction holds with constants checkable from spec syntax is open.
+- **A priori certificates for ($\\star$).** The PL-along-feasible-direction condition is currently verified post-hoc. A syntactic certificate (e.g.\\ from spec-tree depth, simulator Jacobian rank at $\\bar{u}\_0$, and vocabulary covering radius) would let the user predict regime *before* a sweep. Open.
+- \*\*Gap to (1''). \*\* The doubly-logarithmic dependence on $\\delta$ in (1'') requires the per-rollout success probability to be uniformly bounded below; whether this holds across the LLM-prior support without further assumptions on the prior's mass on the cliff is open.
+- **Continuous-action limits.** As $K \\to \\infty$ with $V$ filling $U$, the discrete decoding noise vanishes and our setting approaches STLCG++'s. The transition regime (large but finite $K$) interpolates; the bound (1)'s scaling with $K$ ($\\log K$ in the success-probability denominator) is suggestive but not proven tight.
+
 ## References
 
 - Aksaray, Jones, Kong, Schwager, Belta. "Q-Learning for Robust Satisfaction of Signal Temporal Logic Specifications." CDC 2016.
+- Bottou, Curtis, Nocedal. "Optimization Methods for Large-Scale Machine Learning." arXiv:1606.04838, 2018.
 - Bengio, Léonard, Courville. "Estimating or propagating gradients through stochastic neurons." arXiv:1308.3432, 2013.
 - Chung, Kim, Mccann, Klasky, Ye. "Diffusion Posterior Sampling for general noisy inverse problems." arXiv:2209.14687, 2023.
 - Dhariwal, Nichol. "Diffusion Models Beat GANs on Image Synthesis." arXiv:2105.05233, 2021.
