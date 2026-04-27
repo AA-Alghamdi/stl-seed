@@ -25,7 +25,9 @@ from __future__ import annotations
 
 from stl_seed.baselines.comparison import (
     ComparisonResult,
+    ComparisonResultV2,
     SampleEfficiencyPoint,
+    compare_pav_v2_vs_stl,
     compare_pav_vs_stl,
 )
 from stl_seed.baselines.pav import (
@@ -37,6 +39,8 @@ __all__ = [
     "PAVProcessRewardModel",
     "compute_per_step_mc_labels",
     "ComparisonResult",
+    "ComparisonResultV2",
     "SampleEfficiencyPoint",
     "compare_pav_vs_stl",
+    "compare_pav_v2_vs_stl",
 ]

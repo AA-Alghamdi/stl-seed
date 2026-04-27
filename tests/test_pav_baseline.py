@@ -453,3 +453,143 @@ def test_compare_with_spec_key_string() -> None:
     assert isinstance(result, ComparisonResult)
     assert result.spec_key == spec_key
     assert result.n_test == 10
+
+
+# ---------------------------------------------------------------------------
+# V2 surface tests: model selection + AdamW + early stopping.
+# ---------------------------------------------------------------------------
+
+
+def test_pav_fit_supports_weight_decay() -> None:
+    """fit(...) accepts weight_decay and trains without crashing."""
+    trajs, ts = _separable_trajectories(
+        n=30, state_dim=2, horizon=4, T=11, success_offset=2.0, seed=0
+    )
+    pav = PAVProcessRewardModel(state_dim=2, hidden=16, dropout=0.0)
+    history = pav.fit(
+        trajs,
+        ts,
+        n_epochs=10,
+        lr=1e-2,
+        key=jax.random.PRNGKey(0),
+        k_neighbors=4,
+        weight_decay=1e-3,
+    )
+    assert pav.is_fit is True
+    # AdamW should still drive the training loss down on separable data.
+    assert history["train_loss"][-1] < history["train_loss"][0]
+    assert "best_epoch" in history
+    assert history["best_epoch"] >= 1
+
+
+def test_pav_fit_early_stopping_returns_best() -> None:
+    """early_stopping_patience triggers stop and reports best_epoch."""
+    trajs, ts = _separable_trajectories(
+        n=20, state_dim=2, horizon=4, T=11, success_offset=2.0, seed=1
+    )
+    pav = PAVProcessRewardModel(state_dim=2, hidden=8, dropout=0.0)
+    # Use a *very* short patience so the test exits early on plateau.
+    history = pav.fit(
+        trajs,
+        ts,
+        n_epochs=200,
+        lr=1e-2,
+        key=jax.random.PRNGKey(2),
+        k_neighbors=4,
+        early_stopping_patience=2,
+    )
+    # Either we ran <200 epochs (early stopped) or we ran 200 with no improvement.
+    assert len(history["train_loss"]) <= 200
+    assert isinstance(history["stopped_early"], bool)
+    if history["stopped_early"]:
+        assert len(history["train_loss"]) < 200
+        # best_epoch must be <= the last epoch run.
+        assert history["best_epoch"] <= len(history["train_loss"])
+
+
+def test_pav_fit_with_selection_picks_lowest_val_mse() -> None:
+    """fit_with_selection sweeps the grid and returns the best (h, wd)."""
+    trajs, ts = _separable_trajectories(
+        n=60, state_dim=2, horizon=4, T=11, success_offset=2.0, seed=3
+    )
+    pav, report = PAVProcessRewardModel.fit_with_selection(
+        trajectories=trajs,
+        terminal_success=ts,
+        state_dim=2,
+        hidden_grid=(8, 16),
+        weight_decay_grid=(0.0, 1e-3),
+        dropout=0.0,
+        n_epochs=20,
+        lr=1e-2,
+        key=jax.random.PRNGKey(4),
+        val_frac=0.3,
+        k_neighbors=5,
+        early_stopping_patience=3,
+    )
+    assert pav.is_fit is True
+    assert report["best_hidden"] in {8, 16}
+    assert report["best_weight_decay"] in {0.0, 1e-3}
+    # Grid has 2x2 = 4 cells; all should have a finite val MSE.
+    assert len(report["grid"]) == 4
+    val_mses = [c["best_val_mse"] for c in report["grid"]]
+    assert all(np.isfinite(m) for m in val_mses)
+    # The reported "best" must equal the min over the grid.
+    assert report["best_val_mse"] == min(val_mses)
+
+
+def test_compare_v2_with_knn_label_source() -> None:
+    """compare_pav_v2_vs_stl runs end-to-end with label_source='knn'."""
+    from stl_seed.baselines.comparison import (
+        ComparisonResultV2,
+        compare_pav_v2_vs_stl,
+    )
+
+    spec = _bio_like_spec()
+    rng = np.random.default_rng(11)
+    n = 50
+    H = 3
+    T = 11
+    trajs = []
+    succ = []
+    for i in range(n):
+        is_succ = int(i % 2)
+        x0 = rng.uniform(0.7, 1.0, size=(T,)) if is_succ else rng.uniform(0.0, 0.3, size=(T,))
+        x1 = rng.normal(size=(T,))
+        states = np.stack([x0, x1], axis=1)
+        actions = rng.normal(size=(H, 1))
+        times = np.linspace(0.0, 1.0, T)
+        trajs.append(_make_traj(states, actions, times))
+        succ.append(is_succ)
+    succ = np.asarray(succ, dtype=np.float64)
+
+    result = compare_pav_v2_vs_stl(
+        trajectories=trajs,
+        terminal_success=succ,
+        spec=spec,
+        task="synthetic_test",  # arbitrary; rollout path not exercised
+        n_train=30,
+        n_test=15,
+        seed=0,
+        label_source="knn",
+        hidden_grid=(8, 16),
+        weight_decay_grid=(0.0, 1e-3),
+        pav_n_epochs=10,
+        pav_lr=1e-2,
+        pav_dropout=0.0,
+        early_stopping_patience=3,
+        val_frac=0.3,
+        k_neighbors=4,
+        task_name="synthetic_test",
+    )
+    assert isinstance(result, ComparisonResultV2)
+    assert result.label_source == "knn"
+    assert result.n_train == 30
+    assert result.n_test == 15
+    assert np.isfinite(result.stl_auc)
+    assert result.stl_auc >= 0.95
+    # The best cell must be one of the four grid corners.
+    assert result.pav_best_hidden in {8, 16}
+    assert result.pav_best_weight_decay in {0.0, 1e-3}
+    assert len(result.selection_grid) == 4
+    # No on-policy simulations were charged for the kNN path.
+    assert result.n_onpolicy_simulations == 0
