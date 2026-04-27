@@ -101,9 +101,21 @@ from stl_seed.training.tokenize import _fmt_vec
 # canonical fast-iter model and what we use when the wall-clock budget is
 # tight.
 _MODEL_ALIASES: dict[str, str] = {
+    # bf16 baselines (the canonical Day-1 references).
     "qwen3-0.6b": "mlx-community/Qwen3-0.6B-bf16",
     "qwen3-1.7b": "mlx-community/Qwen3-1.7B-bf16",
     "qwen3-4b": "mlx-community/Qwen3-4B-bf16",
+    # Quantized variants used by scripts/quant_size_sweep.py to test the
+    # quantization-x-verifier interaction. mlx-community ships matched
+    # 4/6/8-bit quantizations of the same base weights; the 4bit variant
+    # is the NF4-equivalent baseline in the bitsandbytes lineage.
+    "qwen3-0.6b-4bit": "mlx-community/Qwen3-0.6B-4bit",
+    "qwen3-0.6b-6bit": "mlx-community/Qwen3-0.6B-6bit",
+    "qwen3-0.6b-8bit": "mlx-community/Qwen3-0.6B-8bit",
+    "qwen3-1.7b-4bit": "mlx-community/Qwen3-1.7B-4bit",
+    "qwen3-1.7b-6bit": "mlx-community/Qwen3-1.7B-6bit",
+    "qwen3-1.7b-8bit": "mlx-community/Qwen3-1.7B-8bit",
+    "qwen3-4b-4bit": "mlx-community/Qwen3-4B-4bit",
 }
 
 
