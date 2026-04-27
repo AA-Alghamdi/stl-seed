@@ -73,5 +73,7 @@ results/*.csv
 # Documentation builds
 docs/_build/
 site/
-.claude/
-CLAUDE.md
+
+# Local dev-loop notes (private)
+.dev/
+*.local.md
