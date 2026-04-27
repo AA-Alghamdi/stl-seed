@@ -60,11 +60,15 @@ The spec auto-tuner in [`src/stl_seed/specs/calibration.py`](src/stl_seed/specs/
 
 ## Status
 
-Phase 1 (theory, library, local pilot) shipped 2026-04-24. Phase 2 is the canonical 18-cell SFT sweep on RunPod: 3 model sizes × 3 filter conditions × 2 task families, projected $5–15 of $25 cap. The mock-backend dry-run validates the full pipeline locally and caught five bugs that would have failed the real run. Single command when ready:
+**Phase 1 (inference-time methodology)** shipped 2026-04-24, falsified against a real `Qwen3-0.6B` prior on 2026-04-26 ([`paper/real_llm_comparison.md`](paper/real_llm_comparison.md)). Theory + library + 9-sampler unified comparison + falsifiable real-LLM head-to-head. The verdict is `METHODOLOGY MATTERS`: beam-search warmstart rescues all 4 hard tasks where standard sampling with the real LLM fails on a majority of seeds.
+
+**Phase 2 (canonical SFT sweep)** is queued, gated on $15–25 of RunPod 4090 spot. Pre-registered 3 sizes × 3 filters × 2 task families = 18 cells. Hypotheses H1 (TOST equivalence of soft and hard at $\\Delta = 0.05$), H2 (size-monotone improvement), H3 (spec-completeness against learned-critic baseline). The mock-backend dry-run validates the full pipeline end-to-end on M5 Pro and caught five bugs that would have failed the real run. The `Qwen3-0.6B-bf16` MLX QLoRA pilot smoke drove training loss $1.484 \\to 0.466$ in 15 s on M5 Pro (5/5 held-out parse-success, 4.6 MiB adapter; `runs/smoke_test_mlx/`). Single command:
 
 ```bash
 python scripts/run_canonical_sweep.py --confirm
 ```
+
+The 4B-and-up scaling question past Qwen3-4B is past M5 Pro memory and past my available compute. The honest framing of this artifact: inference-time methodology shipped + falsified; training-time SERA-mimic ready to run, gated on a small RunPod budget.
 
 ## Citation
 
