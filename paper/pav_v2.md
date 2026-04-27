@@ -24,23 +24,25 @@ The math-rigor audit on 2026-04-26 flagged the original PAV comparison (`paper/p
 
 ## Configuration for this run
 
-- label_source: `onpolicy` (K_rollout = 3)
-- hidden_grid: `[64, 128]`
-- weight_decay_grid: `[0.0, 0.001]`
-- pav_n_epochs: 30, lr: 0.001, early_stopping_patience: 5
-- n_train: 200, n_test: 100
+- label_source: `onpolicy` (K_rollout = 5)
+- hidden_grid: `[64, 128, 256, 512]`
+- weight_decay_grid: `[0.0, 0.0001, 0.001, 0.01]`
+- pav_n_epochs: 100, lr: 0.001, early_stopping_patience: 5
+- n_train: 2000, n_test: 400
 
 ## Headline results
 
-| task            | spec                       | label src | n_train | n_test | STL AUC | PAV-v2 AUC | PAV - STL | best (h, wd) | val MSE | label sec | fit sec | sims |
-| --------------- | -------------------------- | --------- | ------: | -----: | ------: | ---------: | --------: | ------------ | ------: | --------: | ------: | ---: |
-| glucose_insulin | `glucose_insulin.tir.easy` | onpolicy  |     200 |    100 |   1.000 |      0.985 |    -0.015 | (64, 0.001)  | 0.06315 |      42.3 |     2.2 | 7200 |
+| task                  | spec                         | label src | n_train | n_test | STL AUC | PAV-v2 AUC | PAV - STL | best (h, wd) | val MSE | label sec | fit sec |   sims |
+| --------------------- | ---------------------------- | --------- | ------: | -----: | ------: | ---------: | --------: | ------------ | ------: | --------: | ------: | -----: |
+| glucose_insulin       | `glucose_insulin.tir.easy`   | onpolicy  |    2000 |    400 |   1.000 |      0.962 |    -0.038 | (64, 0.0001) | 0.04987 |     817.0 |    13.8 | 120000 |
+| bio_ode.repressilator | `bio_ode.repressilator.easy` | onpolicy  |    2000 |    400 |   1.000 |      1.000 |    +0.000 | (64, 0.0001) | 0.05100 |    1785.6 |     7.6 | 100000 |
 
 ## Spearman rank correlation
 
-| task            | PAV-v2 vs success | STL vs success | PAV-v2 vs rho | STL vs rho |
-| --------------- | ----------------: | -------------: | ------------: | ---------: |
-| glucose_insulin |            +0.877 |         +0.905 |        +0.967 |     +1.000 |
+| task                  | PAV-v2 vs success | STL vs success | PAV-v2 vs rho | STL vs rho |
+| --------------------- | ----------------: | -------------: | ------------: | ---------: |
+| glucose_insulin       |            +0.814 |         +0.882 |        +0.944 |     +1.000 |
+| bio_ode.repressilator |            +0.873 |         +0.954 |        +0.853 |     +1.000 |
 
 ## Selection grid (val MSE)
 
@@ -48,12 +50,47 @@ The math-rigor audit on 2026-04-26 flagged the original PAV comparison (`paper/p
 
 | hidden | weight_decay | best val MSE | best epoch | early stop | wall (s) |
 | -----: | -----------: | -----------: | ---------: | ---------- | -------: |
-|     64 |            0 |      0.06527 |          4 | yes        |      0.7 |
-|     64 |        0.001 |      0.06315 |         30 | no         |      0.1 |
-|    128 |            0 |      0.06781 |          2 | yes        |      0.6 |
-|    128 |        0.001 |      0.06536 |          2 | yes        |      0.0 |
+|     64 |            0 |      0.05306 |          4 | yes        |      0.7 |
+|     64 |       0.0001 |      0.04987 |        100 | no         |      1.2 |
+|     64 |        0.001 |      0.05838 |          6 | yes        |      0.1 |
+|     64 |         0.01 |      0.05616 |          7 | yes        |      0.2 |
+|    128 |            0 |      0.05168 |         17 | yes        |      0.8 |
+|    128 |       0.0001 |      0.05123 |         24 | yes        |      0.6 |
+|    128 |        0.001 |      0.05153 |          8 | yes        |      0.2 |
+|    128 |         0.01 |      0.05852 |          3 | yes        |      0.2 |
+|    256 |            0 |      0.05302 |          7 | yes        |      0.9 |
+|    256 |       0.0001 |      0.05119 |         19 | yes        |      0.9 |
+|    256 |        0.001 |      0.05265 |          7 | yes        |      0.5 |
+|    256 |         0.01 |      0.05293 |          7 | yes        |      0.5 |
+|    512 |            0 |      0.05220 |          8 | yes        |      1.5 |
+|    512 |       0.0001 |      0.05578 |          8 | yes        |      1.1 |
+|    512 |        0.001 |      0.05389 |          8 | yes        |      1.1 |
+|    512 |         0.01 |      0.05434 |          8 | yes        |      1.2 |
 
 ![selection grid: glucose_insulin](/Users/abdullahalghamdi/stl-seed/runs/pav_comparison_v2/glucose_insulin__selection_grid.png)
+
+### bio_ode.repressilator  (`bio_ode.repressilator.easy`)
+
+| hidden | weight_decay | best val MSE | best epoch | early stop | wall (s) |
+| -----: | -----------: | -----------: | ---------: | ---------- | -------: |
+|     64 |            0 |      0.05143 |         22 | yes        |      0.5 |
+|     64 |       0.0001 |      0.05100 |         78 | yes        |      0.8 |
+|     64 |        0.001 |      0.05566 |          8 | yes        |      0.1 |
+|     64 |         0.01 |      0.05456 |         10 | yes        |      0.1 |
+|    128 |            0 |      0.05278 |          4 | yes        |      0.3 |
+|    128 |       0.0001 |      0.05157 |         16 | yes        |      0.3 |
+|    128 |        0.001 |      0.05171 |          7 | yes        |      0.2 |
+|    128 |         0.01 |      0.05162 |         17 | yes        |      0.3 |
+|    256 |            0 |      0.05193 |         14 | yes        |      0.6 |
+|    256 |       0.0001 |      0.05232 |          8 | yes        |      0.3 |
+|    256 |        0.001 |      0.05175 |          9 | yes        |      0.3 |
+|    256 |         0.01 |      0.05183 |          8 | yes        |      0.3 |
+|    512 |            0 |      0.05412 |          8 | yes        |      0.8 |
+|    512 |       0.0001 |      0.05605 |          8 | yes        |      0.7 |
+|    512 |        0.001 |      0.05219 |          8 | yes        |      0.6 |
+|    512 |         0.01 |      0.05338 |          8 | yes        |      0.6 |
+
+![selection grid: bio_ode.repressilator](/Users/abdullahalghamdi/stl-seed/runs/pav_comparison_v2/bio_ode.repressilator__selection_grid.png)
 
 ## Caveats and what is still a strawman
 
@@ -69,7 +106,9 @@ The math-rigor audit on 2026-04-26 flagged the original PAV comparison (`paper/p
 
 ## Headline interpretation
 
-On glucose-insulin the strengthened PAV-v2 essentially matches STL-rho (0.985 vs 1.000, delta = -0.015). The v1 narrative that "STL-rho dominates on glucose-insulin" softens once PAV is properly tuned.
+On glucose-insulin, even after model selection and on-policy rollouts, PAV-v2 trails STL-rho by 0.038 AUC (0.962 vs 1.000). The original headline survives the strengthened comparison.
+
+On bio_ode.repressilator the corpus is degenerate (success rate 0 under the canonical proposer), so PAV AUC is undefined / pinned at random (reported 1.000). STL-rho still achieves 1.000 because rho is continuous and ranks trajectories by margin, not by rho > 0. This is a *task* property, not a verifier-quality property.
 
 ## Provenance
 
