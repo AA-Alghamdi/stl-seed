@@ -85,7 +85,7 @@ class Interval:
 
 @dataclass(frozen=True)
 class Always:
-    """``G_[t_lo, t_hi] inner`` — inner must hold throughout the interval."""
+    """``G_[t_lo, t_hi] inner``. inner must hold throughout the interval."""
 
     inner: Node
     interval: Interval
@@ -93,7 +93,7 @@ class Always:
 
 @dataclass(frozen=True)
 class Eventually:
-    """``F_[t_lo, t_hi] inner`` — inner must hold at some point in the interval."""
+    """``F_[t_lo, t_hi] inner``. inner must hold at some point in the interval."""
 
     inner: Node
     interval: Interval
@@ -153,7 +153,7 @@ class STLSpec:
 
 
 # ---------------------------------------------------------------------------
-# Registry — populated by the per-family modules.
+# Registry. populated by the per-family modules.
 # ---------------------------------------------------------------------------
 
 

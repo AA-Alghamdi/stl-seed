@@ -3,9 +3,9 @@
 Design notes
 ------------
 * Append-only. `save(...)` writes a *new* shard file under `root/`. Existing
-  shards are never rewritten — this matches the project rule that "results
+  shards are never rewritten. this matches the project rule that "results
   files (`sweep.jsonl`, `*.jsonl` in results directories) are append-only
-  artifacts" (`~/CLAUDE.md`).
+  artifacts" (project rules).
 * Each shard is an Apache Parquet file holding one row per trajectory.
   Rows include both metadata columns (id, task, spec_key, policy, seed,
   robustness, nan_count, generated_at) and binary-encoded array columns

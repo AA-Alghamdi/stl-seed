@@ -2,14 +2,14 @@
 
 Targets:
 
-* ``evaluation/runner.py`` — parallel-mode dispatch (lines 119, 169-182),
+* ``evaluation/runner.py``. parallel-mode dispatch (lines 119, 169-182),
   resume-from-corrupt-artifact branch (210-212), failure path inside
   ``_run_one`` (233-234), ``_json_default`` numpy serialization (246-257),
   ``stringify_aggregate`` failure-row format (265-266).
-* ``evaluation/metrics.py`` — 0-d array path (line 52), bon_success
+* ``evaluation/metrics.py``. 0-d array path (line 52), bon_success
   n_seeds==0 path (117), bon_success_curve invalid budgets (139-140),
   rho_margin empty (160), goodhart_gap empty (195).
-* ``evaluation/harness.py`` — exception inside the per-spec loop (382-387),
+* ``evaluation/harness.py``. exception inside the per-spec loop (382-387),
   empty-per-spec aggregate_bon (191).
 """
 
@@ -210,7 +210,7 @@ def test_runner_parallel_mode_dispatch_smoke(tmp_path) -> None:
 
 def test_runner_resume_corrupt_artifact_reruns(tmp_path) -> None:
     """If the existing artifact is unreadable JSON, the runner re-runs
-    rather than crashing — exercises the OSError/ValueError branch
+    rather than crashing. exercises the OSError/ValueError branch
     (lines 210-212)."""
     sims = {"s": _StubSim()}
     cfg = RunnerConfig(
@@ -264,7 +264,7 @@ def test_runner_records_failure_when_run_one_throws(tmp_path) -> None:
             raise RuntimeError("policy crashed")
 
     # The harness's per-spec inner loop swallows ValueError/RuntimeError
-    # and records NaN — so the records succeed but rho is all NaN. Use
+    # and records NaN. so the records succeed but rho is all NaN. Use
     # a directly bad spec name to trigger a hard failure.
     records = runner.run([_BombCheckpoint()], ["s"])
     assert len(records) == 1

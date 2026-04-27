@@ -3,12 +3,12 @@ hierarchical-Bayes data validation.
 
 Targets:
 
-* ``stats/bootstrap.py`` — degenerate jackknife (BCa fallback to percentile)
+* ``stats/bootstrap.py``. degenerate jackknife (BCa fallback to percentile)
   and ``proportion_wilson_ci`` invalid-n branch (lines 78, 82, 85, 105,
   111, 113, 177, 183, 189, 210, 339-340, 420).
-* ``stats/hierarchical_bayes.py`` — _hdi degenerate path (322-330) and
+* ``stats/hierarchical_bayes.py``. _hdi degenerate path (322-330) and
   the convergence_check empty-rows skip (403).
-* ``stats/tost.py`` — df<=0 raise path (172).
+* ``stats/tost.py``. df<=0 raise path (172).
 """
 
 from __future__ import annotations

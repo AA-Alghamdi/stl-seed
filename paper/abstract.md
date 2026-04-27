@@ -1,4 +1,4 @@
-# stl-seed — abstract
+# stl-seed. abstract
 
 Soft-verified SFT, accepting trajectories with a continuous proxy reward instead of a binary pass/fail, is the dominant recipe for instructing small open-weights LLMs on verifiable tasks. The soft signal is almost always *constructed* (line-overlap on a patch, learned RM, judge-LLM rubric), so the Goodhart decomposition $R\_\\text{gold} - R\_\\text{proxy} = (R\_\\text{gold} - R\_\\text{spec}) + (R\_\\text{spec} - R\_\\text{verifier})$ stays unauditable: spec-completeness and verifier-fidelity error terms are entangled in the verifier's training residual.
 

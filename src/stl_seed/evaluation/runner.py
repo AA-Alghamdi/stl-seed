@@ -79,7 +79,7 @@ class RunRecord:
 # Threshold at which a (checkpoint, spec) cell is annotated as
 # [DIVERSITY WARNING] in the stringified output. Below 0.5 means more
 # than half of generations share their first action with another
-# generation — the A15 memorization signature.
+# generation. the A15 memorization signature.
 DIVERSITY_WARNING_THRESHOLD: float = 0.5
 
 
@@ -177,8 +177,8 @@ class EvalRunner:
         checkpoints: Sequence[CheckpointProtocol],
         held_out_specs: Sequence[str],
     ) -> list[RunRecord]:
-        """Process-pool execution. Not used in the canonical sweep —
-        JAX retracing across processes is expensive — but kept for
+        """Process-pool execution. Not used in the canonical sweep ,
+        JAX retracing across processes is expensive. but kept for
         users who want to fan out small per-checkpoint workloads.
         """
         records: list[RunRecord] = []
@@ -223,7 +223,7 @@ class EvalRunner:
                         extras={"resumed": True},
                     )
                 except (OSError, ValueError):
-                    # Corrupt artifact — fall through and re-run
+                    # Corrupt artifact. fall through and re-run
                     pass
 
         try:
@@ -262,7 +262,7 @@ class EvalRunner:
                 success=True,
                 diversity_warnings=diversity_warnings,
             )
-        except Exception as exc:  # noqa: BLE001  — driver-level catch by design
+        except Exception as exc:  # noqa: BLE001 . driver-level catch by design
             return RunRecord(
                 checkpoint_name=name,
                 output_path=out_path,

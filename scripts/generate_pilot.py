@@ -1,10 +1,10 @@
-"""A13 — Generate the Subphase 1.4 local-validation pilot trajectory store.
+"""A13. Generate the Subphase 1.4 local-validation pilot trajectory store.
 
 Generates 2000 trajectories per task family (bio_ode/repressilator and
 glucose-insulin) under a {random: 0.5, heuristic: 0.5} policy mix, scored
 against the easy-difficulty STL spec for each family, and persisted to
 ``data/pilot/`` as a `TrajectoryStore` (Parquet). MLXModelPolicy is
-deliberately skipped — that requires the optional `mlx` extra and is
+deliberately skipped. that requires the optional `mlx` extra and is
 covered separately by A15.
 
 This script also runs the runner-vs-canonical STL evaluator consistency
@@ -141,12 +141,12 @@ def _consistency_check() -> dict[str, Any]:
     )
     if results["pass"]:
         console.print(
-            "  [green]PASS[/] — runner inline evaluator agrees with canonical "
+            "  [green]PASS[/]. runner inline evaluator agrees with canonical "
             "to float32 epsilon, well below all spec thresholds."
         )
     else:
         console.print(
-            "  [red]FAIL[/] — divergence above tolerance; runner must be "
+            "  [red]FAIL[/]. divergence above tolerance; runner must be "
             "switched to `stl_seed.stl.evaluator.evaluate_robustness`."
         )
     return results
@@ -382,7 +382,7 @@ def _generate_one_task(
 
 
 def main() -> int:
-    console.rule("[bold]A13 — Generate pilot trajectory store")
+    console.rule("[bold]A13. Generate pilot trajectory store")
     console.print(f"output dir: {_DATA_DIR}")
     console.print(f"seed: {_SEED}")
     console.print(f"per-task target: {_N_PER_TASK:,}")

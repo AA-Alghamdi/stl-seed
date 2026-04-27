@@ -1,4 +1,4 @@
-"""Example 03 — Minimal MLX QLoRA training pipeline (Apple Silicon only).
+"""Example 03. Minimal MLX QLoRA training pipeline (Apple Silicon only).
 
 End-to-end loop: generate 50 glucose-insulin trajectories, filter with
 `HardFilter`, render as chat, run 10 LoRA iterations on
@@ -48,7 +48,7 @@ def _require_apple_silicon() -> None:
         sys.stderr.write(
             "[example 03] Requires Apple Silicon (Darwin / arm64); "
             f"detected {platform.system()} / {platform.machine()}.\n"
-            "On Linux / CUDA, use the BNBBackend instead — see "
+            "On Linux / CUDA, use the BNBBackend instead. see "
             "docs/README.md and src/stl_seed/training/backends/bnb.py for the equivalent path.\n"
         )
         raise SystemExit(1)
@@ -239,7 +239,7 @@ def _decode_one(adapter_dir: Path, samples: list[dict]) -> str:
 
 
 def main() -> int:
-    print("Example 03 — minimal MLX QLoRA training pipeline")
+    print("Example 03. minimal MLX QLoRA training pipeline")
     print(f"  device       : {platform.system()} / {platform.machine()}")
     print(f"  base model   : {_MODEL_ID}")
     print(f"  spec         : {_SPEC_KEY}")
@@ -249,24 +249,24 @@ def main() -> int:
     _require_apple_silicon()
     np.random.seed(_SEED)
 
-    print("Step 1 — generate + filter trajectories")
+    print("Step 1. generate + filter trajectories")
     kept_traj, _weights, spec = _generate_corpus()
     if not kept_traj:
         sys.stderr.write("No trajectories survived the filter; cannot train.\n")
         return 1
 
-    print("\nStep 2 — render chat samples")
+    print("\nStep 2. render chat samples")
     samples = _render_chat(kept_traj, spec)
     print(f"  {len(samples)} chat samples ready.")
 
-    print("\nStep 3 — LoRA training")
+    print("\nStep 3. LoRA training")
     adapter_dir, losses = _run_lora(samples)
     if losses:
         print(f"  loss curve: first={losses[0]:.4f}  last={losses[-1]:.4f}  min={min(losses):.4f}")
     else:
         print("  no loss reports captured (iters may have been too few).")
 
-    print("\nStep 4 — reload + decode one sample")
+    print("\nStep 4. reload + decode one sample")
     output = _decode_one(adapter_dir, samples)
     preview = output[:200].replace("\n", " ")
     print(f"  decoded preview: {preview}{'...' if len(output) > 200 else ''}")

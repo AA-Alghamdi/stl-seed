@@ -20,7 +20,7 @@ $T_{char} = 10\\,\\mathrm{min}$, $C_{char} = 40\\,\\mathrm{molecules/cell}$
 (repressilator). Every parameter in this module is given in DIMENSIONAL
 units (min, nM, molecules/cell, M^-1 s^-1), placing it in a numerically
 disjoint regime from non-dimensional brackets. Specific
-near-misses (e.g., toggle-switch $\\alpha_1 = 156.25$ — Gardner 2000
+near-misses (e.g., toggle-switch $\\alpha_1 = 156.25$. Gardner 2000
 to also use it as a non-dim plug-in) are resolved by applying a
 literature-justified perturbation (next decimal point inside the
 Gardner-reported uncertainty) and documenting the perturbation in the
@@ -86,7 +86,7 @@ REFERENCES
             (Review of repressilator-class synthetic oscillator parameter
             ranges and design principles.)
 
-[BionumbersDB] Milo R et al. BioNumbers — The Database of Useful
+[BionumbersDB] Milo R et al. BioNumbers. The Database of Useful
             Biological Numbers. https://bionumbers.hms.harvard.edu
             (Cited per individual entry below.)
 
@@ -220,7 +220,7 @@ class RepressilatorParams:
     # PERTURB to 35.
 
     # --- Initial condition ---------------------------------------------------
-    # Initial protein levels (monomers/cell) — perturbed slightly from
+    # Initial protein levels (monomers/cell). perturbed slightly from
     # zero to break the symmetric unstable fixed point. Elowitz's data
     # show oscillations ramping from low, unequal levels.
     initial_proteins_per_cell: tuple[float, float, float] = (15.0, 5.0, 25.0)

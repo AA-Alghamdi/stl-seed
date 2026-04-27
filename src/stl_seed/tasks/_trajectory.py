@@ -66,7 +66,7 @@ class Trajectory(eqx.Module):
     A `Trajectory` is the sole output type of every `Simulator.simulate(...)`
     call (architecture.md §"Simulator interface"). It is consumed unmodified
     by the STL evaluator, the filter, the training tokenizer, and the eval
-    harness. Treat the field shapes as load-bearing — many downstream
+    harness. Treat the field shapes as load-bearing. many downstream
     operations vmap or scan over `states[:, channel]` and assume the second
     axis is the state-dim axis.
 

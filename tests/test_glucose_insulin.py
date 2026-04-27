@@ -104,7 +104,7 @@ def test_insulin_drop(sim: GlucoseInsulinSimulator, params: BergmanParams, key: 
     + Ib = 5 * 1e3 / (60 * 3.5 * 0.2659) + 7 ~ 96 microU/mL, which yields
     steady-state X ~ p3 / p2 * (I - Ib) ~ 4e-4 * 89 ~ 0.036 1/min. At that
     X, dG/dt = -p1 * (G - Gb) - 0.036 * G evaluated at G = 90 gives
-    dG/dt ~ -3.2 mg/dL/min initially — easily clearing 10 mg/dL within 90 min.
+    dG/dt ~ -3.2 mg/dL/min initially. easily clearing 10 mg/dL within 90 min.
     """
     y0 = default_normal_subject_initial_state(params)
     u = jnp.full((sim.n_control_points,), U_INSULIN_MAX_U_PER_H)
@@ -125,7 +125,7 @@ def test_oscillation_stable(
     sim: GlucoseInsulinSimulator, params: BergmanParams, key: jax.Array
 ) -> None:
     """Periodic insulin pulses (alternating max/zero per 10-min interval)
-    must yield a bounded, finite trajectory — no runaway, no oscillatory
+    must yield a bounded, finite trajectory. no runaway, no oscillatory
     blow-up.
 
     "Quasi-stable cycle" is operationalized as: trajectory stays inside a

@@ -1,4 +1,4 @@
-"""Eval harness — the evaluation surface registered in
+"""Eval harness. the evaluation surface registered in
 ``paper/architecture.md`` (eval/ module, A11 deliverable).
 
 Given a trained checkpoint and a held-out set of STL specs, the harness:
@@ -20,7 +20,7 @@ Design notes
 ------------
 
 * The harness is *agnostic* to the concrete simulator and STL evaluator
-  implementations — it operates on protocols. This lets us unit-test
+  implementations. it operates on protocols. This lets us unit-test
   it against synthetic stand-ins without spinning up Diffrax. The
   concrete simulators (``glucose_insulin``, ``bio_ode``) and the STL
   evaluator (``stl/evaluator.py``) are sibling A8/A9 deliverables.
@@ -29,7 +29,7 @@ Design notes
   call that returns a ``(H, m)`` control sequence (or, when the
   underlying agent is stochastic, a single sample drawn under ``key``).
   This abstracts away whether the checkpoint is an MLX-LoRA, a
-  bnb-quantized HF model, or a heuristic baseline — the harness only
+  bnb-quantized HF model, or a heuristic baseline. the harness only
   cares about the action sequence.
 
 * All randomness flows from a single ``jax.random.key`` per checkpoint;
@@ -138,7 +138,7 @@ class PerSpecResult:
         independent generations. Keys: ``first_action_uniqueness``,
         ``sequence_uniqueness``, ``first_action_pairwise_distance``.
         Added in response to the A15 smoke-test diagnostic
-        produced an identical first action — this metric makes that
+        produced an identical first action. this metric makes that
         regression mode falsifiable in eval. ``first_action_uniqueness``
         below 0.5 is treated as a warning by the runner's
         rich-formatted output.
@@ -234,7 +234,7 @@ class EvalHarness:
         glucose-insulin), so the simulator is selected per-spec.
     spec_registry:
         Mapping from spec name to the STL spec object passed to the STL
-        evaluator. The harness is agnostic to its concrete type — it
+        evaluator. The harness is agnostic to its concrete type. it
         forwards the value to ``stl_evaluator(spec, trajectory)``.
     stl_evaluator:
         Callable ``(spec, trajectory) -> float`` returning the
@@ -255,7 +255,7 @@ class EvalHarness:
     The harness draws all ``n_samples_per_spec`` trajectories per spec,
     then computes BoN success at each budget by sample reuse. This
     matches the design choice in theory.md §5: BoN budgets are not
-    independent within a cell — sample reuse keeps the variance
+    independent within a cell. sample reuse keeps the variance
     structure honest.
     """
 
@@ -299,7 +299,7 @@ class EvalHarness:
             Iterable of spec names. All names must be in both
             ``spec_registry`` and ``simulator_registry``.
         n_samples_per_spec:
-            ``N_max`` — the number of trajectories drawn per spec.
+            ``N_max``. the number of trajectories drawn per spec.
             Must be at least the largest budget in ``self.budgets``.
         key:
             Either an integer seed or a ``jax.random.PRNGKey``. Splits
@@ -391,7 +391,7 @@ class EvalHarness:
                     and ctrl_np.shape[1] == controls_buf.shape[2]
                 ):
                     controls_buf[s] = ctrl_np
-                # else: shape mismatch — leave row as NaN; action_diversity
+                # else: shape mismatch. leave row as NaN; action_diversity
                 # treats NaN rows as not-a-real-generation.
 
                 trajectory = sim.simulate(
@@ -417,7 +417,7 @@ class EvalHarness:
                 n_nan += 1
                 rhos[s] = float("nan")
 
-        # BoN success via sample reuse: shape (1, n_samples) — single
+        # BoN success via sample reuse: shape (1, n_samples). single
         # "seed" pool from which we draw N samples, matching the
         # eval-time sample-reuse semantics.
         rhos_2d = rhos[None, :]  # the seed dim is collapsed; bon_success_curve
@@ -438,7 +438,7 @@ class EvalHarness:
 
         # Action-diversity summary. If the policy never produced a
         # successful control rollout (e.g., every call raised), the
-        # buffer stays None — record NaN sentinels.
+        # buffer stays None. record NaN sentinels.
         if controls_buf is None:
             diversity = {
                 "first_action_uniqueness": float("nan"),

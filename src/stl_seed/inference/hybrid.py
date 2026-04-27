@@ -12,7 +12,7 @@ trajectories and picks the argmax-rho one. The two methods exploit
 * **Gradient guidance** uses a *backward* pass per step to convert the
   continuous STL signal into a per-decision bias. It is information-
   efficient per sample but spends compute on differentiation.
-* **BoN selection** uses *more samples* — it pays the cost of additional
+* **BoN selection** uses *more samples*. it pays the cost of additional
   forward simulations but never differentiates.
 
 Hybridising them produces a sampler that runs ``n`` *gradient-guided*
@@ -86,7 +86,7 @@ class HybridGradientBoNSampler:
          the master key (``jax.random.fold_in(key, draw_idx)``).
       2. Score the produced trajectory by the spec's robustness ``rho``
          (taken directly from the inner sampler's ``final_rho``
-         diagnostic — which is computed by the same compiled spec
+         diagnostic. which is computed by the same compiled spec
          used inside the inner sampler).
 
     Then select the argmax-rho trajectory across the ``n`` draws.
@@ -132,7 +132,7 @@ class HybridGradientBoNSampler:
     n:
         Number of gradient-guided draws to perform per ``sample()``
         call. ``n=1`` collapses to pure gradient guidance (with one
-        added simulator call to compute the same final rho — but the
+        added simulator call to compute the same final rho. but the
         final rho is read directly from the inner diagnostics, so the
         collapse is exact at the action-sequence level).
     aux:
@@ -150,14 +150,14 @@ class HybridGradientBoNSampler:
     sampling_temperature:
         Sampling temperature on the biased softmax inside each inner
         draw. ``0.0`` makes each inner draw deterministic given its
-        sub-key — but since the sub-keys differ across draws, the inner
+        sub-key. but since the sub-keys differ across draws, the inner
         sampler's `categorical` consumes them differently and the
         rollouts still diverge. We default to ``1.0`` which preserves
         the LLM's calibration; lowering helps when the LLM is poorly
         calibrated.
     fallback_on_grad_failure:
         Forwarded to the inner sampler. Default ``True`` (do not abort
-        the rollout on a NaN/Inf gradient — the failed step samples
+        the rollout on a NaN/Inf gradient. the failed step samples
         unbiased and the event is recorded in diagnostics).
 
     Notes

@@ -2,7 +2,7 @@
 
 These tests use Hypothesis (https://hypothesis.readthedocs.io) to generate
 random trajectories, predicates, and time intervals, and assert *algebraic
-invariants* of the Donzé–Maler 2010 space-robustness semantics that hold
+invariants* of the Donzé-Maler 2010 space-robustness semantics that hold
 for *every* well-formed input. They complement the example-based tests in
 ``tests/test_stl_evaluator.py`` by catching corner-case bugs that hand-
 written examples miss (off-by-one in window masking, wrong sign in De
@@ -15,8 +15,8 @@ Properties verified
 1.  Negation involution:        ρ(¬¬φ, τ) == ρ(φ, τ)
 2.  Negation antisymmetry:      ρ(¬φ, τ) == −ρ(φ, τ)
 3.  Conjunction = min:          ρ(φ ∧ ψ, τ) == min(ρ(φ, τ), ρ(ψ, τ))
-4.  Always–Eventually duality:  ρ(F[a,b] ¬φ, τ) == −ρ(G[a,b] φ, τ)
-5.  Eventually–Always duality:  ρ(G[a,b] ¬φ, τ) == −ρ(F[a,b] φ, τ)
+4.  Always-Eventually duality:  ρ(F[a,b] ¬φ, τ) == −ρ(G[a,b] φ, τ)
+5.  Eventually-Always duality:  ρ(G[a,b] ¬φ, τ) == −ρ(F[a,b] φ, τ)
 6.  G monotone in interval ⊂:   [a',b'] ⊂ [a,b] ⇒ ρ(G[a,b] φ) ≤ ρ(G[a',b'] φ)
 7.  F monotone in interval ⊂:   [a,b] ⊂ [a',b'] ⇒ ρ(F[a,b] φ) ≤ ρ(F[a',b'] φ)
 8.  Predicate-threshold ↓ in c: c1 ≤ c2 ⇒ ρ(x ≥ c1) ≥ ρ(x ≥ c2)
@@ -81,7 +81,7 @@ class _TrajStub:
 N_DIM = 2
 # Length of the time grid.
 T_LEN = 16
-# Time horizon (physical units, arbitrary — we use [0, 10]).
+# Time horizon (physical units, arbitrary. we use [0, 10]).
 T_MAX = 10.0
 # Bounds on randomly generated state values.
 STATE_LO = -50.0
@@ -331,7 +331,7 @@ def test_conjunction_equals_min_three_clauses(
 
 
 # ---------------------------------------------------------------------------
-# Property 4: Always–Eventually duality.
+# Property 4: Always-Eventually duality.
 #   ρ(¬G[a,b] φ, τ) == ρ(F[a,b] ¬φ, τ)        (Maler & Nickovic 2004)
 # Since the AST forbids ¬G(...), we test the *consequence*:
 #   ρ(F[a,b] ¬φ, τ) == −ρ(G[a,b] φ, τ).
@@ -354,7 +354,7 @@ def test_always_eventually_duality(pred: Predicate, interval: Interval, traj: _T
 
 
 # ---------------------------------------------------------------------------
-# Property 5: Eventually–Always duality (the symmetric statement).
+# Property 5: Eventually-Always duality (the symmetric statement).
 #   ρ(G[a,b] ¬φ, τ) == −ρ(F[a,b] φ, τ).
 # ---------------------------------------------------------------------------
 

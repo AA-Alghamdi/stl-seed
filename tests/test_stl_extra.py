@@ -2,11 +2,11 @@
 
 Targets the lower-coverage branches of:
 
-* ``stl/streaming.py`` — predicate / negation / and streaming branches
+* ``stl/streaming.py``. predicate / negation / and streaming branches
   (lines 89-118 in the partial-trajectory evaluator).
-* ``stl/worst_subformula.py`` — negation branch (lines 78-81) and the
+* ``stl/worst_subformula.py``. negation branch (lines 78-81) and the
   Eventually witness branch (lines 107-120).
-* ``stl/evaluator.py`` — the predicate-introspection fallback (lines
+* ``stl/evaluator.py``. the predicate-introspection fallback (lines
   175-188), the nested-temporal branch (318-363), and a non-conforming
   predicate that triggers ``_FALLBACK_USED``.
 """
@@ -157,7 +157,7 @@ def test_predicate_fallback_triggers_when_introspection_fails() -> None:
     The compiled spec should still produce the correct rho but the
     ``_FALLBACK_USED`` attribute should be True."""
 
-    def my_fn(traj, t):  # no defaults — introspection returns None
+    def my_fn(traj, t):  # no defaults. introspection returns None
         return float(traj[t, 0]) - 1.0
 
     pred = Predicate("custom>1", fn=my_fn)
@@ -184,7 +184,7 @@ def test_introspection_handles_non_int_channel() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Nested temporal: Always[a,b] (Always[c,d] phi) — exercises the nested
+# Nested temporal: Always[a,b] (Always[c,d] phi). exercises the nested
 # branch in _compile_temporal_inner (lines 331-361).
 # ---------------------------------------------------------------------------
 

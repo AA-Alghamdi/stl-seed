@@ -2,20 +2,20 @@
 
 This package implements the analyses required by ``paper/theory.md``:
 
-* ``bootstrap`` — paired/unpaired confidence intervals on means, mean
+* ``bootstrap``. paired/unpaired confidence intervals on means, mean
   differences, and proportions. Three CI methods are exposed: BCa
   (bias-corrected and accelerated; preferred for skewed statistics
   [Efron 1987, DOI:10.1080/01621459.1987.10478410]), percentile
   [Efron 1979, DOI:10.1214/aos/1176344552], and basic / pivotal.
 
-* ``hierarchical_bayes`` — the NumPyro multi-level model from
+* ``hierarchical_bayes``. the NumPyro multi-level model from
   ``paper/theory.md`` §4. Trial-level Bernoulli outcomes are linked to a
   saturating power-law BoN curve ``p(N) = A · (1 − N^{-b})``, with
   ``logit A`` and ``log b`` decomposed into model-size, task-family,
   filter-condition, model×family interaction, and instance-level
   effects.
 
-* ``tost`` — Two One-Sided Tests for equivalence, the formal test
+* ``tost``. Two One-Sided Tests for equivalence, the formal test
   registered for hypothesis H1 in ``paper/theory.md`` §3
   [Schuirmann 1987, DOI:10.1007/BF01068419; Lakens 2017,
   DOI:10.1177/1948550617697177].

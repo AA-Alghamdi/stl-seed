@@ -63,7 +63,7 @@ class TOSTResult:
     p_upper:
         p-value for ``H0_upper : diff ≥ +Δ`` (rejecting → ``diff < +Δ``).
     p_tost:
-        ``max(p_lower, p_upper)`` — the equivalence p-value under the
+        ``max(p_lower, p_upper)``. the equivalence p-value under the
         intersection-union test principle [Berger & Hsu 1996,
         DOI:10.1214/ss/1032280304].
     equivalent:
@@ -141,10 +141,10 @@ def tost_equivalence(
         t_upper = (diff − (+Δ)) / se = (diff − Δ) / se
 
     p-values (one-sided, in the rejection direction):
-        p_lower = P(T <= t_lower under H0_lower)? — actually we test
+        p_lower = P(T <= t_lower under H0_lower)?. actually we test
             "diff > −Δ" so reject H0_lower when t_lower is large; thus
             p_lower = 1 − F(t_lower) = SF(t_lower).
-        p_upper = P(T >= t_upper under H0_upper)? — reject H0_upper
+        p_upper = P(T >= t_upper under H0_upper)?. reject H0_upper
             when t_upper is small; thus p_upper = F(t_upper) = CDF(t_upper).
 
     The intersection-union test [Berger & Hsu 1996,

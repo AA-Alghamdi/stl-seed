@@ -185,7 +185,7 @@ def test_topology_aware_drives_target_high_via_simulator() -> None:
     """A different target-direction config (drive p_2 high by silencing gene 0)
     should also push the chosen target protein above threshold by t=horizon.
 
-    This verifies that the controller is not hard-coded to gene 0 — the
+    This verifies that the controller is not hard-coded to gene 0. the
     topology dispatch generalises.
     """
     sim = RepressilatorSimulator()
@@ -207,7 +207,7 @@ def test_topology_aware_drives_target_high_via_simulator() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Toggle (Gardner-Cantor-Collins 2000) — topology-aware controller dispatch
+# Toggle (Gardner-Cantor-Collins 2000). topology-aware controller dispatch
 # ---------------------------------------------------------------------------
 
 
@@ -259,7 +259,7 @@ def test_topology_aware_drives_toggle_high() -> None:
 
 
 # ---------------------------------------------------------------------------
-# MAPK (Huang-Ferrell 1996) — PID controller dispatch
+# MAPK (Huang-Ferrell 1996). PID controller dispatch
 # ---------------------------------------------------------------------------
 
 

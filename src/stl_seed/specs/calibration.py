@@ -2,12 +2,12 @@
 
 Two related procedures live here:
 
-1. :func:`calibrate_spec` — *single-policy* calibration that nudges one
+1. :func:`calibrate_spec`. *single-policy* calibration that nudges one
    threshold so the random-policy success rate falls into a target band.
    This is the original Subphase-1.6 stub; its public surface is unchanged
    (321 existing tests cover it).
 
-2. :func:`auto_tune_spec_thresholds` — *multi-policy* threshold optimisation
+2. :func:`auto_tune_spec_thresholds`. *multi-policy* threshold optimisation
    that picks the threshold combination maximising between-policy
    discriminability of the robustness margin :math:`\\rho`. This is the
    technical contribution: it removes spec-author bias from benchmark
@@ -28,16 +28,16 @@ TOST equivalence-vs-difference framing).
 The discriminability metrics here directly probe the *separation* of the
 :math:`\\rho` distribution under two policies:
 
-* ``wasserstein`` — earth-mover distance between the empirical
+* ``wasserstein``. earth-mover distance between the empirical
   :math:`\\rho`-distributions. Symmetric, scale-aware, robust to outliers
   (a single failed solve does not dominate). Implemented as the closed-form
   1-D Wasserstein-1 (sum of absolute differences of sorted samples), since
   scipy availability is not assumed by all Phase-1 deployments.
-* ``auc_separation`` — area under the ROC curve treating policy A vs.
+* ``auc_separation``. area under the ROC curve treating policy A vs.
   policy B as a binary discrimination problem on per-trajectory
   :math:`\\rho`. Centred so 0 means "no information" and the headline
   value reported is ``2 |AUC - 0.5|`` (Gini coefficient form).
-* ``trace_overlap`` — :math:`1 - \\sum_i \\min(h^A_i, h^B_i)` where
+* ``trace_overlap``. :math:`1 - \\sum_i \\min(h^A_i, h^B_i)` where
   :math:`h^A, h^B` are normalised histograms of the two
   :math:`\\rho`-vectors on a shared bin grid. Cheap, geometric, but
   bin-resolution sensitive.
@@ -98,7 +98,7 @@ from stl_seed.specs import (
 )
 
 # ---------------------------------------------------------------------------
-# Section 1 — original single-policy success-rate calibration (unchanged).
+# Section 1. original single-policy success-rate calibration (unchanged).
 # ---------------------------------------------------------------------------
 
 
@@ -141,7 +141,7 @@ def success_rate(
 ) -> float:
     """Empirical random-policy success rate ``Pr[rho(traj, spec) >= 0]``.
 
-    NaN/Inf rho values are treated as failures (matches the CLAUDE.md
+    NaN/Inf rho values are treated as failures (matches the project rules
     "no silent error swallowing" rule).
     """
     trajs = sampler.sample(n_samples, seed=seed)
@@ -222,7 +222,7 @@ def calibrate_spec(
         raise RuntimeError(
             f"calibrate_spec: no candidate threshold for key {threshold_key!r} "
             f"yielded a success rate in {target_range}. Sweep: {sweep}. "
-            "Refusing to silently relax the spec — see module docstring."
+            "Refusing to silently relax the spec. see module docstring."
         )
     centre = 0.5 * (low + high)
     best_v, best_sr = min(in_band, key=lambda pair: abs(pair[1] - centre))
@@ -247,7 +247,7 @@ def calibrate_spec(
 
 
 # ---------------------------------------------------------------------------
-# Section 2 — predicate introspection (shared with stl.evaluator).
+# Section 2. predicate introspection (shared with stl.evaluator).
 # ---------------------------------------------------------------------------
 
 
@@ -301,7 +301,7 @@ def _predicate_base_name(pred: Predicate) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Section 3 — placeholder extraction and substitution.
+# Section 3. placeholder extraction and substitution.
 # ---------------------------------------------------------------------------
 
 
@@ -444,7 +444,7 @@ def instantiate_spec_with_thresholds(
 
 
 # ---------------------------------------------------------------------------
-# Section 4 — discriminability metrics.
+# Section 4. discriminability metrics.
 # ---------------------------------------------------------------------------
 
 
@@ -558,7 +558,7 @@ def trace_overlap(rho_a: np.ndarray, rho_b: np.ndarray, n_bins: int = 25) -> flo
 
 
 # ---------------------------------------------------------------------------
-# Section 5 — Auto-tune entry point.
+# Section 5. Auto-tune entry point.
 # ---------------------------------------------------------------------------
 
 
@@ -580,7 +580,7 @@ class AutoTuneResult:
         chosen discriminability metric.
     best_metric_value : float
         The metric value at ``best_thresholds`` (already aggregated across
-        the policy pairs — typically the *worst-case* pairwise
+        the policy pairs. typically the *worst-case* pairwise
         discriminability).
     search_results : pandas.DataFrame
         One row per threshold combination, with the threshold values as
@@ -662,7 +662,7 @@ def _simulate_policy_batch(
     ``(n_kept, T, state_dim)`` and ``n_failed`` counts simulator
     exceptions or all-NaN rollouts (both are dropped).
     """
-    # Lazy imports — keeps `calibration` importable in environments where
+    # Lazy imports. keeps `calibration` importable in environments where
     # the simulator stack is heavy.
     from stl_seed.generation.runner import _simulate_one  # noqa: PLC0415
 
@@ -777,7 +777,7 @@ def auto_tune_spec_thresholds(
     1. Roll out ``n_trajectories_per_policy`` trajectories per named
        policy on the same ``simulator`` with the same ``initial_state``,
        and *cache the state arrays*. Trajectories are simulated *once*
-       per policy (not once per threshold combo) — the spec is independent
+       per policy (not once per threshold combo). the spec is independent
        of the simulator dynamics, so this is exact, not an approximation.
     2. Compile the spec at the candidate thresholds via
        :func:`instantiate_spec_with_thresholds` and evaluate
@@ -985,22 +985,22 @@ def auto_tune_spec_thresholds(
 
 
 __all__ = [
-    # Section 1 — original API.
+    # Section 1. original API.
     "TrajectorySampler",
     "RobustnessFn",
     "CalibrationResult",
     "success_rate",
     "scan_threshold",
     "calibrate_spec",
-    # Section 2-3 — placeholder model.
+    # Section 2-3. placeholder model.
     "ThresholdPlaceholder",
     "extract_threshold_placeholders",
     "instantiate_spec_with_thresholds",
-    # Section 4 — discriminability metrics.
+    # Section 4. discriminability metrics.
     "wasserstein_distance_rho",
     "auc_separation",
     "trace_overlap",
-    # Section 5 — auto-tune entry point.
+    # Section 5. auto-tune entry point.
     "AutoTuneResult",
     "auto_tune_spec_thresholds",
 ]

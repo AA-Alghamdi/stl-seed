@@ -7,5 +7,5 @@ is formal Signal Temporal Logic (STL) robustness.
 
 __version__ = "0.1.0"
 
-# v0.1.0 — first PyPI release. Public API: STL robustness evaluator,
+# v0.1.0. first PyPI release. Public API: STL robustness evaluator,
 # gradient-guided sampler, beam-search warmstart, unified comparison harness.

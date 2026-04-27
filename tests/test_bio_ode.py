@@ -203,7 +203,7 @@ def test_toggle_bistable(
     key: jax.Array,
 ) -> None:
     """Starting in the (A-low, B-high) state, an appropriate inducer pulse
-    on u_1 (which inactivates A — wait, no: u_1 inactivates A, which is
+    on u_1 (which inactivates A. wait, no: u_1 inactivates A, which is
     already low; we want to grow A by removing B). The correct flip is
     via u_2 (inactivates B, releasing A from repression).
 
@@ -277,7 +277,7 @@ def test_mapk_dose_response(
         log_u = np.log(us[mask])
         log_y = np.log(y_norm[mask] / (1.0 - y_norm[mask]))
         n_eff, _ = np.polyfit(log_u, log_y, 1)
-        # Permissive bound: cascade is ultrasensitive (n_eff > 1) — full
+        # Permissive bound: cascade is ultrasensitive (n_eff > 1). full
         # n_eff range bracket is (3, 6) per `MAPKParams.hill_n_effective_range`,
         # but the polyfit on a 21-point sweep is noisy.
         assert n_eff > 1.0, f"MAPK is not ultrasensitive: n_eff = {n_eff:.2f}, expected > 1"
@@ -354,7 +354,7 @@ def test_jit_works_repressilator(
     y0 = default_repressilator_initial_state(rep_params)
     u = jnp.zeros((rep_sim.n_control_points, rep_sim.action_dim))
 
-    # Params are static — they are literature-fixed constants, not traced
+    # Params are static. they are literature-fixed constants, not traced
     # arrays, and the dataclass is not a JAX pytree. The simulator object
     # itself is also static (its eqx.Module fields are all static).
     @jax.jit

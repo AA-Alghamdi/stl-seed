@@ -210,7 +210,7 @@ def test_streaming_lower_bound() -> None:
     Streaming rho at t=2 (only [0, 2] observed): inf x in [0,2] - (-0.5)
                                                = (1 - 0.2) + 0.5 = 1.3.
     1.3 > 0.5, so the streaming value is an upper bound on the partial
-    window — but a lower bound on the final rho is the wrong sign here.
+    window. but a lower bound on the final rho is the wrong sign here.
     Reading more carefully: the docstring says streaming rho at t_now is
     inf over [a, t_now], which monotone-decreases with t_now (more
     samples can only make the inf smaller). So streaming rho at t_now is

@@ -43,7 +43,7 @@ Stages
    the BoN figure + paper/results.md exist.
 
 4. **Real eval is also exercised**: even if some stages fail, we report
-   them — this is a *validation* run, so failures are first-class
+   them. this is a *validation* run, so failures are first-class
    findings to be fixed before Phase 2 launch.
 
 Runtime budget: < 5 minutes on M5 Pro. Achieved by:
@@ -58,8 +58,8 @@ Runtime budget: < 5 minutes on M5 Pro. Achieved by:
 Exit status
 -----------
 
-* 0 — every stage passed.
-* 1 — at least one stage failed; the offending stage is named in the
+* 0. every stage passed.
+* 1. at least one stage failed; the offending stage is named in the
   trailing summary table.
 """
 
@@ -210,7 +210,7 @@ def stage_sweep(
 
     # 1. Verify cell enumeration produces exactly 18 cells. We call
     # enumerate_cells directly (not via the dry-run path) so no provenance
-    # stub directories are created — those would otherwise pollute the
+    # stub directories are created. those would otherwise pollute the
     # eval-stage discover_cells() and inflate the cell count.
     if full_dry_run_first:
         sweep_module = _import_script("run_canonical_sweep")
@@ -328,7 +328,7 @@ def stage_eval(
 ) -> StageResult:
     """Drive ``run_canonical_eval`` against the mock-trained cells.
 
-    Eval-side overrides are deliberately small — the goal is to exercise
+    Eval-side overrides are deliberately small. the goal is to exercise
     the parquet schema, the cell-discovery code, and the harness's main
     loop, not to produce statistically meaningful BoN curves.
     """

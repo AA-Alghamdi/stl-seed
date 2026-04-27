@@ -25,7 +25,7 @@ Defaults are sourced as follows (every numerical field is cited):
   set: the q/k/v/o projections plus the gate/up/down projections of the
 * ``max_seq_length`` is reduced from SERA's 32768 to 8192 because control
   STEP-3 mapping table, "sequence_len: ADAPT").
-* ``base_model`` defaults to ``Qwen/Qwen3-0.6B-Instruct`` — the smallest
+* ``base_model`` defaults to ``Qwen/Qwen3-0.6B-Instruct``. the smallest
   model in stl-seed's 3×3×2 sweep (theory.md §1).
 
 Where SERA does not state a value (or where stl-seed deliberately diverges),
@@ -92,7 +92,7 @@ class TrainingConfig:
     # The exact attribute names are Qwen3-family canonical (validated against
     # the Qwen3 modeling file in transformers ≥ 4.45).
     #
-    # IMPORTANT — naming convention (MLX-compatible):
+    # IMPORTANT. naming convention (MLX-compatible):
     #   Names MUST be local-relative paths inside each TransformerBlock,
     #   e.g. ``"self_attn.q_proj"`` and ``"mlp.gate_proj"``. The MLX
     #   ``linear_to_lora_layers`` helper (mlx_lm 0.31) matches keys
@@ -102,7 +102,7 @@ class TrainingConfig:
     #   but we standardize on the prefixed form so a single config works
     #   on both backends without per-backend rewriting.
     #
-    # — the smoke test caught the silent no-op when bare names were used.
+    # . the smoke test caught the silent no-op when bare names were used.
     #
     # Example (working on both MLX and bnb):
     #     ["self_attn.q_proj", "self_attn.v_proj"]   # attention only
@@ -134,12 +134,12 @@ class TrainingConfig:
     # SERA QLoRA YAML: load_in_4bit: true, compute bfloat16. The
     # ``weight_format`` field selects the on-disk / on-GPU representation:
     #
-    # * ``"nf4"`` (default) — bitsandbytes NF4 with double-quant, bf16
+    # * ``"nf4"`` (default). bitsandbytes NF4 with double-quant, bf16
     #   compute. Matches SERA's MoE-QLoRA recipe and the Dettmers QLoRA
     #   paper (arXiv:2305.14314 §3, "NF4").
-    # * ``"int8"`` — bitsandbytes int8 (LLM.int8). Used when NF4 kernels
+    # * ``"int8"``. bitsandbytes int8 (LLM.int8). Used when NF4 kernels
     #   are unavailable on a particular Ada/Hopper driver combo.
-    # * ``"fp16"`` — no quantization; LoRA on top of fp16 base. Used by
+    # * ``"fp16"``. no quantization; LoRA on top of fp16 base. Used by
     #   the MLX backend, which does not currently expose NF4 kernels on
     #   M-series GPUs (mlx_lm 0.20).
     weight_format: Literal["fp16", "nf4", "int8"] = "nf4"
@@ -173,7 +173,7 @@ class TrainingConfig:
         # modules under mlx_lm.tuner.utils.linear_to_lora_layers because the
         # matcher walks each TransformerBlock and compares against locally
         # qualified attribute paths (e.g. "self_attn.q_proj"). A bare
-        # "q_proj" produces a 0-trainable-parameter LoRA — training runs
+        # "q_proj" produces a 0-trainable-parameter LoRA. training runs
         # but does nothing. Warn loudly so callers catch the typo before
         # burning compute.
         bare = [t for t in self.lora_target_modules if "." not in t]
@@ -199,15 +199,15 @@ class TrainingConfig:
 class TrainedCheckpoint:
     """A trained LoRA adapter on disk plus minimal training diagnostics.
 
-    The ``model_path`` is whatever the backend wrote to disk. For the bnb
-    backend this is a directory of LoRA adapter weights (NOT the base
-    model); for the mlx backend this is the directory ``mlx_lm.lora``
-    populates. Both backends record only the adapter, not the base model
-    — the base is re-downloaded from HuggingFace at eval time.
+     The ``model_path`` is whatever the backend wrote to disk. For the bnb
+     backend this is a directory of LoRA adapter weights (NOT the base
+     model); for the mlx backend this is the directory ``mlx_lm.lora``
+     populates. Both backends record only the adapter, not the base model
+    . the base is re-downloaded from HuggingFace at eval time.
 
-    ``training_loss_history`` is the per-step training loss, length
-    ``ceil(num_train_examples * num_epochs / (batch_size * grad_accum))``.
-    Used for the loss curves in ``paper/figures/``.
+     ``training_loss_history`` is the per-step training loss, length
+     ``ceil(num_train_examples * num_epochs / (batch_size * grad_accum))``.
+     Used for the loss curves in ``paper/figures/``.
     """
 
     backend: Literal["mlx", "bnb"]
@@ -230,7 +230,7 @@ class TrainingBackend(Protocol):
     Both backends consume a HuggingFace ``Dataset`` of records with at minimum
     ``prompt: str``, ``completion: str``, and ``weight: float`` columns. The
     weight is consumed in the SFT loss as a per-sample scalar (see the
-    backend implementations for the per-framework realization — bnb uses a
+    backend implementations for the per-framework realization. bnb uses a
     custom collator + reduction='none' loss, mlx uses a custom loss closure).
     """
 

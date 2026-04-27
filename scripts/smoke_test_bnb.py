@@ -1,4 +1,4 @@
-"""A23 — bitsandbytes 4-bit QLoRA smoke test on Qwen3-0.6B (RunPod-only).
+"""A23. bitsandbytes 4-bit QLoRA smoke test on Qwen3-0.6B (RunPod-only).
 
 Mirror of ``scripts/smoke_test_mlx.py`` for the canonical Phase-2 backend
 (``stl_seed.training.backends.bnb``). Designed to be the single command
@@ -90,7 +90,7 @@ _SEED = 20260424
 _N_TOTAL = 100
 _N_HELDOUT = 5
 
-# Hyperparameters — chosen to mirror the MLX smoke test (A15) so the two
+# Hyperparameters. chosen to mirror the MLX smoke test (A15) so the two
 # backends produce directly comparable artifacts. The bnb backend computes
 # total training steps from num_epochs * len(dataset) / (batch * accum), so
 # we scale num_epochs to land near 50 optimizer steps on a 95-row train
@@ -108,7 +108,7 @@ _WARMUP_RATIO = 0.10
 _WEIGHT_DECAY = 0.01
 
 # Canonical CUDA student. Falls back to mlx-community variant if the user
-# pre-cached only that one — but the bnb path needs the HF-format weights
+# pre-cached only that one. but the bnb path needs the HF-format weights
 # (the mlx-community variant ships .safetensors but in MLX layout, which
 # transformers cannot consume).
 _PRIMARY_MODEL = "Qwen/Qwen3-0.6B-Instruct"
@@ -117,7 +117,7 @@ _FALLBACK_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 _SPEC_KEY = "glucose_insulin.tir.easy"
 _TASK_NAME = "glucose_insulin"
 
-# Wall-clock guard — abort if training exceeds this budget (RunPod cost cap).
+# Wall-clock guard. abort if training exceeds this budget (RunPod cost cap).
 _WALL_CLOCK_BUDGET_S = 1800.0
 
 console = Console()
@@ -131,7 +131,7 @@ console = Console()
 def _require_cuda() -> None:
     """Assert CUDA is visible. Helpful error message if not.
 
-    This script intentionally does NOT run on macOS — bitsandbytes 4-bit
+    This script intentionally does NOT run on macOS. bitsandbytes 4-bit
     kernels are CUDA-only. On the user's M5 Pro, the corresponding
     ``smoke_test_mlx.py`` is the right tool.
     """
@@ -160,7 +160,7 @@ def _seed_everything(seed: int) -> None:
 
     PyTorch's CUDA kernels are not bit-deterministic by default
     (``torch.use_deterministic_algorithms(True)`` would force it but at a
-    large speed cost and with extra constraints — e.g. it disallows
+    large speed cost and with extra constraints. e.g. it disallows
     non-deterministic matmul kernels in cuBLAS). We document this in
     paper/reproducibility.md as a known source of non-determinism.
     """
@@ -328,7 +328,7 @@ def _run_bnb_training(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Tokenizer first — we need its chat template to materialize the dataset
+    # Tokenizer first. we need its chat template to materialize the dataset
     # before handing off to the backend.
     tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
     if tokenizer.pad_token is None:
@@ -369,7 +369,7 @@ def _run_bnb_training(
             output_dir=output_dir,
         )
     except Exception:
-        # Per CLAUDE.md: never silently swallow training failures.
+        # Per project rules: never silently swallow training failures.
         console.print_exception()
         raise
     wall = time.perf_counter() - t_start
@@ -616,7 +616,7 @@ def _write_report(
         first_mean = last_mean = float("nan")
 
     lines: list[str] = []
-    lines.append("# A23 — bnb QLoRA smoke test report")
+    lines.append("# A23. bnb QLoRA smoke test report")
     lines.append("")
     lines.append("**Date:** generated at run-time")
     lines.append(
@@ -704,7 +704,7 @@ def _write_report(
         first_action_str = (
             ",".join(f"{x:.4e}" for x in r.first_action_values[:3])
             if r.first_action_values
-            else "—"
+            else ","
         )
         lines.append(f"| {i} | {'Y' if r.parses else 'N'} | {r.n_blocks} | {first_action_str} |")
     lines.append("")
@@ -769,12 +769,12 @@ def _write_report(
 def main() -> int:
     console.print(
         Panel.fit(
-            "A23 — bnb 4-bit QLoRA smoke test on Qwen3-0.6B-Instruct\n"
+            "A23. bnb 4-bit QLoRA smoke test on Qwen3-0.6B-Instruct\n"
             f"Iters target: ~50 ({_NUM_EPOCHS} epochs over 95 rows / "
             f"{_BATCH_SIZE}x{_GRAD_ACCUM} effective batch)\n"
             f"LoRA rank/alpha: {_LORA_RANK}/{_LORA_ALPHA}  | "
             f"targets: {_LORA_TARGETS}",
-            title="[bold]Subphase 1.7 — Phase-2 readiness",
+            title="[bold]Subphase 1.7. Phase-2 readiness",
         )
     )
 
@@ -784,11 +784,11 @@ def main() -> int:
     setup_start = time.perf_counter()
 
     # Resolve the model identifier first so we fail fast on network issues.
-    console.rule("[bold]Step 0 — Resolve model identifier")
+    console.rule("[bold]Step 0. Resolve model identifier")
     model_id = _resolve_model_id()
 
     # 1) Build dataset.
-    console.rule("[bold]Step 1 — Build SFT dataset")
+    console.rule("[bold]Step 1. Build SFT dataset")
     rng = np.random.default_rng(_SEED)
     samples = _load_filtered_glucose_dataset(_N_TOTAL, rng)
     held_samples = samples[-_N_HELDOUT:]
@@ -797,7 +797,7 @@ def main() -> int:
     setup_seconds = time.perf_counter() - setup_start
 
     # 2) Train.
-    console.rule("[bold]Step 2 — bnb QLoRA fine-tuning")
+    console.rule("[bold]Step 2. bnb QLoRA fine-tuning")
     issues: list[str] = []
     followups: list[str] = []
     try:
@@ -828,13 +828,13 @@ def main() -> int:
         issues.append(f"Training exceeded {_WALL_CLOCK_BUDGET_S:.0f}s budget (took {wall:.1f}s)")
 
     # 3) Loss-decrease check.
-    console.rule("[bold]Step 3 — Loss decrease verification")
+    console.rule("[bold]Step 3. Loss decrease verification")
     decreased, decrease_diag = _loss_decrease_check(losses)
     _print_loss_table(losses)
     console.print(f"  loss decreased: {decreased}  diag: {decrease_diag}")
 
     # 4) Held-out parse evaluation.
-    console.rule("[bold]Step 4 — Held-out parse evaluation")
+    console.rule("[bold]Step 4. Held-out parse evaluation")
     try:
         parse_results = _heldout_eval(held_samples, _RUNS_DIR, model_id)
     except Exception as e:  # noqa: BLE001
@@ -868,7 +868,7 @@ def main() -> int:
     )
     followups.append(
         "Validate that the same dataset shape lands the bnb run within "
-        "+/- 0.1 of the MLX smoke-test final loss (1.484 -> 0.466) — large "
+        "+/- 0.1 of the MLX smoke-test final loss (1.484 -> 0.466). large "
         "divergence indicates a tokenization-template mismatch between the "
         "two backends."
     )

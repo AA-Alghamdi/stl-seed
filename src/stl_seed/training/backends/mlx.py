@@ -14,14 +14,14 @@ The pre-A15 wrapper was pinned to mlx_lm <= 0.20 and broke under 0.31:
 * ``TrainingArgs`` no longer accepts ``learning_rate`` / ``lr_schedule``
   / ``warmup_steps`` / ``seed`` (the schedule lives on the optimizer;
   the seed lives on ``iterate_batches``).
-* ``train(...)`` no longer takes a ``tokenizer`` argument — the
+* ``train(...)`` no longer takes a ``tokenizer`` argument. the
   tokenizer is consumed by the dataset wrapper instead.
 * ``mlx_lm.tuner.utils.linear_to_lora_layers`` matches keys against
   module names *relative to each TransformerBlock* (e.g.
   ``"self_attn.q_proj"``). Bare names (e.g. ``"q_proj"``) silently
   match zero modules, producing a 0-trainable-parameter LoRA.
 * The dataset passed to ``train(...)`` must be a processed
-  ``CacheDataset`` wrapping a ``ChatDataset`` — the raw ``ChatDataset``
+  ``CacheDataset`` wrapping a ``ChatDataset``. the raw ``ChatDataset``
   returns ``dict`` records for which ``iterate_batches`` raises
   ``KeyError: 0`` when it tries ``len(dataset[idx][0])``.
 * Reload via ``mlx_lm.load(adapter_path=...)`` requires
@@ -117,7 +117,7 @@ class MLXBackend:
             Iterable of records with at minimum a ``messages`` field
             (chat-format list of role/content dicts) and optionally a
             ``weight`` field (recorded in the manifest; mlx_lm 0.31's
-            default loss does not consume per-sample weights — for true
+            default loss does not consume per-sample weights. for true
             weighted SFT the bnb backend is the canonical path). A
             HuggingFace ``datasets.Dataset`` works directly because it
             satisfies the iterable + indexable protocol used here.
@@ -138,7 +138,7 @@ class MLXBackend:
         """
         _check_apple_silicon()
 
-        # Lazy heavy imports — only loaded when actually training on Mac.
+        # Lazy heavy imports. only loaded when actually training on Mac.
         try:
             import mlx.core as mx
             import mlx.optimizers as optim  # type: ignore[import-not-found]
@@ -167,7 +167,7 @@ class MLXBackend:
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # 1) Render dataset to JSONL for repro + future inspection. We collect
-        #    weights into a sidecar manifest only — mlx_lm 0.31's default loss
+        #    weights into a sidecar manifest only. mlx_lm 0.31's default loss
         #    does not consume per-sample weights, and we do not silently
         #    pretend it does. (For weighted SFT use the bnb backend.)
         dataset_path = output_dir / "_train.jsonl"
@@ -233,7 +233,7 @@ class MLXBackend:
 
         # 4) Build the chat dataset. mlx_lm.iterate_batches expects each
         #    element to be a processed (token_ids, prompt_offset) tuple,
-        #    not the raw chat dict — so we MUST wrap ChatDataset with
+        #    not the raw chat dict. so we MUST wrap ChatDataset with
         #    CacheDataset (CacheDataset.__getitem__ runs .process(...) on
         #    first access). Without this wrap, iterate_batches raises
         #    KeyError: 0 because the raw dict has no integer key 0.
@@ -333,7 +333,7 @@ class MLXBackend:
                 training_callback=_Callback(),
             )
         except Exception:  # noqa: BLE001
-            # Per CLAUDE.md: never silently swallow training failures.
+            # Per project rules: never silently swallow training failures.
             log.exception("MLX training failed; checkpoint will be incomplete.")
             raise
         wall = time.time() - wall_start

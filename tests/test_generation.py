@@ -118,7 +118,7 @@ def test_pid_controller_converges(
     Test design: start at G=180 (upper edge of TIR), simulate the closed-loop
     PID/glucose system at the literature gains, confirm the final glucose
     sample is below 180 mg/dL (controller actually reduced it). This is a
-    weaker, deterministic check than "tracks setpoint exactly" — sufficient
+    weaker, deterministic check than "tracks setpoint exactly". sufficient
     to detect a sign error or gain inversion in PIDController.
     """
     pid = PIDController(setpoint=110.0, kp=0.05, ki=0.001, kd=0.02)
@@ -179,7 +179,7 @@ def test_perturbed_heuristic_in_range(key: jax.Array) -> None:
 
     Wraps a constant base policy whose output sits at the *upper* bound,
     so any positive noise without clipping would push the action out of
-    range — confirms the wrapper's clip is doing real work.
+    range. confirms the wrapper's clip is doing real work.
     """
     base = ConstantPolicy(jnp.array([1.0]))  # action sits at high bound
     pol = PerturbedHeuristicPolicy(

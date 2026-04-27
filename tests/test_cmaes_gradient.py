@@ -3,25 +3,25 @@
 Test plan
 ---------
 
-C1. ``test_cmaes_runs_glucose_insulin_no_crash`` — sanity end-to-end
+C1. ``test_cmaes_runs_glucose_insulin_no_crash``. sanity end-to-end
     on the smaller glucose-insulin task; produces a well-formed
     :class:`Trajectory` and finite ``final_rho``.
-C2. ``test_cmaes_finds_optimum_synthetic`` — on a unimodal quadratic
+C2. ``test_cmaes_finds_optimum_synthetic``. on a unimodal quadratic
     in 5-D, the hand-rolled CMA-ES converges to the known optimum
     within 20 generations (within 0.1 in L2 norm). Tests the inner
     update math without the simulator stack.
-C3. ``test_cmaes_escapes_local_minimum`` — on a deceptive bimodal
+C3. ``test_cmaes_escapes_local_minimum``. on a deceptive bimodal
     surface with a shallow local minimum near init and a deep global
     minimum far away, CMA-ES finds the global > 50% of the time
     across 8 seeds. Tests the algorithmic claim that population
     search escapes basins that gradient methods do not.
-C4. ``test_cmaes_protocol_compliance`` — the sampler satisfies the
+C4. ``test_cmaes_protocol_compliance``. the sampler satisfies the
     :class:`Sampler` Protocol (runtime-checkable isinstance).
-C5. ``test_cmaes_box_reflection`` — actions in the produced
+C5. ``test_cmaes_box_reflection``. actions in the produced
     trajectory always lie in ``[u_min, u_max]``, and the standalone
     ``_reflect_into_box`` helper handles single, multiple, and
     pathologically large violations.
-C6. ``test_cmaes_diagnostics_well_formed`` — every diagnostic field
+C6. ``test_cmaes_diagnostics_well_formed``. every diagnostic field
     has the expected shape / type / range; ``best_rho_per_gen`` is
     length ``n_generations``; ``rho_post_refine_per_step`` is
     bounded above by ``n_refine``.
@@ -226,9 +226,9 @@ def test_cmaes_finds_optimum_synthetic() -> None:
 
 
 def test_cmaes_escapes_local_minimum() -> None:
-    """On a 2-D deceptive surface — a wide shallow local maximum at the
+    """On a 2-D deceptive surface. a wide shallow local maximum at the
     init and a much deeper (but narrower) global maximum at moderate
-    distance — CMA-ES should reach the global > 50% of the time across
+    distance. CMA-ES should reach the global > 50% of the time across
     8 seeds with a generous population/generation budget.
 
     Surface (we maximise):
@@ -241,7 +241,7 @@ def test_cmaes_escapes_local_minimum() -> None:
     stddev, so it reliably discovers the deep basin within ~30
     generations across most seeds. The basins are wider and closer
     than a textbook deceptive landscape so the test isn't a
-    population-budget stress test — it is an *escape* test.
+    population-budget stress test. it is an *escape* test.
     """
     d = 2
     x_global = np.array([2.5, 2.5])

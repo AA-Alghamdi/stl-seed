@@ -27,7 +27,7 @@ Three fixed seeds per (task, sampler) cell (`{3000, 3001, 3002}`). 24 runs total
 
 ## Why this is the test that matters
 
-Without this script, the unified-comparison "+128× lift" is against `jnp.zeros(K)` — uniform logits, not a real LLM. With this script, the comparison is against the same Qwen3-0.6B base both samplers consume, under matched temperature `0.5` and matched seeds. The gap is entirely attributable to the sampler's use of the verifier signal: standard sampling reads the LLM logits and picks; beam-search warmstart enumerates the action vocabulary, scores each candidate under a model-predictive constant-extrapolation lookahead, and seeds gradient refinement from the top-B. Same LLM, same temperature, same seeds, same horizon — different inference recipe.
+Without this script, the unified-comparison "+128× lift" is against `jnp.zeros(K)`. uniform logits, not a real LLM. With this script, the comparison is against the same Qwen3-0.6B base both samplers consume, under matched temperature `0.5` and matched seeds. The gap is entirely attributable to the sampler's use of the verifier signal: standard sampling reads the LLM logits and picks; beam-search warmstart enumerates the action vocabulary, scores each candidate under a model-predictive constant-extrapolation lookahead, and seeds gradient refinement from the top-B. Same LLM, same temperature, same seeds, same horizon. different inference recipe.
 
 ## Honest caveats
 

@@ -19,8 +19,8 @@ Operator's manual for the canonical training sweep on RunPod. Phase 1 ran on the
 | ------------------------------------------------------- | ----------- | ----- | ------- |
 | Smoke test on 1×4090 spot                               | $0.34       | 0.5   | $0.17   |
 | Canonical 18-cell sweep (3 sizes × 3 filters × 2 tasks) | $0.34       | ~25   | $8.50   |
-| Headroom for re-runs / spot interruptions               | —           | —     | $5      |
-| Storage (50 GB × 30 d)                                  | $0.07/GB-mo | —     | $3.50   |
+| Headroom for re-runs / spot interruptions               | .           | .     | $5      |
+| Storage (50 GB × 30 d)                                  | $0.07/GB-mo | .     | $3.50   |
 | **Suggested initial credit**                            |             |       | **$25** |
 
 Pricing is RunPod 4090 spot at ~$0.34/hr (2026-04). Verify on the dashboard before committing. Fallbacks if 4090 spot is gone: A6000 ($0.49/hr spot), A100 40GB ($1.19/hr).
@@ -63,7 +63,7 @@ SKIP_SMOKE_TEST=1 bash docker/runpod_bootstrap.sh
 
 (a) Training runs without crash. (b) Loss decreases (mean of last window \< mean of first window). (c) No NaN/Inf in loss history. (d) ≥ 1 of 5 held-out generations parses as the expected XML block.
 
-(d) failing while (a)-(c) pass is *expected* at the 50-step smoke-test scale — the bnb smoke uses a stripped LoRA (rank 8, q/v only) on 100 rows. Do not raise the smoke budget to chase (d); raise the canonical sweep budget instead.
+(d) failing while (a)-(c) pass is *expected* at the 50-step smoke-test scale. the bnb smoke uses a stripped LoRA (rank 8, q/v only) on 100 rows. Do not raise the smoke budget to chase (d); raise the canonical sweep budget instead.
 
 ## 6. The canonical sweep
 
@@ -144,7 +144,7 @@ Pod Termination is the primary kill switch. Belt-and-braces:
 
 ## 11. Where to look afterwards
 
-- `paper/smoke_test_bnb_report.md` — first-run bnb verdict.
-- `paper/reproducibility.md` — pinned versions, seed propagation, how to reproduce.
-- `runs/sweep_main/cell-<id>/provenance.json` — per-cell config, loss curve, git SHA.
-- `runs/sweep_main/cell-<id>/adapter/` — LoRA weights (also on HF Hub if upload was enabled).
+- `paper/smoke_test_bnb_report.md`. first-run bnb verdict.
+- `paper/reproducibility.md`. pinned versions, seed propagation, how to reproduce.
+- `runs/sweep_main/cell-<id>/provenance.json`. per-cell config, loss curve, git SHA.
+- `runs/sweep_main/cell-<id>/adapter/`. LoRA weights (also on HF Hub if upload was enabled).

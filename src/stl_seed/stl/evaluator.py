@@ -33,7 +33,7 @@ predicate's per-time robustness vector via
 non-uniform ``times`` because the mask uses physical times, not indices.
 Empty windows (no sample falls in [a, b], i.e. trajectory does not cover
 the requested interval) yield ``+inf`` for ``Always`` and ``-inf`` for
-``Eventually`` — these are propagated upward as numerical infinities; the
+``Eventually``. these are propagated upward as numerical infinities; the
 caller is responsible for ensuring ``trajectory.times`` covers all spec
 intervals (typically guaranteed by the simulator construction).
 """
@@ -58,7 +58,7 @@ from stl_seed.specs import (
 )
 
 # ---------------------------------------------------------------------------
-# Trajectory protocol — duck-typed.
+# Trajectory protocol. duck-typed.
 # ---------------------------------------------------------------------------
 
 
@@ -144,7 +144,7 @@ def _predicate_jax_fn(
     """Return a JAX-pure function ``states -> rho_per_time`` for ``pred``.
 
     Returns ``(fn, is_jit)``. When introspection fails, ``is_jit`` is
-    ``False`` and ``fn`` invokes the original Python lambda in a loop —
+    ``False`` and ``fn`` invokes the original Python lambda in a loop ,
     correct but unjittable.
     """
     info = _introspect_predicate(pred)

@@ -3,7 +3,7 @@
 These are the building blocks the harness reduces over to produce its
 final ``EvalResults``. All functions accept either ``jax.Array`` or
 ``numpy.ndarray`` and return Python floats / tuples (the JIT boundary
-ends inside ``Simulator.simulate`` — these summary stats are
+ends inside ``Simulator.simulate``. these summary stats are
 post-processing on small arrays).
 
 Definitions
@@ -28,7 +28,7 @@ Definitions
   is the σ-squashed ρ on the training spec and ``R_gold`` the
   σ-squashed ρ on the held-out tightened ``φ_gold`` (paper §6).
   Positive values quantify how much the trained policy over-optimizes
-  the proxy reward relative to the gold reward — the operational
+  the proxy reward relative to the gold reward. the operational
   definition of the spec-completeness term in the Goodhart
   decomposition theorem of §6.
 
@@ -121,7 +121,7 @@ def bon_success(
     if n_seeds == 0:
         return float("nan")
     sub = arr[:, :n]
-    # NaNs cannot be the success — treat as -inf.
+    # NaNs cannot be the success. treat as -inf.
     sub = np.where(np.isfinite(sub), sub, -np.inf)
     best = sub.max(axis=1)
     return float((best > 0).mean())
@@ -182,7 +182,7 @@ def goodhart_gap(
     the logistic. Returns ``0.0`` exactly when ``ρ_proxy ≡ ρ_gold``
     (identical specs evaluated on identical trajectories).
 
-    Both arrays must have the same shape — the comparison is paired by
+    Both arrays must have the same shape. the comparison is paired by
     trajectory index. NaN entries are dropped pairwise.
     """
     a = _to_numpy(rho_proxy)
@@ -210,7 +210,7 @@ def action_diversity(
 ) -> dict[str, float]:
     """Measure action-sequence diversity across N independent generations.
 
-    held-out generations produced identical first actions — a sign of
+    held-out generations produced identical first actions. a sign of
     memorization on the dominant training-set action pattern rather
     than learned control. This metric makes that regression mode
     catchable in the eval harness.
@@ -218,7 +218,7 @@ def action_diversity(
     Parameters
     ----------
     actions:
-        Array of shape ``(n_prompts, H, m)`` — for each of ``n_prompts``
+        Array of shape ``(n_prompts, H, m)``. for each of ``n_prompts``
         independent generations, the ``H``-step ``m``-dim action
         sequence the policy emitted. May contain NaN (e.g., from
         parse failures); rows that are all-NaN are excluded from
@@ -235,14 +235,14 @@ def action_diversity(
     -------
     dict with keys:
 
-    * ``first_action_uniqueness`` — fraction of unique first actions
+    * ``first_action_uniqueness``. fraction of unique first actions
       divided by ``n_prompts``. ``1.0`` means every prompt got a
       different first action; ``1/n_prompts`` means every prompt got
       the same first action (the A15 failure mode).
-    * ``sequence_uniqueness`` — fraction of unique full sequences /
+    * ``sequence_uniqueness``. fraction of unique full sequences /
       ``n_prompts``. ``1.0`` means every full action sequence is
       distinct.
-    * ``first_action_pairwise_distance`` — mean pairwise L2 distance
+    * ``first_action_pairwise_distance``. mean pairwise L2 distance
       between *distinct* first actions. ``0.0`` if there is only one
       distinct first action; otherwise the average of
       ``‖a_i − a_j‖_2`` over the ``C(k, 2)`` distinct-pair indices,
@@ -304,7 +304,7 @@ def action_diversity(
             for j in range(i + 1, len(distinct_firsts)):
                 a = distinct_firsts[i]
                 b = distinct_firsts[j]
-                # If either contains NaN, skip — those rows are not real
+                # If either contains NaN, skip. those rows are not real
                 # generations and including them inflates the distance.
                 if not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
                     continue

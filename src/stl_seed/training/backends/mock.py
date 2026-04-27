@@ -31,7 +31,7 @@ What the mock does
   output respects the spec horizon (read off the prompt) and the action
   dimensionality (heuristically inferred from the initial-state block in
   the prompt). This lets the eval harness run end-to-end against the mock
-  checkpoint and record real-shaped (n_seeds, N) success matrices — even
+  checkpoint and record real-shaped (n_seeds, N) success matrices. even
   though every sample is "deterministic random" by construction.
 
 Safety rails
@@ -41,7 +41,7 @@ Safety rails
   ``stl_seed.training.loop.get_backend("bnb")`` can return it transparently
   when ``STL_SEED_USE_MOCK_BACKEND=1`` is set in the environment. Without
   the env var, callers get the real :class:`BNBBackend` as before.
-* If ``STL_SEED_REAL_TRAINING=1`` is set, the mock refuses to run — both
+* If ``STL_SEED_REAL_TRAINING=1`` is set, the mock refuses to run. both
   :meth:`train` and :meth:`load` raise :class:`RuntimeError`. This guards
   against accidentally booting the mock inside a real Phase-2 RunPod
   invocation (the user's .bashrc on RunPod is expected to set the
@@ -107,7 +107,7 @@ def _refuse_if_real_training() -> None:
 
     The :class:`MockBNBBackend` should never run inside a process that has
     declared itself a real Phase-2 training run. This is a defense-in-depth
-    check — the env var is the second line of defense after the explicit
+    check. the env var is the second line of defense after the explicit
     user opt-in via :data:`USE_MOCK_ENV`.
     """
     if os.environ.get(REAL_TRAINING_ENV, "").strip() in {"1", "true", "True", "TRUE", "yes"}:
@@ -144,7 +144,7 @@ def _synthetic_loss_curve(
     ----------
     n_steps:
         Number of loss-log points to synthesize. Mirrors the real
-        :class:`BNBBackend`'s ``n_loss_points`` — the SFTTrainer logs every
+        :class:`BNBBackend`'s ``n_loss_points``. the SFTTrainer logs every
         ``logging_steps=10`` steps, so ``n_steps`` is roughly the total
         number of optimizer updates / 10 for the real path.
     base_model_hint:
@@ -211,7 +211,7 @@ def _infer_horizon_and_dim(
     The eval harness's prompt template ends with ``Emit exactly H (state,
     action) blocks`` (see :func:`stl_seed.training.tokenize.format_prompt_for_eval`),
     and the initial-state block carries the state dimension. We take the
-    state dim as a proxy for the action dim — it is correct for the
+    state dim as a proxy for the action dim. it is correct for the
     glucose-insulin family (1-D action) and for the bio-ode families where
     we set the action dim to 1; the mock does not need exact dimensionality
     to satisfy the parser-shape contract, only consistent shape across
@@ -248,7 +248,7 @@ def _make_mock_generation_callable(
     the assistant-side state values are cosmetic); the action values are
     drawn from a tiny seeded RNG so different prompts get different
     rollouts (otherwise BoN would collapse to the same single sample N
-    times — exactly the action-diversity regression mode flagged in
+    times. exactly the action-diversity regression mode flagged in
     """
     base_seed = (hash(base_model) ^ int(seed)) & 0xFFFF_FFFF
 
@@ -313,7 +313,7 @@ class MockBNBBackend:
         ----------
         mock_train_seconds:
             How long :meth:`train` should pretend to take. We do *not*
-            ``time.sleep`` — instead, we record this as ``wall_clock_seconds``
+            ``time.sleep``. instead, we record this as ``wall_clock_seconds``
             in the provenance to make downstream cost-accounting code
             exercise its arithmetic. Default 0.05s keeps the validation
             script under the 5-minute CI ceiling even with 18 cells.
@@ -339,7 +339,7 @@ class MockBNBBackend:
             <output_dir>/
                 adapter/
                     adapter_config.json     (PEFT-style stub, mock-flagged)
-                    MOCK.txt                (sentinel — humans cannot miss)
+                    MOCK.txt                (sentinel. humans cannot miss)
                     tokenizer_config.json   (empty stub)
                 provenance.json             (BNB-schema-compatible)
 

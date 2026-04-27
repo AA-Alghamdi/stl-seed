@@ -3,20 +3,20 @@
 Three specs of varying difficulty over the same Bergman 1979 + Dalla Man 2007
 state ``s_t = (G, X, I)``:
 
-* ``glucose_insulin.tir.easy``       — Time-in-Range (ADA 2024 standards).
-* ``glucose_insulin.no_hypo.medium`` — TIR + strict hypoglycaemia avoidance.
-* ``glucose_insulin.dawn.hard``      — Reach-then-track around a postprandial
+* ``glucose_insulin.tir.easy``      . Time-in-Range (ADA 2024 standards).
+* ``glucose_insulin.no_hypo.medium``. TIR + strict hypoglycaemia avoidance.
+* ``glucose_insulin.dawn.hard``     . Reach-then-track around a postprandial
   challenge with a transient insulin-bolus reachability requirement.
 
 State conventions:
 
-* ``G`` — plasma glucose, mg/dL. (Bergman et al. 1979 use mg/dL throughout
+* ``G``. plasma glucose, mg/dL. (Bergman et al. 1979 use mg/dL throughout
   their Eq. 1, and the ADA 2024 Standards of Care Time-in-Range targets are
   reported in mg/dL.)
-* ``X`` — remote-compartment insulin action, normalised arbitrary units
+* ``X``. remote-compartment insulin action, normalised arbitrary units
   per Bergman et al. 1979 Eq. 1.
-* ``I`` — plasma insulin, µU/mL. Bergman et al. 1979 Table 1 reports
-  basal ``I_b ≈ 7–15 µU/mL`` for healthy adults.
+* ``I``. plasma insulin, µU/mL. Bergman et al. 1979 Table 1 reports
+  basal ``I_b ≈ 7-15 µU/mL`` for healthy adults.
 
 Action: ``u_t ∈ [0, 5] U/h`` insulin infusion rate (a clinically realistic
 upper bound for closed-loop insulin pumps; see Garg et al., *Diabetes Tech.
@@ -73,29 +73,29 @@ def _lt(name: str, channel: int, threshold: float) -> Predicate:
 # All values are mg/dL plasma glucose unless otherwise stated. Sourced from:
 #
 # * American Diabetes Association, "6. Glycemic Targets: Standards of Care
-#   in Diabetes — 2024." *Diabetes Care* 47(Suppl. 1):S111–S125 (2024).
+#   in Diabetes. 2024." *Diabetes Care* 47(Suppl. 1):S111-S125 (2024).
 #   DOI: 10.2337/dc24-S006.
 # * Battelino, T. *et al.* "Clinical targets for continuous glucose
 #   monitoring data interpretation: recommendations from the international
 #   consensus on time in range." *Diabetes Care* 42:1593 (2019).
 #   DOI: 10.2337/dci19-0028.
 # * Whipple, A. O. "The surgical therapy of hyperinsulinism." *J. Int.
-#   Chir.* 3:237 (1938) — defines clinical hypoglycaemia (the "Whipple
+#   Chir.* 3:237 (1938). defines clinical hypoglycaemia (the "Whipple
 #   triad" lower bound).
 # * Bergman, R. N., Ider, Y. Z., Bowden, C. R. & Cobelli, C. "Quantitative
 #   estimation of insulin sensitivity." *Am. J. Physiol.* 236:E667 (1979).
 #   PubMed 443421.
 
-G_TIR_LOW = 70.0  # mg/dL — lower bound of ADA 2024 target range.
-G_TIR_HIGH = 180.0  # mg/dL — upper bound of ADA 2024 target range.
-G_HYPO_SEVERE = 54.0  # mg/dL — Battelino 2019 "Level 2" severe hypo.
-G_HYPER_LEVEL2 = 250.0  # mg/dL — Battelino 2019 "Level 2" hyperglycaemia.
-G_POSTPRANDIAL_PEAK = 140.0  # mg/dL — ADA 2024 2h-postprandial target.
+G_TIR_LOW = 70.0  # mg/dL. lower bound of ADA 2024 target range.
+G_TIR_HIGH = 180.0  # mg/dL. upper bound of ADA 2024 target range.
+G_HYPO_SEVERE = 54.0  # mg/dL. Battelino 2019 "Level 2" severe hypo.
+G_HYPER_LEVEL2 = 250.0  # mg/dL. Battelino 2019 "Level 2" hyperglycaemia.
+G_POSTPRANDIAL_PEAK = 140.0  # mg/dL. ADA 2024 2h-postprandial target.
 
-I_BOLUS_MIN = 40.0  # µU/mL — minimum effective bolus peak (see derivation).
-I_HYPER_HIGH = 100.0  # µU/mL — upper safety bound on plasma insulin.
+I_BOLUS_MIN = 40.0  # µU/mL. minimum effective bolus peak (see derivation).
+I_HYPER_HIGH = 100.0  # µU/mL. upper safety bound on plasma insulin.
 
-GI_T = 120.0  # minutes — full simulation horizon.
+GI_T = 120.0  # minutes. full simulation horizon.
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +104,7 @@ GI_T = 120.0  # minutes — full simulation horizon.
 #
 # Textbook source. ADA 2024 Standards of Care Recommendation 6.5b: "An A1C
 # goal of <7% (53 mmol/mol) is appropriate for many nonpregnant adults with
-# diabetes" with TIR target of 70–180 mg/dL >70% of the time. We weaken
+# diabetes" with TIR target of 70-180 mg/dL >70% of the time. We weaken
 # the >70% statistical TIR target to a *deterministic* "always within
 # range over [30, 120] min" because (a) we are evaluating individual
 # trajectories rather than aggregates, and (b) the first 30 min are the
@@ -113,7 +113,7 @@ GI_T = 120.0  # minutes — full simulation horizon.
 # 4 shows postprandial peak at ~30 min).
 #
 # Difficulty: EASY. A constant infusion rate near the basal needs of the
-# Dalla Man healthy-subject template (~1–2 U/h) keeps glucose in range
+# Dalla Man healthy-subject template (~1-2 U/h) keeps glucose in range
 # most of the time; random infusion sequences satisfy the spec a
 # meaningful fraction of the time.
 
@@ -169,7 +169,7 @@ register(tir_spec)
 #
 # Difficulty: MEDIUM. The spec adds two hard avoidance bounds on top of
 # the easy TIR spec. Random over-dosing trajectories that hit the 54 mg/dL
-# severe-hypoglycaemia floor — a clinically catastrophic outcome —
+# severe-hypoglycaemia floor. a clinically catastrophic outcome ,
 # automatically violate the spec, which sharply reduces the random-policy
 # success rate relative to the easy spec.
 
@@ -247,7 +247,7 @@ register(no_hypo_spec)
 # derived from Polonsky et al., "Twenty-four-hour profiles and pulsatile
 # patterns of insulin secretion in normal and obese subjects." *J. Clin.
 # Invest.* 81:442 (1988), Fig. 1: peak postprandial insulin in healthy
-# subjects ≈ 40–80 µU/mL. We require the controller to produce a bolus
+# subjects ≈ 40-80 µU/mL. We require the controller to produce a bolus
 # whose plasma-insulin peak crosses 40 µU/mL within the first hour, then
 # settle back below the 100 µU/mL upper safety bound (Cryer, "Hypoglycemia
 # in Diabetes: Pathophysiology, Prevalence, and Prevention," ADA 2016

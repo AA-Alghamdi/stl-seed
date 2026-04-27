@@ -14,7 +14,7 @@ For each policy ``pi`` and task family, this module:
      overall mean. Negative gap means the spec-top trajectories are
      *systematically worse* under gold --- a smoking gun for Goodhart.
 
-The last quantity is the "FM2" preflight in CLAUDE.md S "Failure modes":
+The last quantity is the "FM2" preflight in project rules S "Failure modes":
 if Spearman r between rho and gold drops below 0.3, the spec is
 suspected of being a poor proxy for the gold, and the cell is flagged.
 
@@ -75,7 +75,7 @@ class PerPolicyGap:
         most direct empirical handle on the spec-completeness gap.
     flagged:
         True iff the population-level Spearman correlation falls below
-        0.3, the FM2 preflight threshold from CLAUDE.md.
+        0.3, the FM2 preflight threshold from project rules.
     """
 
     policy_name: str
@@ -269,7 +269,7 @@ def measure_goodhart_gap(
         glucose-insulin).
     flag_threshold:
         Spearman r below this value flags the cell as FM2-suspicious
-        per CLAUDE.md.
+        per project rules.
 
     Returns
     -------

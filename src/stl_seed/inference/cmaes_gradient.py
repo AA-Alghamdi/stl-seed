@@ -9,7 +9,7 @@ shows that the per-step gradient probe of
 satisfying region for ``bio_ode.repressilator.easy``. The diagnosis
 there: the satisfying region is a measure-near-zero attractor in the
 30-D joint action box (``H = 10`` steps × ``m = 3`` channels), and the
-single-step partial-then-extrapolated probe is myopic — it cannot see
+single-step partial-then-extrapolated probe is myopic. it cannot see
 that *every* future step must also be ``silence-3`` for the
 ``G_{[120, 200]}(m_1 \\geq 250)`` clause to hold.
 
@@ -22,7 +22,7 @@ without ever needing the local gradient of ``rho``. The cost is
 of one backward per step.
 
 We then do a small number of plain gradient-ascent steps on the best
-survivor — a refinement that exploits the same continuous ``rho``
+survivor. a refinement that exploits the same continuous ``rho``
 gradient that
 :class:`stl_seed.inference.STLGradientGuidedSampler` uses, but now
 applied jointly across all ``H × m`` action coordinates rather than
@@ -379,7 +379,7 @@ def _cmaes_update(
     sigma_new = float(min(sigma_new, 1e6))
     sigma_new = float(max(sigma_new, 1e-12))
 
-    # Heaviside h_sigma indicator (Eq. 45 helper) — discounts p_c update
+    # Heaviside h_sigma indicator (Eq. 45 helper). discounts p_c update
     # when sigma is about to explode (||p_sigma|| too large relative to
     # generation count). The bound is from Hansen 2016 below Eq. 45.
     g_plus_1 = state.generation + 1
@@ -460,7 +460,7 @@ def _cmaes_sample_population(
 
 # ---------------------------------------------------------------------------
 # Differentiable simulator wrapper (mirrors gradient_guided._wrap_simulator
-# verbatim — replicated rather than imported to keep this module
+# verbatim. replicated rather than imported to keep this module
 # ---------------------------------------------------------------------------
 
 

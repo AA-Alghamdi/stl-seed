@@ -207,7 +207,7 @@ def main() -> None:
     )
     cbar.outline.set_linewidth(0.5)
 
-    # Attribution line (bottom) — Day-1 verdict, subtle
+    # Attribution line (bottom). Day-1 verdict, subtle
     fig.text(
         0.5,
         0.005,
@@ -278,7 +278,7 @@ def main() -> None:
         "toggle: SERA-saturation transition at 1.7B", fontsize=7.5, fontweight="bold", pad=4
     )
     # Increase headroom and place a compact legend top-right where 1.7B bars
-    # already saturate near 1.0 — no useful empty space, so use lower-right where
+    # already saturate near 1.0. no useful empty space, so use lower-right where
     # standard bars at 0.6B are zero
     ax2.text(
         0.5, 1.22, "beam warmstart", fontsize=5.8, color="#1f7a1f", fontweight="bold", ha="left"

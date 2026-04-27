@@ -10,7 +10,7 @@ and ``stl_seed.inference.hybrid``) both hinge on the *partial-then-
 extrapolated* gradient probe: at each step ``t`` they freeze ``u_{t+1}, ...,
 u_H`` at a constant ``u_default`` and differentiate ``rho`` w.r.t. the
 continuous ``u_bar_t``. On the glucose-insulin task this myopic probe is
-enough — a single insulin bolus mostly determines local glucose dynamics —
+enough. a single insulin bolus mostly determines local glucose dynamics ,
 but it fails on the repressilator, where the ``G_[120,200]`` clause demands
 that *all* downstream actions cooperate to keep ``m_1`` above 250 nM. The
 negative result is documented in ``paper/cross_task_validation.md``.
@@ -39,7 +39,7 @@ Reference work
   pp. 501-531. Origin of beam search as a heuristic decoding strategy.
 * Wu et al. 2016, "Google's Neural Machine Translation System", arXiv:
   1609.08144. Modern NMT-style beam search with length and coverage
-  penalties — the conceptual ancestor of every present-day decoding
+  penalties. the conceptual ancestor of every present-day decoding
   beam in NLP.
 * Vijayakumar et al. 2018, "Diverse Beam Search", arXiv:1610.02424. Adds
   a similarity-penalty term to the score so beams do not collapse onto
@@ -48,8 +48,8 @@ Reference work
   The classical complexity bound on beam search: ``H x B x K`` simulator
   + STL evals per ``sample()``.
 
-The novelty here is not the beam-search algorithm — it is a 50-year-old
-recipe — but its application to *STL-aware control sequence decoding*
+The novelty here is not the beam-search algorithm. it is a 50-year-old
+recipe. but its application to *STL-aware control sequence decoding*
 where each expansion's score is a streaming continuous-robustness signal,
 not an LM log-likelihood.
 
@@ -117,7 +117,7 @@ class BeamSearchDiagnostics:
       active beam at step ``t``. Diagnostic of beam diversity.
     * ``streaming_rho_top1_at_step``: streaming-rho (Maler-Nickovic
       monotone lower bound) of the top-1 candidate's padded trajectory
-      at the wall-clock end of step ``t``. Diagnostic only — not used
+      at the wall-clock end of step ``t``. Diagnostic only. not used
       to drive beam selection. Returns ``-inf`` for steps where some
       ``Eventually`` clause has not yet activated and ``+inf`` for
       vacuous ``Always``; both are honest lower bounds per the
@@ -136,7 +136,7 @@ class BeamSearchDiagnostics:
       key so cross-sampler dashboards consume one field.
     * ``refine_iters_run``: number of refinement iterations that actually
       executed. Equal to ``gradient_refine_iters`` unless an early-stop
-      rule fires (currently none — included for forward compatibility).
+      rule fires (currently none. included for forward compatibility).
     """
 
     best_partial_score_at_step: list[float] = dataclasses.field(default_factory=list)
@@ -182,7 +182,7 @@ def _wrap_simulator(simulator: Any, sim_params: Any, aux: dict[str, Any] | None)
     Mirrors :func:`stl_seed.inference.gradient_guided._wrap_simulator` so
     the beam sampler accepts the same simulator instances as the gradient
     sampler. Re-implemented locally rather than imported to keep the two
-    modules independent — the gradient module is a peer, not a dependency.
+    modules independent. the gradient module is a peer, not a dependency.
     """
 
     sim_class_name = type(simulator).__name__
@@ -240,7 +240,7 @@ class BeamSearchWarmstartSampler:
           remaining ``H - t - 1`` slots with the *tail-extrapolation*
           (selected by ``tail_strategy``; default ``'repeat_candidate'``,
           which holds the candidate ``a`` constant for the rest of the
-          horizon — model-predictive constant-extrapolation).
+          horizon. model-predictive constant-extrapolation).
        b. Simulate each padded sequence end-to-end and score it by the
           *full-trajectory* STL robustness ``rho`` from the same compiled
           spec the eval harness uses. The full-rho lookahead is used
@@ -331,7 +331,7 @@ class BeamSearchWarmstartSampler:
         # standard samplers all take one) and to enable a future
         # extension where beam expansion is constrained to the LLM's
         # top-p actions. The current implementation does not consult it
-        # — pre-registered as future work in the docstring.
+        # . pre-registered as future work in the docstring.
         self.llm = llm
         self.simulator = simulator
         self.spec = spec
@@ -405,7 +405,7 @@ class BeamSearchWarmstartSampler:
         # batch axis is dynamic across calls (BK changes when the active
         # beam shrinks below B), so we wrap the vmap in a JIT that takes
         # the batch as an argument rather than capturing it as a closure
-        # constant — this prevents re-tracing on every step.
+        # constant. this prevents re-tracing on every step.
         def rho_full_batched(
             init: jt.Float[jt.Array, " n"],
             controls: jt.Float[jt.Array, "BK H m"],
@@ -468,7 +468,7 @@ class BeamSearchWarmstartSampler:
         # Beam state: we track it as numpy-like JAX arrays for vmap.
         # ``beam_indices`` shape (B_active, t) holds the vocabulary
         # indices chosen so far per beam member (Python list of ints
-        # nested in a Python list — H is small, B is small, no JAX-scan
+        # nested in a Python list. H is small, B is small, no JAX-scan
         # required at this scale).
         beam_indices: list[list[int]] = [[]]
         beam_scores: list[float] = [0.0]
@@ -497,7 +497,7 @@ class BeamSearchWarmstartSampler:
 
             # Diagnostics. Compute streaming-rho on the top-1 candidate's
             # padded trajectory at the wall-clock end of step t. This is
-            # diagnostic-only — beam selection used the full-rho score
+            # diagnostic-only. beam selection used the full-rho score
             # already computed above. The streaming-rho honestly returns
             # +/-inf in the vacuous-temporal-operator regime; we record
             # it as a JSON-friendly float (Python float supports inf).

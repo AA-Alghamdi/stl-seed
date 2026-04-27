@@ -3,29 +3,29 @@
 Test plan
 ---------
 
-T1. ``test_standard_sampler_no_crash`` — vanilla LLM sampling produces a
+T1. ``test_standard_sampler_no_crash``. vanilla LLM sampling produces a
     well-formed Trajectory on the glucose-insulin task.
-T2. ``test_bon_sampler_selects_satisfying`` — BoN with a known-rho LLM
+T2. ``test_bon_sampler_selects_satisfying``. BoN with a known-rho LLM
     set returns the first satisfying sample (rho > 0).
-T3. ``test_continuous_bon_selects_argmax`` — Continuous BoN returns the
+T3. ``test_continuous_bon_selects_argmax``. Continuous BoN returns the
     argmax-rho sample over its budget.
-T4. ``test_gradient_guided_zero_lambda_matches_standard`` — lambda = 0
+T4. ``test_gradient_guided_zero_lambda_matches_standard``. lambda = 0
     reduces to StandardSampler (modulo numerical-tracer noise).
-T5. ``test_gradient_guided_improves_rho`` — with lambda > 0, mean rho
+T5. ``test_gradient_guided_improves_rho``. with lambda > 0, mean rho
     over a batch of seeds is strictly higher than at lambda = 0. The
     PRE-REGISTERED hypothesis the algorithm exists to support.
-T6. ``test_jit_compatibility`` — the rho_from_control closure is JIT-
+T6. ``test_jit_compatibility``. the rho_from_control closure is JIT-
     compatible (the value-and-grad call inside the sampler does not
     raise).
-T7. ``test_diagnostics_well_formed`` — every diagnostic field has the
+T7. ``test_diagnostics_well_formed``. every diagnostic field has the
     expected shape / type / range.
-T8. ``test_streaming_partial_rho_used`` — confirms the partial-trajectory
+T8. ``test_streaming_partial_rho_used``. confirms the partial-trajectory
     construction (not just the full-trajectory rho) is what the gradient
     sees, by checking that step-t guidance bias is sensitive to actions
     committed before step t.
-T9. ``test_protocol_compliance`` — all four samplers satisfy the Sampler
+T9. ``test_protocol_compliance``. all four samplers satisfy the Sampler
     Protocol (runtime-checkable isinstance).
-T10. ``test_make_vocabulary_shapes_and_endpoints`` — vocabulary builder
+T10. ``test_make_vocabulary_shapes_and_endpoints``. vocabulary builder
     returns the right shape and includes the endpoints.
 
 """
@@ -91,7 +91,7 @@ def _peaked_llm(target_idx: int, K: int, peak_logit: float = 5.0) -> LLMProposal
 
 
 def _uniform_llm(K: int) -> LLMProposal:
-    """A flat LLM (entropy = log K) — pure prior."""
+    """A flat LLM (entropy = log K). pure prior."""
 
     def llm(state, history, key):
         return jnp.zeros(K)
@@ -103,7 +103,7 @@ def _state_dependent_llm(K: int, channel: int = 0) -> LLMProposal:
     """LLM whose argmax depends on the observed state.
 
     Produces logits proportional to ``state[channel]`` shifted to the
-    middle vocabulary item — so trajectories with different state evolve
+    middle vocabulary item. so trajectories with different state evolve
     different choice sequences. Used for streaming-partial-rho test.
     """
 
@@ -314,7 +314,7 @@ def test_gradient_guided_improves_rho(gi_setup) -> None:
 
     Falsification criterion: mean_rho_guided <= mean_rho_baseline. If
     this test fires, the algorithm is either buggy or the hypothesis
-    fails on this task family — both demand investigation.
+    fails on this task family. both demand investigation.
 
     We use a flat-prior LLM so the only signal driving choices is the
     STL gradient. With a peaked LLM the guidance can be 'overruled' by
@@ -489,7 +489,7 @@ def test_streaming_partial_rho_used(gi_setup) -> None:
     # The two bias vectors must differ if the gradient really sees the
     # committed history. (They might both be zero only at saturation,
     # which would still indicate the partial-trajectory path is in
-    # use — but we sanity-check by also requiring the streaming rho
+    # use. but we sanity-check by also requiring the streaming rho
     # itself differs.)
     diff = float(jnp.max(jnp.abs(bias_low - bias_high)))
     assert diff > 1e-3, (
@@ -596,8 +596,8 @@ def test_llm_wrong_shape_raises(gi_setup) -> None:
 # The hypothesis: gradient guidance generalises across task families.
 #
 # Empirical finding (smoke run on 2026-04-24, 6 seeds, lambda in {0.1, 1, 5,
-# 20, 50}): on the canonical default IC ``[0,0,0,15,5,25]`` — the pilot
-# initial state — gradient guidance does NOT meaningfully improve mean rho.
+# 20, 50}): on the canonical default IC ``[0,0,0,15,5,25]``. the pilot
+# initial state. gradient guidance does NOT meaningfully improve mean rho.
 # The G[120,200] (m1 >= 250 nM) clause requires SUSTAINED control of the
 # upstream repressor (silence gene 3, action ``[0,0,1]``) across ALL 10
 # control steps; the partial-then-extrapolated gradient probe at any
@@ -912,7 +912,7 @@ def test_beam_search_solves_mapk() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Hybrid sampler — protocol & beats-pure-guidance.
+# Hybrid sampler. protocol & beats-pure-guidance.
 # ---------------------------------------------------------------------------
 
 
@@ -1002,7 +1002,7 @@ def test_hybrid_beats_pure_guidance() -> None:
         guided ~ H * (1 fwd + 1 bwd)
         hybrid ~ 4 * H * (1 fwd + 1 bwd)
     The matched-compute baseline would be ``ContinuousBoNSampler(n=8)``
-    (assuming bwd ~ fwd) — that's the comparison in
+    (assuming bwd ~ fwd). that's the comparison in
     paper/cross_task_validation.md, not here.
     """
     sim = GlucoseInsulinSimulator()

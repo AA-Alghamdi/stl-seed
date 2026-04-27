@@ -40,7 +40,7 @@ def _format_trajectory_as_text(
     """Self-contained reference formatter: trajectory -> (prompt, completion).
 
     The completion is a JSON list of length H, where each element is a
-    list of `m` floats — the agent's emitted action sequence. The prompt
+    list of `m` floats. the agent's emitted action sequence. The prompt
     contains the task name, the spec text, the initial state, and the
     requested horizon / action_dim. This is the SCHEMA we will commit to
     in `stl_seed.training.tokenize` (subphase 1.3 agent A10); pinning it
@@ -137,7 +137,7 @@ def build_sft_dataset(
         try:
             prompt, completion = formatter(traj, spec_text, task)
         except TypeError:
-            # Canonical signature differs — pass tokenizer / prompt_template.
+            # Canonical signature differs. pass tokenizer / prompt_template.
             prompt, completion = formatter(
                 traj=traj,
                 spec_text=spec_text,

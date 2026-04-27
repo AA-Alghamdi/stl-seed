@@ -4,7 +4,7 @@ Output:
 
   hand-set thresholds to the auto-tuned recommendations, plus per-policy
   rho summaries at the recommended thresholds.
-* ``paper/figures/spec_calibration_<task>.png`` — discriminability plot
+* ``paper/figures/spec_calibration_<task>.png``. discriminability plot
   per spec (1-D line plot if a single threshold is tuned; 2-D heatmap
   if two are tuned).
 
@@ -17,7 +17,7 @@ runs in roughly 2-4 minutes.
 
 literature-derived plausibility bands documented in
 used and no run-time mutation of the registered specs is performed
-(the script emits *recommendations* — adoption is a separate v0.2 step).
+(the script emits *recommendations*. adoption is a separate v0.2 step).
 """
 
 from __future__ import annotations
@@ -100,7 +100,7 @@ def _build_configs() -> list[_SpecConfig]:
     configs: list[_SpecConfig] = []
 
     # ------------------------------------------------------------------
-    # glucose_insulin.tir.easy — sweep G_below_180 in 140..250 mg/dL.
+    # glucose_insulin.tir.easy. sweep G_below_180 in 140..250 mg/dL.
     # Range derived from ADA 2024 Standards: 140 mg/dL is the
     # 2-h-postprandial target; 250 mg/dL is Battelino 2019 "Level 2"
     # severe hyperglycaemia. The hand-set value is 180.
@@ -128,7 +128,7 @@ def _build_configs() -> list[_SpecConfig]:
     )
 
     # ------------------------------------------------------------------
-    # glucose_insulin.no_hypo.medium — sweep TIR-upper + severe-hypo bound.
+    # glucose_insulin.no_hypo.medium. sweep TIR-upper + severe-hypo bound.
     # Severe-hypo bound: 50..70 mg/dL, bracketing the Battelino 2019
     # Level-1 (70) and Level-2 (54) lines.
     # ------------------------------------------------------------------
@@ -152,7 +152,7 @@ def _build_configs() -> list[_SpecConfig]:
     )
 
     # ------------------------------------------------------------------
-    # glucose_insulin.dawn.hard — sweep insulin-bolus-min in 20..80 µU/mL.
+    # glucose_insulin.dawn.hard. sweep insulin-bolus-min in 20..80 µU/mL.
     # Polonsky 1988 Fig. 1: postprandial insulin peak 40-80 µU/mL in
     # healthy subjects. 20 is sub-clinical; 80 is the upper end. The
     # hand-set value is 40.
@@ -177,7 +177,7 @@ def _build_configs() -> list[_SpecConfig]:
     )
 
     # ------------------------------------------------------------------
-    # bio_ode.repressilator.easy — sweep P_HIGH (p1) in 100..600 nM.
+    # bio_ode.repressilator.easy. sweep P_HIGH (p1) in 100..600 nM.
     # Müller 2007 Table 1 K_LacI ~ 30-60 nM; "fully on" is canonically
     # 5-10x K, i.e., 150-600 nM. Hand-set 250.
     # ------------------------------------------------------------------
@@ -203,7 +203,7 @@ def _build_configs() -> list[_SpecConfig]:
     )
 
     # ------------------------------------------------------------------
-    # bio_ode.toggle.medium — sweep HIGH (x1) in 100..300 nM, LOW in 10..50.
+    # bio_ode.toggle.medium. sweep HIGH (x1) in 100..300 nM, LOW in 10..50.
     # Gardner 2000 Fig. 5a stable states ~200 (high) / ~20 (low).
     # ------------------------------------------------------------------
     tog_params = ToggleParams()
@@ -228,7 +228,7 @@ def _build_configs() -> list[_SpecConfig]:
     )
 
     # ------------------------------------------------------------------
-    # bio_ode.mapk.hard — sweep MAPK_PEAK in absolute microM.
+    # bio_ode.mapk.hard. sweep MAPK_PEAK in absolute microM.
     # As of 2026-04-25 the spec reads state index 4 (MAPK_PP) using
     # absolute microM thresholds (peak=0.5, settle=0.05). Sweeping
     # 0.2..0.8 microM spans the simulator's MAPK_PP saturation band
@@ -468,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
     for cfg in configs:
         spec = REGISTRY[cfg.spec_key]
         # Filter the search space down to predicates that actually exist
-        # in the spec — guards against typos in `_build_configs`.
+        # in the spec. guards against typos in `_build_configs`.
         ph_names = {p.base_name for p in extract_threshold_placeholders(spec)}
         search_space = {k: v for k, v in cfg.threshold_search_space.items() if k in ph_names}
         if not search_space:

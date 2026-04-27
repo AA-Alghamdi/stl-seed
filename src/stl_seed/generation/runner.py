@@ -7,7 +7,7 @@ The runner is the single point in `stl-seed` that
 4. tags the result with the policy used and persists to a
    `TrajectoryStore`.
 
-It does NOT perform vector-level vmap fusion — the policy interface is
+It does NOT perform vector-level vmap fusion. the policy interface is
 state-by-state, and policies like `MLXModelPolicy` cannot be vmapped. The
 inner ODE solve is JIT'd by Diffrax automatically. For pure-JAX policies
 (`Random`, `Constant`, `PID`, `BangBang`) the runner could be vmap'd over
@@ -121,7 +121,7 @@ def evaluate_robustness(
             elif isinstance(inner, Negation):
                 vals = np.array([-_evaluate_predicate(inner.inner, states, int(t)) for t in idx])
             else:
-                # Nested Always/And/Eventually under Always — fall back to
+                # Nested Always/And/Eventually under Always. fall back to
                 # full per-step recursion. Our specs never use this nesting
                 # but the evaluator handles it for completeness.
                 vals = np.array([_recurse_at(inner, int(t)) for t in idx])
@@ -146,14 +146,14 @@ def evaluate_robustness(
             return -_evaluate_predicate(node.inner, states, t_idx)
         if isinstance(node, And):
             return float(min(_recurse_at(c, t_idx) for c in node.children))
-        # Nested temporal under temporal — re-enter the global recursion.
+        # Nested temporal under temporal. re-enter the global recursion.
         return _recurse(node)
 
     return _recurse(spec.formula)
 
 
 # -----------------------------------------------------------------------------
-# Simulator adapter — bridges per-task simulator signatures to a uniform call.
+# Simulator adapter. bridges per-task simulator signatures to a uniform call.
 # -----------------------------------------------------------------------------
 
 
@@ -289,7 +289,7 @@ class TrajectoryRunner:
         self.output_store = output_store
         if initial_state is None:
             raise ValueError(
-                "initial_state must be provided to the TrajectoryRunner — "
+                "initial_state must be provided to the TrajectoryRunner. "
                 "it is part of the locked Simulator.simulate signature."
             )
         self.initial_state = jnp.asarray(initial_state)
@@ -335,7 +335,7 @@ class TrajectoryRunner:
                 )
             history.append((state, a))
             actions.append(a)
-            # State update: open-loop policy — we don't update state between
+            # State update: open-loop policy. we don't update state between
             # control points (the simulator integrates the whole sequence at
             # once). Pass the same `state` to every call. This matches the
             # SERA recipe (one rollout = one full control schedule emission).
@@ -392,7 +392,7 @@ class TrajectoryRunner:
 
         Returns
         -------
-        (trajectories, metadata) — a list of kept `Trajectory` pytrees and
+        (trajectories, metadata). a list of kept `Trajectory` pytrees and
         a parallel list of metadata dicts (id, task, spec_key, policy,
         seed, robustness, nan_count, generated_at). NaN-dropped
         trajectories are recorded in `self.last_stats` but not returned.

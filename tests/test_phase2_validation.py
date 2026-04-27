@@ -334,7 +334,7 @@ class TestValidationPipeline:
         """
         # Set env vars for the validator before importing it. The validator
         # also sets these in main(), but tests can't rely on subprocess
-        # state — set explicitly.
+        # state. set explicitly.
         monkeypatch.setenv(USE_MOCK_ENV, "1")
         monkeypatch.delenv(REAL_TRAINING_ENV, raising=False)
 

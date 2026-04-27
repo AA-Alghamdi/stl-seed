@@ -2,7 +2,7 @@
 
 The hierarchical-Bayes test that fits the full NumPyro model is marked
 ``slow`` and skipped by default; run with ``pytest -m slow`` to exercise
-it (typical wall time on CPU: 60–180 s for the small synthetic dataset
+it (typical wall time on CPU: 60-180 s for the small synthetic dataset
 used here).
 """
 
@@ -75,7 +75,7 @@ def test_bootstrap_diff_paired_recovers_known_mean() -> None:
     b = a - 0.5 + rng.normal(loc=0.0, scale=0.05, size=n)  # b ≈ a − 0.5 + tiny noise
     ci = bootstrap_diff_ci(a, b, paired=True, n_resamples=2000, key=3)
     assert abs(ci.statistic - 0.5) < 0.1
-    assert ci.lower > 0.0  # 0 excluded — clear positive offset
+    assert ci.lower > 0.0  # 0 excluded. clear positive offset
 
 
 def test_bootstrap_diff_paired_shape_mismatch_raises() -> None:
@@ -337,9 +337,9 @@ def test_hierarchical_bayes_recovers_known_truth() -> None:
 
     Notes on tolerance: the spec asks for posterior recovery within
     ±0.05 95% HDI. We use a synthetic sweep matching the structure of
-    the canonical 3 × 3 × 2 grid (theory.md §4) — 3 models × 2
+    the canonical 3 × 3 × 2 grid (theory.md §4). 3 models × 2
     verifiers × 2 families × 8 instances × 5 seeds × 8 budgets = 3840
-    trials — and check that δ_A's 95% HDI covers the truth and the
+    trials. and check that δ_A's 95% HDI covers the truth and the
     posterior mean is within ±0.15 of truth (allowing for partial
     pooling shrinkage on a sample much smaller than the full sweep).
     The δ_b parameter governs the curvature of the BoN power law and
@@ -371,7 +371,7 @@ def test_hierarchical_bayes_recovers_known_truth() -> None:
     )
     assert delta_A_row["P(>0)"] > 0.9
 
-    # δ_b: weaker identifiability — only check sign and that the HDI
+    # δ_b: weaker identifiability. only check sign and that the HDI
     # covers truth.
     assert delta_b_row["hdi_low"] <= truth["delta_b"] <= delta_b_row["hdi_high"], (
         f"δ_b truth {truth['delta_b']} outside 95% HDI "

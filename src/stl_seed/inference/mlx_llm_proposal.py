@@ -22,7 +22,7 @@ Implementation: token-prefix log-prob lookup
 Action vocabularies in this repo are small discrete grids (``K`` from 4
 to 125). Asking the LLM to *generate* a serialized action and then
 parse-and-project to the vocabulary (approach (b) in the design doc) is
-brittle for a non-fine-tuned base model — the bare Qwen3 enters
+brittle for a non-fine-tuned base model. the bare Qwen3 enters
 "thinking" mode and emits prose, not the
 ``<state>...</state><action>...</action>`` blocks.
 
@@ -43,7 +43,7 @@ not K independent forwards. Empirically this is ~100ms / call for
 Qwen3-0.6B and ~430ms / call for Qwen3-1.7B at our prompt length
 (~380 tokens).
 
-Returning *log-probabilities* — not the softmax — preserves the LLMProposal
+Returning *log-probabilities*. not the softmax. preserves the LLMProposal
 contract that gradient guidance can additively bias logits before
 re-normalising. That preservation is the technical reason the
 gradient-guided sampler needs unnormalised logits.
@@ -56,7 +56,7 @@ Within one rollout (``H`` LLM calls back-to-back), the leading
 action-history suffix grows. mlx_lm exposes a KV-cache via
 ``mlx_lm.models.cache.make_prompt_cache``, but using it across the
 batched-K forward is awkward (the cache must replicate K-fold). We keep
-the implementation simple — re-prefill on every call — and rely on
+the implementation simple. re-prefill on every call. and rely on
 mlx's fast-prefill for the static prompt. A KV-cache optimisation is a
 clean follow-up if real-LLM throughput becomes a bottleneck.
 
@@ -165,7 +165,7 @@ def _load_model(model_id: str) -> tuple[Any, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Action serialization — must match stl_seed.training.tokenize byte-for-byte
+# Action serialization. must match stl_seed.training.tokenize byte-for-byte
 # so that scoring sequences correspond to what the model would emit if the
 # downstream Phase-2 SFT'd Qwen3 wrote one out.
 # ---------------------------------------------------------------------------
@@ -190,7 +190,7 @@ def _state_text_placeholder(state_dim: int) -> str:
     The LLM is conditioned on the action history and the initial state
     (in the system prompt + user turn). The per-step state observation
     that would normally precede the action would require an extra
-    simulator call to materialise — and the action history alone is
+    simulator call to materialise. and the action history alone is
     sufficient context for a base model to emit a reasonable prior over
     next actions. We therefore use a literal ``?`` placeholder which
     keeps the format intact without committing to a fabricated state.
@@ -245,7 +245,7 @@ class MLXLLMProposal:
         diagnostics for reproducibility but is not used here.
     enable_thinking:
         Forwarded to ``tokenizer.apply_chat_template``. Always ``False``
-        for this scoring use case — the Qwen3 thinking-block does not
+        for this scoring use case. the Qwen3 thinking-block does not
         affect token-prefix scoring of an action sequence appended after
         ``add_generation_prompt=True`` and only inflates the prompt-
         token count. Kept as a parameter so future Qwen3 variants whose
@@ -276,7 +276,7 @@ class MLXLLMProposal:
 
     The proposal is **stateful** in that the chat-template prompt is
     cached as token IDs after first construction. It is *not* stateful
-    across different ``initial_state`` arguments — a different IC at
+    across different ``initial_state`` arguments. a different IC at
     call time would silently use a stale prompt. This is acceptable for
     the unified-comparison harness (one IC per task), and we assert the
     contract in ``__call__`` so misuse fails loudly.
@@ -352,7 +352,7 @@ class MLXLLMProposal:
             else self._tokenizer.eos_token_id or 0
         )
 
-        # Diagnostics counters — handy for debugging but not part of the
+        # Diagnostics counters. handy for debugging but not part of the
         # LLMProposal contract. Tests that introspect the proposal's
         # behaviour (e.g. tests/test_mlx_llm_proposal.py) read these.
         self.n_calls: int = 0
@@ -496,7 +496,7 @@ class MLXLLMProposal:
 
         Conforms to :class:`stl_seed.inference.protocol.LLMProposal`. The
         ``key`` argument is accepted for protocol-conformance and is
-        unused — token-prefix scoring is deterministic given the prompt.
+        unused. token-prefix scoring is deterministic given the prompt.
 
         Parameters
         ----------

@@ -3,22 +3,22 @@
 Synthesises four scattered empirical claims in the artifact into one
 apples-to-apples picture:
 
-* Tier 3   — gradient-guided gives ~12x mean rho over a flat-prior
+* Tier 3  . gradient-guided gives ~12x mean rho over a flat-prior
   baseline on glucose-insulin (``paper/inference_method.md``).
-* Tier 6   — STL-rho dominates the PAV learned baseline at every
+* Tier 6  . STL-rho dominates the PAV learned baseline at every
   train-set size (``paper/pav_comparison.md``); not re-run here, the
   PAV result is referenced in the markdown report rather than recomputed
   per-seed because PAV is a *verifier* baseline, not a *sampler*.
-* Tier 10  — gradient-guided FAILS to transfer to the repressilator
+* Tier 10 . gradient-guided FAILS to transfer to the repressilator
   task family on the canonical IC (``paper/cross_task_validation.md``).
   This script reproduces that finding alongside the positive Tier 3
   result so the asymmetric outcome is visible in one figure.
-* Tier 10b — the hybrid sampler (``HybridGradientBoNSampler``) recovers
+* Tier 10b. the hybrid sampler (``HybridGradientBoNSampler``) recovers
   some of the loss on hard glucose specs by combining argmax-rho
   selection over ``n`` gradient-guided draws.
 
 This script is the *headline* visualisation. It is not a new
-experiment — it consumes only the public sampler API of
+experiment. it consumes only the public sampler API of
 ``stl_seed.inference``, runs every sampler on every (task, spec) cell
 across many seeds, and outputs a single grouped bar chart with 95% CIs.
 
@@ -553,7 +553,7 @@ def _build_sampler(name: str, setup: TaskSetup, llm_name: str = "uniform") -> Sa
     (``_BON_N``, ``_GRADIENT_GUIDANCE_WEIGHT``, ``_HYBRID_N``,
     ``_HORIZON_FOLDED_*``, ``_ROLLOUT_TREE_*``, ``_CMAES_*``,
     ``_BEAM_*``). The vocabulary used can be overridden per-(sampler,
-    task) by :func:`_vocabulary_for` — currently only the beam-search
+    task) by :func:`_vocabulary_for`. currently only the beam-search
     warmstart sampler on the repressilator uses an override (the dense
     k_per_dim=5 lattice that contains the silence-3 satisfying corner).
 
@@ -569,7 +569,7 @@ def _build_sampler(name: str, setup: TaskSetup, llm_name: str = "uniform") -> Sa
     # Samplers split into two API shapes: most accept ``sampling_temperature``
     # in their constructor (the original five), the four extended samplers
     # (horizon_folded, rollout_tree, cmaes_gradient, beam_search_warmstart)
-    # do not — they have their own action-selection mechanism that does not
+    # do not. they have their own action-selection mechanism that does not
     # consume an LLM-temperature knob. We therefore branch on the name and
     # build two slightly different kwargs dicts.
     common = dict(
@@ -838,7 +838,7 @@ def _plot_unified_comparison(
     """Grouped bar chart, one group per task, one bar per sampler.
 
     Error bars are 95% bootstrap CIs (asymmetric); the y-axis is
-    final-trajectory rho. We deliberately do *not* normalise per-task —
+    final-trajectory rho. We deliberately do *not* normalise per-task ,
     the natural rho scales differ across spec families (the TIR spec
     saturates around ~20 rho units; the repressilator easy spec runs in
     the [-250, +25] band) and showing the raw scales preserves the
@@ -1026,10 +1026,7 @@ def _write_markdown_report(
     lines.append(f"- {headline_hybrid}")
     lines.append("")
     if llm_name == "uniform":
-        llm_blurb = (
-            "All cells use a flat-prior LLM (uniform logits over the action "
-            "vocabulary)"
-        )
+        llm_blurb = "All cells use a flat-prior LLM (uniform logits over the action vocabulary)"
     else:
         llm_blurb = (
             f"All cells use a real Qwen3 base LLM (`mlx-community/{llm_name.replace('qwen3-', 'Qwen3-').upper()}-bf16` "

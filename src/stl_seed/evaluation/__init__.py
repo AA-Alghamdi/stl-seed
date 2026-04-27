@@ -6,13 +6,13 @@ metrics referenced throughout ``paper/theory.md``.
 
 Public API:
 
-    EvalHarness               — wraps simulator + STL evaluator + spec set
-    EvalResults               — per-spec results: ρ matrix, BoN curves
-    EvalRunner                — parallel multi-checkpoint driver
-    success_rate              — fraction with ρ > 0
-    bon_success               — fraction of seeds where best-of-N is positive
-    rho_margin                — (mean ρ, IQR)
-    goodhart_gap              — measured spec-completeness gap
+    EvalHarness              . wraps simulator + STL evaluator + spec set
+    EvalResults              . per-spec results: ρ matrix, BoN curves
+    EvalRunner               . parallel multi-checkpoint driver
+    success_rate             . fraction with ρ > 0
+    bon_success              . fraction of seeds where best-of-N is positive
+    rho_margin               . (mean ρ, IQR)
+    goodhart_gap             . measured spec-completeness gap
 
 imports anywhere in this package.
 """

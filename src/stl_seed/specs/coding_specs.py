@@ -47,8 +47,8 @@ def _gt(name: str, channel: int, threshold: float) -> Predicate:
 # [0, 1] with resolution 1/3 (3 unit tests per task). The 0.5 threshold puts
 # the spec frontier between "1 of 3 pass" (rho < 0) and "2 of 3 pass"
 # (rho > 0), giving a positive STL gradient on each independent fix.
-# Horizon = 6 edit steps (chosen so the worst-case task — the two-bug task
-# in TINY_TASKS — is reachable but not trivially so).
+# Horizon = 6 edit steps (chosen so the worst-case task. the two-bug task
+# in TINY_TASKS. is reachable but not trivially so).
 
 CODING_HORIZON: int = 6
 

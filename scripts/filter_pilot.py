@@ -1,4 +1,4 @@
-"""A14 — Apply the three STL filter conditions to the pilot trajectory store.
+"""A14. Apply the three STL filter conditions to the pilot trajectory store.
 
 For each task family in `data/pilot/`, runs:
 
@@ -15,7 +15,7 @@ For each (task, filter) we report:
 
 Filtered datasets are persisted as Parquet under
 ``data/pilot/filtered_<task>_<filter>.parquet`` with columns:
-  - traj_id (str)        — backreference to the source trajectory store
+  - traj_id (str)       . backreference to the source trajectory store
   - policy (str)
   - robustness (float)
   - weight (float)
@@ -148,7 +148,7 @@ def _persist_filtered(
 
 
 def main() -> int:
-    console.rule("[bold]A14 — Apply STL filter conditions to pilot store")
+    console.rule("[bold]A14. Apply STL filter conditions to pilot store")
     console.print(f"input store: {_DATA_DIR}")
 
     if not _DATA_DIR.exists():
@@ -170,7 +170,7 @@ def main() -> int:
     # Filter failures are EXPECTED for HardFilter on tasks where the
     # uncalibrated pilot policy mix produces zero satisfying trajectories
     # (this is FM2 in paper/theory.md §7). They must surface in the report
-    # but they do not mark the script as "failed" — A14's contract is to
+    # but they do not mark the script as "failed". A14's contract is to
     # *try* every (task, filter) combination and *report* the outcome.
     overall_ok = True
     for task in sorted(buckets):

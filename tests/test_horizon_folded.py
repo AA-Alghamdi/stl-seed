@@ -3,27 +3,27 @@
 Test plan
 ---------
 
-H1. ``test_horizon_folded_runs_glucose_insulin_no_crash`` — sampler
+H1. ``test_horizon_folded_runs_glucose_insulin_no_crash``. sampler
     instantiates and runs end-to-end on the glucose-insulin task,
     producing a well-formed Trajectory and diagnostics dict.
-H2. ``test_horizon_folded_improves_rho_synthetic`` — on a synthetic
+H2. ``test_horizon_folded_improves_rho_synthetic``. on a synthetic
     one-state, scalar-action ODE with a simple ``G[a, b] (x >= c)``
     spec, K=100 Adam iterations from a known-bad init reach a known-
     good rho within tolerance. The "the algorithm actually does
     gradient ascent" sanity test.
-H3. ``test_horizon_folded_protocol_compliance`` — the sampler
+H3. ``test_horizon_folded_protocol_compliance``. the sampler
     satisfies the runtime-checkable :class:`Sampler` Protocol.
-H4. ``test_horizon_folded_invalid_init_raises`` — input validation
+H4. ``test_horizon_folded_invalid_init_raises``. input validation
     for the ``init`` enum and ``init='heuristic' + missing init_action``.
-H5. ``test_horizon_folded_invalid_hyperparameters_raise`` — Adam
+H5. ``test_horizon_folded_invalid_hyperparameters_raise``. Adam
     hyperparameter validation (lr > 0, k_iters >= 1, action_high >
     action_low).
-H6. ``test_horizon_folded_diagnostics_well_formed`` — diagnostics
+H6. ``test_horizon_folded_diagnostics_well_formed``. diagnostics
     schema invariants (lengths, types, finiteness).
-H7. ``test_horizon_folded_init_strategies_run`` — all four init
+H7. ``test_horizon_folded_init_strategies_run``. all four init
     strategies execute without raising (smoke test for the warm-start
     code paths).
-H8. ``test_horizon_folded_sigmoid_reparam_invertible`` — the inverse-
+H8. ``test_horizon_folded_sigmoid_reparam_invertible``. the inverse-
     sigmoid round-trips inside the box (eps clipping aside).
 
 """
@@ -70,7 +70,7 @@ from stl_seed.tasks.glucose_insulin import (
 
 
 def _uniform_llm(K: int):
-    """Flat (no-info) LLM — entropy = log K."""
+    """Flat (no-info) LLM. entropy = log K."""
 
     def llm(state, history, key):
         return jnp.zeros(K)
@@ -131,13 +131,13 @@ def test_horizon_folded_runs_glucose_insulin_no_crash() -> None:
 #   IC:     x(0) = 0
 #   action: u(t) in [0, 1], piecewise-constant with H = 5 control steps,
 #           horizon T = 5.0 (so each step lasts 1.0 time-unit).
-#   Spec:   G_[3.5, 5.0] (x >= 4.0)  — the trajectory must hold above 4.0
+#   Spec:   G_[3.5, 5.0] (x >= 4.0) . the trajectory must hold above 4.0
 #                                      across the back half of the horizon.
 #
 # Optimal: ``u(t) = 1`` for all t -> ``x(t) = t`` -> ``x(3.5) = 3.5``,
 # ``x(5.0) = 5.0``. Robustness ``rho = min(x(t) - 4.0 : t in [3.5, 5.0])
 # = -0.5``. So even the optimal action sequence does not satisfy this
-# spec across the FULL window — the test is on whether the optimiser
+# spec across the FULL window. the test is on whether the optimiser
 # can reach the optimal rho ``-0.5``, NOT on whether rho > 0.
 #
 # An equivalent way to phrase the success criterion: the optimiser
@@ -583,7 +583,7 @@ def test_horizon_folded_repressilator_improves_over_floor() -> None:
     If this test passes, the unified eval phase should see horizon-
     folding matching or beating the +25 known-satisfier on at least
     some seeds. If it fails, that itself is informative: it means the
-    failure is not purely about myopia — it is about the rho landscape
+    failure is not purely about myopia. it is about the rho landscape
     being too non-convex for first-order methods even with full-horizon
     gradients.
     """

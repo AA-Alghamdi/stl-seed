@@ -1,6 +1,6 @@
 """CPU-CI integration test for the MLX SFT loop (Fix 4 / A15 followup).
 
-3 — "Add an integration test under tests/training/ that builds a tiny
+3. "Add an integration test under tests/training/ that builds a tiny
 synthetic dataset, runs 5 mlx_lm iterations, and asserts loss
 decreased". This test is the regression test for Fix 1
 (``MLXBackend`` patched for mlx_lm 0.31).
@@ -166,7 +166,7 @@ def test_mlx_backend_train_5_iters_loss_decreases(tmp_path: Path) -> None:
     # Tiny config: 1 epoch, batch 1, accum 1 → 5 iters total. 5 iters is
     # the spec; warmup 1 step (warmup_ratio rounds up). Sequence length
     # is generous because tokenizer adds a chat-template overhead.
-    # Use the minimal LoRA target set (q_proj + v_proj) for speed —
+    # Use the minimal LoRA target set (q_proj + v_proj) for speed ,
     # still in the locally-prefixed naming form so the wrapper's
     # 0-trainable-parameter guard doesn't trip.
     config = TrainingConfig(
@@ -285,7 +285,7 @@ def test_mlx_backend_load_round_trips_adapter(tmp_path: Path) -> None:
 
     gen = backend.load(ckpt)
     # We do not invoke the generator (that would download/run inference,
-    # which is slow) — but the callable must be returned.
+    # which is slow). but the callable must be returned.
     assert callable(gen)
 
 
@@ -320,7 +320,7 @@ def test_mlx_backend_zero_trainable_params_raises(tmp_path: Path) -> None:
         max_seq_length=2048,
         lora_rank=4,
         lora_alpha=8.0,
-        # Bare names — must trigger the wrapper's 0-trainable guard.
+        # Bare names. must trigger the wrapper's 0-trainable guard.
         lora_target_modules=["q_proj", "v_proj"],
         lora_dropout=0.0,
         warmup_ratio=0.5,

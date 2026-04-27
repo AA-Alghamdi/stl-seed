@@ -156,7 +156,7 @@ class GuidanceDiagnostics:
 
 
 # ---------------------------------------------------------------------------
-# Helpers — vocabulary construction & default extrapolation.
+# Helpers. vocabulary construction & default extrapolation.
 # ---------------------------------------------------------------------------
 
 
@@ -216,20 +216,20 @@ SimulateFn = Callable[
 def _wrap_simulator(simulator: Any, sim_params: Any, aux: dict[str, Any] | None) -> SimulateFn:
     """Adapt a simulator to a uniform ``(initial_state, control, key) -> (states, times)`` callable.
 
-    The two simulator families currently implemented:
+     The two simulator families currently implemented:
 
-    * :class:`stl_seed.tasks.glucose_insulin.GlucoseInsulinSimulator`:
-      takes ``(initial_state, u_flat, meal_schedule, params, key)`` and
-      returns ``(states, times, meta)``. The control axis is *implicit*
-      (scalar insulin), so a 2-d ``(H, 1)`` is reshaped to ``(H,)``.
-    * :class:`stl_seed.tasks.bio_ode.{Repressilator,Toggle,MAPK}Simulator`:
-      takes ``(initial_state, control_sequence, params, key)`` and
-      returns a :class:`Trajectory` directly.
+     * :class:`stl_seed.tasks.glucose_insulin.GlucoseInsulinSimulator`:
+       takes ``(initial_state, u_flat, meal_schedule, params, key)`` and
+       returns ``(states, times, meta)``. The control axis is *implicit*
+       (scalar insulin), so a 2-d ``(H, 1)`` is reshaped to ``(H,)``.
+     * :class:`stl_seed.tasks.bio_ode.{Repressilator,Toggle,MAPK}Simulator`:
+       takes ``(initial_state, control_sequence, params, key)`` and
+       returns a :class:`Trajectory` directly.
 
-    The returned wrapper is closed over ``sim_params`` and ``aux`` so the
-    autodiff path is purely a function of ``(initial_state, control, key)``
-    — JAX can then take ``grad`` with respect to the control argument
-    without tracing through static parameter pytrees.
+     The returned wrapper is closed over ``sim_params`` and ``aux`` so the
+     autodiff path is purely a function of ``(initial_state, control, key)``
+    . JAX can then take ``grad`` with respect to the control argument
+     without tracing through static parameter pytrees.
     """
 
     sim_class_name = type(simulator).__name__
@@ -287,7 +287,7 @@ class STLGradientGuidedSampler:
         STL specification (registered :class:`STLSpec` or raw
         :class:`Node`). Predicates must conform to the introspection
         convention in :func:`stl_seed.stl.evaluator._introspect_predicate`
-        — i.e. all specs in ``stl_seed.specs.REGISTRY`` are supported.
+       . i.e. all specs in ``stl_seed.specs.REGISTRY`` are supported.
         Non-conforming predicates would force the slow Python eval path
         which is JIT/grad-incompatible; the sampler raises at construction
         in that case.
@@ -332,7 +332,7 @@ class STLGradientGuidedSampler:
 
     Notes
     -----
-    The sampler is *not* an ``equinox.Module`` — it carries Python-level
+    The sampler is *not* an ``equinox.Module``. it carries Python-level
     bookkeeping (the Trajectory builder loop, diagnostics) that doesn't
     fit the eqx pytree contract. Sub-pieces that *are* JIT-able (the
     simulator wrapper, the STL evaluator) are JIT'd internally.

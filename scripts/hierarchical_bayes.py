@@ -293,15 +293,15 @@ def main():
     md.append("\nInterpretation: ")
     if dg_lo > 0:
         md.append(
-            "the 95% CI excludes zero on the positive side — the population-mean methodology gap favours beam over standard sampling.\n"
+            "the 95% CI excludes zero on the positive side. the population-mean methodology gap favours beam over standard sampling.\n"
         )
     elif dg_hi < 0:
         md.append(
-            "the 95% CI excludes zero on the negative side — the population-mean methodology gap favours standard over beam.\n"
+            "the 95% CI excludes zero on the negative side. the population-mean methodology gap favours standard over beam.\n"
         )
     else:
         md.append(
-            "the 95% CI **crosses zero** — at the population scale the methodology gap is not credibly different from zero. "
+            "the 95% CI **crosses zero**. at the population scale the methodology gap is not credibly different from zero. "
         )
         md.append("Per-cell effects can still be sign-determined; see Section 4.\n")
 
@@ -340,7 +340,7 @@ def main():
         "This is exactly the situation hierarchical pooling is designed for, but reviewers should not over-interpret per-cell CIs.\n"
     )
     md.append(
-        "2. **Zero-variance cells violate homoscedasticity.** When a (model, task, sampler) triple is deterministic across the 3 seeds — observed for some Qwen3 cells in the parquet — the sample variance is exactly zero. "
+        "2. **Zero-variance cells violate homoscedasticity.** When a (model, task, sampler) triple is deterministic across the 3 seeds. observed for some Qwen3 cells in the parquet. the sample variance is exactly zero. "
     )
     md.append(
         "The model uses a single shared `sigma_eps`, so it cannot capture this heterogeneity; the inferred `sigma_eps` is an across-cell average and inflates uncertainty for the deterministic cells while underestimating it for the noisy ones. "
@@ -355,7 +355,7 @@ def main():
         "A linear additive `delta` treats them identically, so a +20 rho swing in an already-satisfied cell is weighted the same as a -200 rho rescue of an unsatisfied cell. "
     )
     md.append(
-        "A two-stage model — Bernoulli on `satisfied` plus a magnitude regression conditional on satisfaction — would separate these. The current `delta_global` should be read as a *combined* gap.\n"
+        "A two-stage model. Bernoulli on `satisfied` plus a magnitude regression conditional on satisfaction. would separate these. The current `delta_global` should be read as a *combined* gap.\n"
     )
     md.append(
         "4. **Heavy-tailed residuals.** Empirical `final_rho` ranges from -248 to +30, with the negative tail far heavier than the positive. Gaussian residuals will be pulled by these outliers; a Student-t observation likelihood with `nu ~ Gamma(2, 0.1)` is the standard robustification.\n"

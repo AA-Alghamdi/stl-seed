@@ -2,9 +2,9 @@
 
 Three subdomains, three specs of varying difficulty:
 
-* ``bio_ode.repressilator.easy``     — Repressilator (Elowitz & Leibler 2000).
-* ``bio_ode.toggle.medium``          — Toggle switch (Gardner et al. 2000).
-* ``bio_ode.mapk.hard``              — MAPK cascade (Huang & Ferrell 1996).
+* ``bio_ode.repressilator.easy``    . Repressilator (Elowitz & Leibler 2000).
+* ``bio_ode.toggle.medium``         . Toggle switch (Gardner et al. 2000).
+* ``bio_ode.mapk.hard``             . MAPK cascade (Huang & Ferrell 1996).
 
 For each spec the docstring records: (a) the textbook / paper source, (b) the
 control framing (what the action ``u_t`` does to the autonomous ODE), (c) the
@@ -43,14 +43,14 @@ from stl_seed.specs import (
 # ---------------------------------------------------------------------------
 #
 # Reference. Elowitz, M. B. & Leibler, S. "A synthetic oscillatory network of
-# transcriptional regulators." *Nature* 403, 335–338 (2000).
+# transcriptional regulators." *Nature* 403, 335-338 (2000).
 # DOI: 10.1038/35002125. PubMed 10659856.
 #
 # State. ``s_t = (p_1, p_2, p_3)`` are the three repressor *protein*
-# concentrations in nM. The classical Elowitz–Leibler simulation reports
-# protein peak amplitudes in the range ~100–5,000 monomers per cell, which
+# concentrations in nM. The classical Elowitz-Leibler simulation reports
+# protein peak amplitudes in the range ~100-5,000 monomers per cell, which
 # at the *E. coli* cytoplasmic volume of ~1 fL corresponds to a peak
-# molarity in the 100–8,000 nM band (Milo & Phillips, *Cell Biology by the
+# molarity in the 100-8,000 nM band (Milo & Phillips, *Cell Biology by the
 # Numbers*, 2015, BioNumbers ID 100037 for *E. coli* cell volume; Elowitz &
 # Leibler 2000 Fig. 1c for the per-monomer trace). We adopt nM units so that
 # the thresholds below are immediately comparable to wet-lab fluorescence
@@ -102,14 +102,14 @@ def _lt(name: str, channel: int, threshold: float) -> Predicate:
 #   ~50 nM repression dissociation constant ``K`` reported by Müller et al.
 #   ("Tuning the dynamic range of bacterial promoters regulated by ligand-
 #   inducible transcription factors", *Nucleic Acids Res.* 35:5267, 2007;
-#   their Table 1 gives ``K_LacI ≈ 30–60 nM``). At ``p_1 ≥ 250 nM`` gene 1
-#   is repressed roughly 5×–8× over its baseline, which is the textbook
+#   their Table 1 gives ``K_LacI ≈ 30-60 nM``). At ``p_1 ≥ 250 nM`` gene 1
+#   is repressed roughly 5×,8× over its baseline, which is the textbook
 #   "fully on" regime.
 # * ``P_LOW = 25 nM``. Set one decade below ``K_LacI`` so that the
 #   repressor is unambiguously below its dissociation constant (and the
 #   downstream gene is therefore de-repressed, again per Müller et al.
 #   Fig. 2). This is the textbook "off" band.
-# * Time windows. The Elowitz–Leibler 2000 simulation reports an oscillation
+# * Time windows. The Elowitz-Leibler 2000 simulation reports an oscillation
 #   period of ≈ 150 min (Fig. 3b) with the system reaching a quasi-steady
 #   limit cycle by ~100 min. We take ``[120, 200] min`` as the
 #   post-transient window for the sustained-high requirement, and
@@ -120,7 +120,7 @@ def _lt(name: str, channel: int, threshold: float) -> Predicate:
 P_HIGH_NM = 250.0  # textbook "fully on" repressor concentration (nM).
 P_LOW_NM = 25.0  # textbook "fully off" repressor concentration (nM).
 
-REPRESSILATOR_T = 200.0  # minutes (Elowitz–Leibler 2000 Fig. 3b period × ~1.3).
+REPRESSILATOR_T = 200.0  # minutes (Elowitz-Leibler 2000 Fig. 3b period × ~1.3).
 REPRESSILATOR_T_SETTLE = 120.0  # one full oscillation period plus transient.
 
 repressilator_spec = STLSpec(
@@ -168,19 +168,19 @@ register(repressilator_spec)
 # ---------------------------------------------------------------------------
 #
 # Reference. Gardner, T. S., Cantor, C. R. & Collins, J. J. "Construction of a
-# genetic toggle switch in *Escherichia coli*." *Nature* 403, 339–342 (2000).
+# genetic toggle switch in *Escherichia coli*." *Nature* 403, 339-342 (2000).
 # DOI: 10.1038/35002131. PubMed 10659857.
 #
 # State. ``s_t = (x_1, x_2)`` are repressor concentrations in nM. The Gardner
 # et al. 2000 dimensionless variables ``u, v`` correspond to repressor
 # concentrations in units of their dissociation constants ``K_1, K_2``;
-# they report ``K_1, K_2 ≈ 50–100 nM`` for LacI / cIts (their §Methods,
+# they report ``K_1, K_2 ≈ 50-100 nM`` for LacI / cIts (their §Methods,
 # "Model parameters"). We work in physical nM.
 #
 # Action. ``u_t = (i_1, i_2) ∈ [0, 1]^2`` are chemical inducers (IPTG and
 # anhydrotetracycline analog in the original construct); each inducer
 # transiently inactivates the corresponding repressor. ``H = 10`` updates
-# over ``T = 100`` minutes — long enough for at least one full bistable
+# over ``T = 100`` minutes. long enough for at least one full bistable
 # transition (Gardner et al. 2000 Fig. 5a shows a switching transient of
 # ≈ 30 min between the two stable states).
 #
@@ -201,7 +201,7 @@ register(repressilator_spec)
 #   state (the simulator emits ``x_1`` in the same dimensionless units
 #   that Gardner reports, with ``K_LacI ~ 50 nM``). Earlier drafts used
 #   ``HIGH = 200`` nM, but ``x_1`` saturates at ``alpha_1 = 160`` so
-#   that band is unreachable: this is a SPEC-side fix only — the
+#   that band is unreachable: this is a SPEC-side fix only. the
 #   literature-cited Gardner 2000 simulator parameters are unchanged.
 #   ``HIGH = 100`` nM sits comfortably above the LOW state (~10 nM) and
 #   above the bistable separatrix per Gardner 2000 Fig. 5, while being
@@ -294,7 +294,7 @@ register(toggle_spec)
 # ---------------------------------------------------------------------------
 #
 # Reference. Huang, C.-Y. F. & Ferrell, J. E. "Ultrasensitivity in the
-# mitogen-activated protein kinase cascade." *PNAS* 93(19):10078–10083
+# mitogen-activated protein kinase cascade." *PNAS* 93(19):10078-10083
 # (1996). DOI: 10.1073/pnas.93.19.10078. PubMed 8816754.
 #
 # State. ``s_t`` is the 6-vector emitted by ``MAPKSimulator``:

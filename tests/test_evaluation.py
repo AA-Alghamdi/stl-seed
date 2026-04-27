@@ -43,7 +43,7 @@ def test_success_rate_basic() -> None:
 
 def test_success_rate_jax_array() -> None:
     rhos = jnp.array([-0.1, 0.0, 0.1, 1.0])
-    # ρ > 0 strict — both 0.0 and -0.1 fail; only 0.1 and 1.0 pass.
+    # ρ > 0 strict. both 0.0 and -0.1 fail; only 0.1 and 1.0 pass.
     assert success_rate(rhos) == pytest.approx(0.5)
 
 
@@ -438,7 +438,7 @@ def test_action_diversity_invalid_quantization_raises() -> None:
 
 
 class _MemorizingCheckpoint:
-    """Always emits the same control sequence regardless of prompt — this is
+    """Always emits the same control sequence regardless of prompt. this is
     the A15 failure mode the diversity warning exists to catch."""
 
     name = "memorizing"

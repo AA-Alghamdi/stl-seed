@@ -499,7 +499,7 @@ class PAVProcessRewardModel:
             val_idx = perm[:n_val]
             tr_idx = perm[n_val:]
             if len(tr_idx) < 2:
-                # Not enough train trajectories — collapse split so kNN works.
+                # Not enough train trajectories. collapse split so kNN works.
                 tr_idx = perm
                 val_idx = np.array([], dtype=np.int64)
 
@@ -561,7 +561,7 @@ class PAVProcessRewardModel:
 
         # Best-val-MSE tracking: keep the model at the lowest val_loss and
         # restore it at the end if early stopping triggered (or even if it
-        # didn't — restoring the best is always at-least-as-good in
+        # didn't. restoring the best is always at-least-as-good in
         # generalization terms when there is val signal).
         best_val = float("inf")
         best_model = model
@@ -926,7 +926,7 @@ def _adam_step(
     """One Adam (or AdamW) step on the array leaves of the model pytree.
 
     When ``weight_decay > 0`` we apply *decoupled* weight decay
-    (Loshchilov & Hutter 2019, AdamW) — i.e. ``p <- p - lr * (m_hat /
+    (Loshchilov & Hutter 2019, AdamW). i.e. ``p <- p - lr * (m_hat /
     (sqrt(v_hat) + eps) + wd * p)``. Decay is applied uniformly to every
     array leaf (weights and biases). With ``weight_decay == 0`` this is
     plain Adam, identical to the previous behavior.

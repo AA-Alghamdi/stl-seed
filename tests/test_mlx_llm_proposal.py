@@ -225,7 +225,7 @@ def test_proposal_chunked_scoring_matches_unchunked() -> None:
     logits_chunked = np.asarray(prop_chunked(jnp.asarray(x0), history, jax.random.key(0)))
     logits_unchunked = np.asarray(prop_unchunked(jnp.asarray(x0), history, jax.random.key(0)))
     # Numerical agreement: the model's matmul reductions on Metal are not
-    # bit-exact across batch sizes — the kernel selection depends on the
+    # bit-exact across batch sizes. the kernel selection depends on the
     # leading batch dim, and different reduction orders give fp32
     # differences ~1e-1 in raw logit space (observed: max-abs ~0.28 on
     # K=5 glucose-insulin, qwen3-0.6b). Tolerance is set to absorb this

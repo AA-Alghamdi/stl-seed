@@ -2,12 +2,12 @@
 
 Targets:
 
-* ``training/loop.py`` — _load_filtered_dataset (lines 71-81), the
+* ``training/loop.py``. _load_filtered_dataset (lines 71-81), the
   config.base_model warning branch (126-128), the missing-dataset path (141).
-* ``training/backends/mlx.py`` — _estimate_iters edge cases, _config_to_dict
+* ``training/backends/mlx.py``. _estimate_iters edge cases, _config_to_dict
   serialization (313-337).
-* ``training/backends/bnb.py`` — _config_to_dict serialization (370-379).
-* ``training/backends/base.py`` — TrainingConfig invalid lora_alpha,
+* ``training/backends/bnb.py``. _config_to_dict serialization (370-379).
+* ``training/backends/base.py``. TrainingConfig invalid lora_alpha,
   invalid num_epochs, invalid lora_dropout (lines 144, 146, 150).
 """
 
@@ -64,7 +64,7 @@ def test_train_with_filter_warns_when_model_overrides_config(tmp_path, caplog) -
 def test_train_with_filter_loads_dataset_when_none_passed(tmp_path) -> None:
     """When ``dataset=None`` and no manifest exists for the requested cell,
     train_with_filter must surface FileNotFoundError from
-    load_filtered_dataset (post-Tier-9 — the loader is now implemented)."""
+    load_filtered_dataset (post-Tier-9. the loader is now implemented)."""
     cfg = TrainingConfig(output_dir=tmp_path)
     with pytest.raises(FileNotFoundError, match="No filtered manifest"):
         train_with_filter(

@@ -47,7 +47,7 @@ import numpyro.distributions as dist
 import pandas as pd
 from numpyro.infer import MCMC, NUTS
 
-# Suppress arviz refactor banner — it's noisy for unit testing
+# Suppress arviz refactor banner. it's noisy for unit testing
 warnings.filterwarnings("ignore", category=FutureWarning, module="arviz")
 
 
@@ -66,24 +66,24 @@ class HierarchicalData:
 
     Index conventions
     -----------------
-    model_idx ∈ {0, ..., n_models − 1}        — model size (Q06, Q17, Q40)
-    verifier_idx ∈ {0, ..., n_verifiers − 1}  — verifier-density v
+    model_idx ∈ {0, ..., n_models − 1}       . model size (Q06, Q17, Q40)
+    verifier_idx ∈ {0, ..., n_verifiers − 1} . verifier-density v
         Index 0 is the *baseline* (e.g., hard); the δ_v contrasts cover
         indices 1 .. n_verifiers − 1.
-    family_idx ∈ {0, ..., n_families − 1}     — task family
-    instance_idx ∈ {0, ..., n_instances − 1}  — global instance id
+    family_idx ∈ {0, ..., n_families − 1}    . task family
+    instance_idx ∈ {0, ..., n_instances − 1} . global instance id
         (the model treats each (family, instance) as its own
         observation; instances are nested inside families but indexed
         flat for vectorization.)
-    seed ∈ {0, ..., n_seeds − 1}              — RNG seed of the trial
-    N ∈ ℤ_>0                                  — best-of-N budget
+    seed ∈ {0, ..., n_seeds − 1}             . RNG seed of the trial
+    N ∈ ℤ_>0                                 . best-of-N budget
 
-    Y ∈ {0, 1}                                — success indicator
+    Y ∈ {0, 1}                               . success indicator
 
     Notes
     -----
     ``seed`` is carried through but not used as a structural effect in
-    the registered model — its role is to allow held-out posterior
+    the registered model. its role is to allow held-out posterior
     predictive checks on a withheld seed (theory.md §4 "PPC via held-
     out seed 6").
     """
@@ -178,7 +178,7 @@ def model(data: HierarchicalData) -> None:
         "alpha_b_raw", dist.Normal(0.0, 1.0).expand([n_models]).to_event(1)
     )
     # Soft sum-to-zero: subtract mean. This is the standard trick to
-    # avoid the joint identifiability of (μ, α) — strict sum-to-zero
+    # avoid the joint identifiability of (μ, α). strict sum-to-zero
     # would require a constrained simplex which complicates HMC; the
     # subtract-mean projection has the same fixed point.
     alpha_A = tau_alpha_A * (alpha_A_raw - alpha_A_raw.mean())

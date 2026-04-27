@@ -2,13 +2,13 @@
 
 One template per task family in the canonical 3×3×2 sweep:
 
-* ``repressilator`` — Elowitz-Leibler 3-gene oscillator (Elowitz & Leibler
+* ``repressilator``. Elowitz-Leibler 3-gene oscillator (Elowitz & Leibler
   2000, DOI:10.1038/35002125). Action = transcription-rate scaling factors.
-* ``toggle`` — Gardner-Cantor-Collins genetic toggle switch (Gardner et al.
+* ``toggle``. Gardner-Cantor-Collins genetic toggle switch (Gardner et al.
   2000, DOI:10.1038/35002131). Action = inducer concentrations.
-* ``mapk`` — Huang-Ferrell 1996 MAPK cascade (Huang & Ferrell 1996,
+* ``mapk``. Huang-Ferrell 1996 MAPK cascade (Huang & Ferrell 1996,
   DOI:10.1073/pnas.93.19.10078). Action = upstream stimulus magnitudes.
-* ``glucose_insulin`` — Bergman 1979 minimal model + Dalla Man 2007
+* ``glucose_insulin``. Bergman 1979 minimal model + Dalla Man 2007
   (Bergman et al. 1979, DOI:10.1152/ajpendo.1979.236.6.E667). Action =
   insulin infusion rates.
 
@@ -25,7 +25,7 @@ the format fixed across families means the model can transfer
 physics changes.
 
 The templates are rendered by ``stl_seed.training.tokenize`` at dataset-
-construction time — never at training time — so any rendering error
+construction time. never at training time. so any rendering error
 surfaces before SFT begins.
 """
 

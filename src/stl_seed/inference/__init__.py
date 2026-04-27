@@ -21,7 +21,7 @@ candidates that locally increase ``rho``.
 Public classes
 --------------
 
-* :class:`STLGradientGuidedSampler` — the technical contribution. Uses
+* :class:`STLGradientGuidedSampler`. the technical contribution. Uses
   ``grad rho`` as a continuous classifier in the spirit of classifier
   guidance (Dhariwal & Nichol 2021), DPS (Chung et al. 2023), and
   signal-temporal-logic-as-RL-reward (Aksaray et al. 2016). Closest prior
@@ -29,13 +29,13 @@ Public classes
   arXiv:2507.03293), which uses LTL as a *discrete* token-level critic;
   our method uses STL as a *continuous, differentiable* one.
 
-* :class:`StandardSampler` — vanilla LLM sampling (the ``lambda = 0``
+* :class:`StandardSampler`. vanilla LLM sampling (the ``lambda = 0``
   ablation); no verifier feedback at all.
 
-* :class:`BestOfNSampler` — standard BoN with binary STL filtering
+* :class:`BestOfNSampler`. standard BoN with binary STL filtering
   (``rho > 0`` selects).
 
-* :class:`ContinuousBoNSampler` — BoN with continuous ``rho`` scoring
+* :class:`ContinuousBoNSampler`. BoN with continuous ``rho`` scoring
   (argmax over the ``N`` samples).
 
 All four samplers implement the :class:`Sampler` Protocol and produce a

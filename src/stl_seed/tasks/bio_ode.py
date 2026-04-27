@@ -1,10 +1,10 @@
-"""bio_ode task family — Repressilator, Toggle, MAPK simulators.
+"""bio_ode task family. Repressilator, Toggle, MAPK simulators.
 
 Implements three biomolecular ODE control problems for the stl-seed pipeline:
 
-* :class:`RepressilatorSimulator` — 6-state Elowitz-Leibler 2000 oscillator.
-* :class:`ToggleSimulator`        — 2-state Gardner-Cantor-Collins 2000 switch.
-* :class:`MAPKSimulator`          — 6-state Huang-Ferrell 1996 cascade.
+* :class:`RepressilatorSimulator`. 6-state Elowitz-Leibler 2000 oscillator.
+* :class:`ToggleSimulator`       . 2-state Gardner-Cantor-Collins 2000 switch.
+* :class:`MAPKSimulator`         . 6-state Huang-Ferrell 1996 cascade.
 
 $\\theta$ is a fixed literature-sourced constant, loaded from
 ``bio_ode_params.py``. The agent (LLM policy) optimizes only the control
@@ -113,7 +113,7 @@ def _u_at_time(
 
 
 # ---------------------------------------------------------------------------
-# Simulator protocol — structural type enforced at static-check time.
+# Simulator protocol. structural type enforced at static-check time.
 # ---------------------------------------------------------------------------
 
 
@@ -337,10 +337,10 @@ class RepressilatorSimulator(eqx.Module):
         """Integrate the Elowitz-Leibler model forward over [0, horizon_min].
 
         Args:
-            initial_state: shape (6,) — (m_1, m_2, m_3, p_1, p_2, p_3).
+            initial_state: shape (6,). (m_1, m_2, m_3, p_1, p_2, p_3).
                 Use :func:`_repressilator_initial_state(params)` for the
                 literature-default Fig. 2 condition.
-            control_sequence: shape (H, 3) — per-gene transcription control
+            control_sequence: shape (H, 3). per-gene transcription control
                 in [0, 1]. Will be clipped to [0, 1] inside the simulator.
             params: ``RepressilatorParams``.
             key: PRNG key (currently unused; reserved for stochastic
@@ -548,7 +548,7 @@ class ToggleSimulator(eqx.Module):
         ys = sol.ys
         assert ys is not None
 
-        # Sentinel: zero — both repressors silenced. Same rationale as
+        # Sentinel: zero. both repressors silenced. Same rationale as
         # repressilator: predicates of the form "A > HIGH" return ρ < 0
         # rather than ρ = NaN under sentinel poisoning.
         sentinel = jnp.zeros((TOGGLE_STATE_DIM,), dtype=ys.dtype)
@@ -614,7 +614,7 @@ class ToggleSimulator(eqx.Module):
 #
 # Time units. ``MAPKParams`` reports rate constants in s^-1 (k_cat,
 # k_dissoc) and (microM)^-1 s^-1 (k_assoc); V_X in microM/s. We integrate
-# in MINUTES so the simulator API is uniform across the bio_ode family —
+# in MINUTES so the simulator API is uniform across the bio_ode family ,
 # all rate-constant uses below multiply by 60.0 to convert s^-1 -> min^-1.
 # This is a units conversion only; it does NOT change the underlying
 # kinetics. The horizon T = 60 min therefore corresponds to 3600 s in the
@@ -657,7 +657,7 @@ _K_E1_RELAX_PER_MIN: float = 1.0
 # phosphatase scaling below, the simulator reproduces (a) the HF Fig. 1
 # rise time of ~30 min for a saturating step input and (b) the HF Fig. 6
 # effective Hill coefficient of n_eff ~ 4-5. Calibration label per
-# CLAUDE.md "Scientific integrity": labeled as a literature-bracket
+# project rules "Scientific integrity": labeled as a literature-bracket
 # geometric mean, not tuned to match a target simulation outcome.
 _MAPK_EFFECTIVE_K_CAT_PER_S: float = 1.0
 
@@ -671,8 +671,8 @@ _MAPK_EFFECTIVE_K_CAT_PER_S: float = 1.0
 # above baseline within the 60-min horizon. To recover the cascade rise
 # time of ~30 min reported by HF 1996 Fig. 1 for their Table II
 # parameter set, the phosphatase rates are scaled by this constant.
-# Calibration label per CLAUDE.md "Scientific integrity": labeled as a
-# calibration shortcut, not a "physics-informed prior" — the underlying
+# Calibration label per project rules "Scientific integrity": labeled as a
+# calibration shortcut, not a "physics-informed prior". the underlying
 # V_max values come from Markevich 2004 (ERK/MEK system) and the scale
 # compensates for the stoichiometry mismatch between Markevich's measured
 # system and HF 1996's idealized cascade.

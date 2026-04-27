@@ -46,9 +46,9 @@ harness reports whichever outcome is true without softening or retrying.
 Outputs
 -------
 
-* ``runs/real_llm_hard_specs/results.parquet`` — per-(task, sampler, seed)
+* ``runs/real_llm_hard_specs/results.parquet``. per-(task, sampler, seed)
   row with final rho, satisfaction flag, and wall-clock time.
-* ``paper/real_llm_comparison.md`` — written by hand by the operator
+* ``paper/real_llm_comparison.md``. written by hand by the operator
   (this script prints the table that goes into it).
 
 Usage
@@ -396,7 +396,7 @@ def _run_one_cell(
         rho = float(diag["final_rho"])
         ok = True
         err = ""
-    except Exception as exc:  # noqa: BLE001 — surface failure rather than crash sweep
+    except Exception as exc:  # noqa: BLE001. surface failure rather than crash sweep
         wall = time.time() - t0
         rho = float("nan")
         ok = False

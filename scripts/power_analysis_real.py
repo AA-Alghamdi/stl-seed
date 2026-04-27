@@ -1,4 +1,4 @@
-"""A16 — Power analysis with empirical ICC from the pilot trajectory store.
+"""A16. Power analysis with empirical ICC from the pilot trajectory store.
 
 Replays the design analysis in `paper/theory.md` §5 with an *empirical*
 intra-class correlation (ICC) of robustness rho within (task x policy)
@@ -41,7 +41,7 @@ which is exactly the design-effect correction we apply in theory.md §5.
 
 What this script does NOT do
 ----------------------------
-* It does not refit the hierarchical Bayes model (theory.md §4) — that is
+* It does not refit the hierarchical Bayes model (theory.md §4). that is
   the job of stats/hierarchical_bayes.py during Phase 2 analysis. Here we
   just replace the worst-case ICC plug-in with the empirical one and
   recompute the *sampling-design* power numbers.
@@ -79,7 +79,7 @@ _N_BON = 8  # BoN budgets {1, 2, 4, 8, 16, 32, 64, 128}
 _N_CELLS = _N_SIZES * _N_FILTERS * _N_TASKS  # 18
 
 # Fisher matrix at the prior median (A=0.6, b=0.25, N=128). Re-derived
-# inline so the script is self-contained — values match theory.md §5.
+# inline so the script is self-contained. values match theory.md §5.
 _A_PRIOR = 0.6
 _B_PRIOR = 0.25
 _N_BON_MAX = 128
@@ -395,13 +395,13 @@ def _verdict(empirical: dict[str, float]) -> tuple[bool, str, dict]:
 
     if is_powered:
         verdict = (
-            "YES — the locked design (3x3x2x25x5x8 = 36000 trials) is "
+            "YES. the locked design (3x3x2x25x5x8 = 36000 trials) is "
             f"adequately powered to detect Delta_A>={_DELTA_A:.3f} and "
             f"Delta_b>={_DELTA_B:.3f} at the global pooled scale."
         )
     else:
         verdict = (
-            "NO — the locked design is *not* adequately powered for at least "
+            "NO. the locked design is *not* adequately powered for at least "
             "one registered effect size at the empirical ICC. "
             f"MDE(Delta_A)={mde_dA:.4f} (registered {_DELTA_A}); "
             f"MDE(Delta_b)~{mde_db_rate:.4f} (registered {_DELTA_B}); "
@@ -642,7 +642,7 @@ def _write_paper(
 
 
 def main() -> int:
-    console.rule("[bold]A16 — Empirical-ICC power analysis")
+    console.rule("[bold]A16. Empirical-ICC power analysis")
     if not _DATA_DIR.exists():
         console.print(f"[red]ERROR[/]: pilot data dir {_DATA_DIR} does not exist.")
         return 2
@@ -656,12 +656,12 @@ def main() -> int:
     _print_groups_table(buckets)
 
     # Two ICC variants:
-    # (a) ICC at (task x policy) — what the deliverable spec literally asks
+    # (a) ICC at (task x policy). what the deliverable spec literally asks
     #     for. Note: heuristic policies are deterministic so their within-
     #     group variance is structurally zero, which inflates this ICC near
     #     1.0 even when the random-policy variance is healthy. Reported as
     #     a sanity check; not used for the verdict.
-    # (b) ICC at (task) only — the design-relevant analogue of theory.md §5's
+    # (b) ICC at (task) only. the design-relevant analogue of theory.md §5's
     #     "within-task ICC across seeds": grouping is the task family, all
     #     within-task variation (from policy + random key + future LLM mix)
     #     is treated as the within-group component. This is the ICC variant
@@ -707,7 +707,7 @@ def main() -> int:
             )
         else:
             console.print(
-                "[red]No n_seeds in [1, 100] suffices[/] — design needs "
+                "[red]No n_seeds in [1, 100] suffices[/]. design needs "
                 "revisiting at a higher level (more instances or more cells)."
             )
 

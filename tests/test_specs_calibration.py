@@ -2,7 +2,7 @@
 
 The calibration module currently has 0% coverage. These tests exercise
 both the diagnostic (no-threshold) and sweep (with-threshold) modes
-against a stub trajectory sampler / robustness function — no JAX or
+against a stub trajectory sampler / robustness function. no JAX or
 Diffrax integration is needed because the module is duck-typed against
 ``TrajectorySampler`` / ``RobustnessFn`` Protocols.
 """
@@ -72,7 +72,7 @@ def _rho_threshold_aware(metadata_key: str, target: float):
 
 
 def _spec(name: str = "stub.spec") -> STLSpec:
-    """Borrow a real registered spec; it doesn't matter which — we only
+    """Borrow a real registered spec; it doesn't matter which. we only
     need the dataclass shape and a mutable metadata dict."""
 
     return REGISTRY["glucose_insulin.tir.easy"]
@@ -125,7 +125,7 @@ def test_success_rate_handles_exception_in_rho() -> None:
 
 
 def test_success_rate_handles_nan_inf() -> None:
-    """NaN / +/-inf rho counts as failure (matches CLAUDE.md no-silent-swallow)."""
+    """NaN / +/-inf rho counts as failure (matches project rules no-silent-swallow)."""
     spec = _spec()
     sampler = _ConstSampler(4)
 
@@ -181,7 +181,7 @@ def test_scan_threshold_returns_value_rate_pairs() -> None:
 
 
 # ---------------------------------------------------------------------------
-# calibrate_spec — diagnostic mode
+# calibrate_spec. diagnostic mode
 # ---------------------------------------------------------------------------
 
 
@@ -200,7 +200,7 @@ def test_calibrate_diagnostic_in_band() -> None:
 def test_calibrate_diagnostic_out_of_band() -> None:
     spec = _spec()
     sampler = _ConstSampler(20)
-    rho = _rho_constant(1.0)  # 100% success — too easy
+    rho = _rho_constant(1.0)  # 100% success. too easy
     result = calibrate_spec(spec, sampler, rho, n_samples=20, target_range=(0.15, 0.55))
     assert result.in_band is False
     assert result.success_rate == 1.0
@@ -220,7 +220,7 @@ def test_calibrate_diagnostic_invalid_target_range() -> None:
 
 
 # ---------------------------------------------------------------------------
-# calibrate_spec — sweep mode
+# calibrate_spec. sweep mode
 # ---------------------------------------------------------------------------
 
 

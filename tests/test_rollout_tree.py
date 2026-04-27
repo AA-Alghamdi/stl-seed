@@ -3,26 +3,26 @@
 Test plan
 ---------
 
-T1. ``test_rollout_tree_protocol_compliance`` — RolloutTreeSampler conforms
+T1. ``test_rollout_tree_protocol_compliance``. RolloutTreeSampler conforms
     to the :class:`Sampler` Protocol; `sample()` returns a (Trajectory, dict)
     pair with the canonical keys.
-T2. ``test_rollout_tree_runs_glucose_insulin_no_crash`` — end-to-end run on
+T2. ``test_rollout_tree_runs_glucose_insulin_no_crash``. end-to-end run on
     the glucose-insulin task family, all four continuation policies.
-T3. ``test_rollout_tree_runs_repressilator_no_crash`` — end-to-end run on
+T3. ``test_rollout_tree_runs_repressilator_no_crash``. end-to-end run on
     the repressilator (the failure case the algorithm exists to address).
-T4. ``test_rollout_tree_better_than_standard_synthetic`` — on a synthetic
+T4. ``test_rollout_tree_better_than_standard_synthetic``. on a synthetic
     delayed-reward problem where 1-step lookahead is bad and K-step
     lookahead is good, the rollout-tree sampler strictly beats vanilla
     sampling on mean rho across 6 seeds.
-T5. ``test_rollout_tree_invalid_branch_k_raises`` — branch_k < 1 raises.
-T6. ``test_rollout_tree_invalid_lookahead_h_raises`` — lookahead_h < 0 raises.
-T7. ``test_rollout_tree_invalid_continuation_policy_raises`` — unknown policy
+T5. ``test_rollout_tree_invalid_branch_k_raises``. branch_k < 1 raises.
+T6. ``test_rollout_tree_invalid_lookahead_h_raises``. lookahead_h < 0 raises.
+T7. ``test_rollout_tree_invalid_continuation_policy_raises``. unknown policy
     string raises with a clear message.
-T8. ``test_rollout_tree_heuristic_requires_callable`` — selecting
+T8. ``test_rollout_tree_heuristic_requires_callable``. selecting
     ``"heuristic"`` without supplying ``heuristic_continuation`` raises.
-T9. ``test_rollout_tree_branch_k_caps_at_vocabulary_size`` — requesting more
+T9. ``test_rollout_tree_branch_k_caps_at_vocabulary_size``. requesting more
     branches than vocabulary items silently caps, doesn't raise.
-T10. ``test_rollout_tree_diagnostics_well_formed`` — every diagnostic field
+T10. ``test_rollout_tree_diagnostics_well_formed``. every diagnostic field
      has the expected shape / type / range.
 
 """
@@ -91,7 +91,7 @@ def _peaked_llm(target_idx: int, K: int, peak_logit: float = 5.0) -> LLMProposal
 
 
 def _myopic_llm(K: int, myopic_idx: int = 0) -> LLMProposal:
-    """LLM that strongly prefers ``myopic_idx`` — the locally-greedy choice
+    """LLM that strongly prefers ``myopic_idx``. the locally-greedy choice
     on the synthetic delayed-reward problem below.
 
     Used to stress-test that the rollout-tree sampler can override the
@@ -122,7 +122,7 @@ def _myopic_llm(K: int, myopic_idx: int = 0) -> LLMProposal:
 # Spec: G_[8, 10] (y >= 0.8), i.e. the state must be sustained-high in the
 # back third of the horizon. Achieving this requires u ~ 1 across most of
 # the 5 control steps (the integrator's tracking time constant is 10 vs
-# horizon 10, so a single high-u step is insufficient — the state decays
+# horizon 10, so a single high-u step is insufficient. the state decays
 # back before the spec window).
 #
 # The 1-step probe at step t=0 sees only the immediate ramp-up and is
@@ -228,7 +228,7 @@ class _ToySimulator(eqx.Module):
 
 
 def _toy_spec() -> STLSpec:
-    """G_[8, 10] (y >= 0.8) — sustained-high requirement.
+    """G_[8, 10] (y >= 0.8). sustained-high requirement.
 
     Constructed inline (not registered) so each test instance is fresh.
     The predicate uses the (channel, threshold) default-argument convention
@@ -560,7 +560,7 @@ def test_rollout_tree_heuristic_requires_callable(gi_setup) -> None:
 def test_rollout_tree_branch_k_caps_at_vocabulary_size(gi_setup) -> None:
     sim, params, spec, V, x0 = gi_setup
     K = int(V.shape[0])
-    # Request more branches than the vocabulary has — must silently cap.
+    # Request more branches than the vocabulary has. must silently cap.
     sampler = RolloutTreeSampler(
         _uniform_llm(K),
         sim,

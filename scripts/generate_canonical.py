@@ -2,7 +2,7 @@
 
 Produces the 2,500-trajectory-per-task corpus that the Phase-2 RunPod
 sweep (`scripts/run_canonical_sweep.py`) consumes. Generation runs on the
-free local M5 Pro under JAX, NOT on the paid RunPod GPU — the simulators
+free local M5 Pro under JAX, NOT on the paid RunPod GPU. the simulators
 are CPU-bound at this scale and pre-generating saves ~30 min of GPU time
 per sweep.
 
@@ -15,7 +15,7 @@ Differences vs. `scripts/generate_pilot.py` (Phase 1):
   {random: 0.4, heuristic: 0.4, perturbed_heuristic: 0.2}. The
   "perturbed_heuristic" leg adds small Gaussian noise (σ = 0.1 of the
   action range) on top of the heuristic controller, boosting SFT
-  example diversity without breaking structural correctness — the
+  example diversity without breaking structural correctness. the
   perturbed actions stay inside the simulator's declared action box
   (the wrapper clips to bounds), so the heuristic's spec-satisfaction
   property degrades gracefully rather than collapsing. For
@@ -98,8 +98,8 @@ _N_PER_TASK = 2500
 #    glucose to ~90 mg/dL (lower edge of the integrator's stable
 #    regime) and Diffrax then returns NaN on the descending leg. We
 #    swept σ_frac ∈ {0.005, 0.01, 0.02, 0.05, 0.1} and observed
-#    66–76% per-trajectory drop rate on the perturbed leg in all
-#    cases — the instability is *not* primarily σ-dependent. We
+#    66-76% per-trajectory drop rate on the perturbed leg in all
+#    cases. the instability is *not* primarily σ-dependent. We
 #    therefore drop the perturbed_heuristic leg from this family and
 #    fall back to the pilot mix {random: 0.5, heuristic: 0.5}, which
 #    yields ~0% NaN drops.
@@ -414,7 +414,7 @@ def _print_task_report(
     if sat_rate < _SAT_RATE_FLOOR:
         console.print(
             f"  [red]FAIL[/]: satisfaction {sat_rate:.2%} < "
-            f"floor {_SAT_RATE_FLOOR:.0%} — hard filter will starve."
+            f"floor {_SAT_RATE_FLOOR:.0%}. hard filter will starve."
         )
 
 

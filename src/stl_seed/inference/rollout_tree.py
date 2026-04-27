@@ -41,7 +41,7 @@ analogue of the Monte-Carlo tree search used in AlphaGo (Silver et al.,
    wins.
 5. (Optional) take ``refine_iters`` gradient-refinement steps on the
    chosen candidate using the existing horizon-aware
-   :class:`STLGradientGuidedSampler` machinery — i.e. recompute
+   :class:`STLGradientGuidedSampler` machinery. i.e. recompute
    ``grad_{u_bar_t} rho`` with the chosen-candidate branch as the
    linearisation point, and shift the bias accordingly. Set
    ``refine_iters = 0`` (the default) for pure tree-search.
@@ -67,7 +67,7 @@ The depth-bounded rollout tree with default-policy continuations is the
 direct analogue of their Monte Carlo tree search with rollout policy;
 the difference is that we use a continuous STL robustness signal (not a
 binary win/loss) at the leaves and we do not maintain a UCT-style
-bandit tree across decoding steps — each step's branch is fresh.
+bandit tree across decoding steps. each step's branch is fresh.
 
 Browne, C. B. et al. "A survey of Monte Carlo tree search methods."
 *IEEE Trans. Comput. Intell. AI Games* 4(1):1-43 (2012).
@@ -104,7 +104,7 @@ ContinuationPolicy = Literal["zero", "random", "heuristic", "llm"]
 
 * ``"zero"`` (default): the continuation actions ``u_{t+1}, ...,
   ``u_{t+lookahead_h}`` are the all-zeros vector. For the repressilator,
-  this corresponds to "leave all genes at full transcription" — a
+  this corresponds to "leave all genes at full transcription". a
   neutral baseline that lets the candidate at step ``t`` express its
   effect without confounding by the continuation choice.
 * ``"random"``: each continuation action is drawn i.i.d. uniformly from
@@ -139,7 +139,7 @@ class RolloutTreeDiagnostics:
       trajectory with the *committed* prefix and the ``default_action``
       tail. This is the ground-truth streaming rho the agent acts on,
       *not* the projected leaf rho used for the branch-selection decision.
-    * ``projected_rho_at_step``: the chosen branch's leaf rho — i.e. the
+    * ``projected_rho_at_step``: the chosen branch's leaf rho. i.e. the
       ``branch_k``-argmax leaf rho computed at step ``t``. Subject to the
       continuation-policy bias.
     * ``branch_rho_min/max/mean_at_step``: per-step summary statistics of
@@ -250,7 +250,7 @@ class RolloutTreeSampler:
       3. Pick the candidate that maximises projected rho.
       4. (Optional) take ``refine_iters`` gradient-refinement steps on the
          chosen ``u_t`` using the horizon-aware
-         :class:`STLGradientGuidedSampler` gradient — i.e. compute
+         :class:`STLGradientGuidedSampler` gradient. i.e. compute
          ``grad_{u_bar_t} rho`` at the chosen-branch linearisation point
          and update ``u_t`` along the projection of ``grad_rho`` onto
          vocabulary directions ``V_k - u_bar_t``. Re-pick the argmax
@@ -271,7 +271,7 @@ class RolloutTreeSampler:
         STL specification (registered :class:`STLSpec` or raw
         :class:`Node`). Predicates must conform to the introspection
         convention in :func:`stl_seed.stl.evaluator._introspect_predicate`
-        — i.e. all specs in ``stl_seed.specs.REGISTRY`` are supported.
+       . i.e. all specs in ``stl_seed.specs.REGISTRY`` are supported.
         Non-conforming predicates would force the slow Python eval path
         which is JIT/vmap/grad-incompatible; the sampler raises at
         construction in that case.
@@ -332,7 +332,7 @@ class RolloutTreeSampler:
         diagnostics when the projected rhos are all near-equal (i.e. the
         leaf evaluator is uninformative) and we want to fall back on the
         LLM prior. Note: argmax / softmax is over the ``branch_k``
-        candidates' *projected rhos*, NOT over the LLM logits — the LLM
+        candidates' *projected rhos*, NOT over the LLM logits. the LLM
         only enters via its top-``branch_k`` candidate selection.
 
     Notes
@@ -377,7 +377,7 @@ class RolloutTreeSampler:
             raise ValueError(f"horizon must be >= 1, got {self.horizon}")
         if branch_k < 1:
             raise ValueError(f"branch_k must be >= 1, got {branch_k}")
-        # Cap branch_k at vocabulary size — top-k requires k <= K.
+        # Cap branch_k at vocabulary size. top-k requires k <= K.
         self.branch_k = min(int(branch_k), self.K)
         if lookahead_h < 0:
             raise ValueError(f"lookahead_h must be >= 0, got {lookahead_h}")
@@ -557,7 +557,7 @@ class RolloutTreeSampler:
                 # Argmax over projected leaf rhos. Ties broken by smallest
                 # vocabulary index (cand_idx is already sorted by logit
                 # descending, so the smallest-index winner among ties is the
-                # higher-logit one — the natural prior tiebreaker).
+                # higher-logit one. the natural prior tiebreaker).
                 chosen_branch = int(jnp.argmax(branch_rhos))
             else:
                 # Temperature-softmax over projected rhos. We treat the
@@ -763,7 +763,7 @@ class RolloutTreeSampler:
                 cont = cont.at[j].set(cont_j)
             return cont
 
-        raise RuntimeError(  # defensive — _init_ already validated
+        raise RuntimeError(  # defensive. _init_ already validated
             f"unhandled continuation_policy {self.continuation_policy!r}"
         )
 

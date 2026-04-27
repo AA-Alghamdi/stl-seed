@@ -30,13 +30,13 @@ The discrete-to-continuous bridge is the expected-action construction $\\bar{u}_
 
 Per generation step: one forward ODE solve on $\\hat{u}\_{1:H}$ and one reverse-mode pass through the solve plus the STL evaluator (Diffrax `RecursiveCheckpointAdjoint`), plus $K \\cdot m$ FLOPs for the bias projection. Total over the horizon: $H \\cdot (1,\\text{fwd} + 1,\\text{bwd}) + HKm$.
 
-Continuous BoN at budget $N$ costs $N$ forward solves with no backward. A backward pass on the recursive-checkpoint adjoint runs about $1$–$2\\times$ a forward, so the matched-compute baseline is $N \\approx 2H$. For glucose-insulin ($H = 12$), that is $N = 24$.
+Continuous BoN at budget $N$ costs $N$ forward solves with no backward. A backward pass on the recursive-checkpoint adjoint runs about $1$,$2\\times$ a forward, so the matched-compute baseline is $N \\approx 2H$. For glucose-insulin ($H = 12$), that is $N = 24$.
 
 ## Comparison with prior decoding-time recipes
 
 | Method                                         | Verifier signal                  | Selection time      | Granularity        |
 | ---------------------------------------------- | -------------------------------- | ------------------- | ------------------ |
-| Vanilla LLM                                    | none                             | —                   | per-token          |
+| Vanilla LLM                                    | none                             | .                   | per-token          |
 | BoN (binary)                                   | $\\rho > 0$                      | post-hoc            | per-trajectory     |
 | Continuous BoN                                 | $\\rho \\in \\mathbb{R}$         | post-hoc            | per-trajectory     |
 | Classifier guidance (Dhariwal-Nichol 2021)     | $\\nabla_x \\log p(y \\mid x)$   | during sampling     | per-step (image)   |
@@ -49,23 +49,23 @@ STLCG and STLCG++ (Leung et al. 2020 arXiv:2008.00097; Hashemi et al. 2025 arXiv
 
 ## Pre-registered hypotheses
 
-H1 (existence of effect). On `glucose_insulin.tir.easy` with action vocabulary $K = 5$ uniform on $\[0, 5\]$ U/h, seeds 1000–1005, mean ρ under `STLGradientGuidedSampler(λ=2, T=0.5)` exceeds the matched-temperature $\\lambda = 0$ ablation by at least 0.5 ρ units. Passing in `tests/test_inference.py::test_gradient_guided_improves_rho`; the smoke run is the headline 19.91 vs 1.58 above.
+H1 (existence of effect). On `glucose_insulin.tir.easy` with action vocabulary $K = 5$ uniform on $\[0, 5\]$ U/h, seeds 1000-1005, mean ρ under `STLGradientGuidedSampler(λ=2, T=0.5)` exceeds the matched-temperature $\\lambda = 0$ ablation by at least 0.5 ρ units. Passing in `tests/test_inference.py::test_gradient_guided_improves_rho`; the smoke run is the headline 19.91 vs 1.58 above.
 
 H2 (matched-compute dominance). On `glucose_insulin.tir.easy` and `bio_ode.repressilator.easy`, gradient-guided sampling at $\\lambda = 2$ with one rollout per seed achieves higher mean ρ than continuous BoN at $N = 2H$ rollouts per seed, paired across seeds, with bootstrap 95% CI on the difference excluding zero. Pending the Phase-2 RunPod sweep.
 
-H3 (graceful saturation). When the spec is fully satisfied at step $t \< H$, the gradient $g_t$ vanishes; the sampler should revert to LLM-prior sampling rather than producing pathological choices. Confirmed observationally — per-step grad norms in the smoke run drop to zero after ρ saturates at the spec's max of 12.84.
+H3 (graceful saturation). When the spec is fully satisfied at step $t \< H$, the gradient $g_t$ vanishes; the sampler should revert to LLM-prior sampling rather than producing pathological choices. Confirmed observationally. per-step grad norms in the smoke run drop to zero after ρ saturates at the spec's max of 12.84.
 
 ## Hybrid sampler
 
 `HybridGradientBoNSampler` (`src/stl_seed/inference/hybrid.py`) composes the two inference-time scaling levers: gradient guidance per-rollout, and verifier-based selection across rollouts. For each of $n$ draws, a gradient-guided rollout runs on a sub-key from `jax.random.fold_in(key, draw_idx)`, scored by the same compiled spec used inside the inner sampler; argmax-ρ across draws wins.
 
-The matched-compute baseline is $\\text{ContinuousBoN}(2n)$. Pre-registered ordering at fixed compute: $$ \\text{hybrid}(n) \\ge \\text{guided} \\ge \\text{cont-BoN}(2n) \\ge \\text{BoN}(n) \\ge \\text{standard}. $$ The tightest claim — hybrid beats pure guidance — is exercised on the harder `glucose_insulin.dawn.hard` spec (where ρ hovers in $\[-33, -19\]$ with no saturation): hybrid($n=4$, $\\lambda=2$) reaches mean ρ = $-28.31$ versus pure guidance at $-30.62$ over six seeds, with 5/6 hybrid $\\ge$ guided per seed. This is the gradient-guided analogue of the Brown 2024 / Snell 2024 (arXiv:2407.21787, arXiv:2408.03314) repeated-sampling-with-verifier scaling recipe, with two changes: each inner draw is itself information-efficient (uses $\\nabla \\rho$, not vanilla sampling), and the verifier is the *exact same* continuous STL signal — no train/eval mismatch on the verifier side.
+The matched-compute baseline is $\\text{ContinuousBoN}(2n)$. Pre-registered ordering at fixed compute: $$ \\text{hybrid}(n) \\ge \\text{guided} \\ge \\text{cont-BoN}(2n) \\ge \\text{BoN}(n) \\ge \\text{standard}. $$ The tightest claim. hybrid beats pure guidance. is exercised on the harder `glucose_insulin.dawn.hard` spec (where ρ hovers in $\[-33, -19\]$ with no saturation): hybrid($n=4$, $\\lambda=2$) reaches mean ρ = $-28.31$ versus pure guidance at $-30.62$ over six seeds, with 5/6 hybrid $\\ge$ guided per seed. This is the gradient-guided analogue of the Brown 2024 / Snell 2024 (arXiv:2407.21787, arXiv:2408.03314) repeated-sampling-with-verifier scaling recipe, with two changes: each inner draw is itself information-efficient (uses $\\nabla \\rho$, not vanilla sampling), and the verifier is the *exact same* continuous STL signal. no train/eval mismatch on the verifier side.
 
 ## Limitations
 
 The vocabulary scales as $k^m$ with axis-granularity $k$ and action-dimension $m$; the repressilator at $K = 125$ ($m = 3$, $k = 5$) is still tractable, but richer action spaces are an open scaling question. When $\\bar{u}\_t$ saturates against the simulator's box, $\\rho$ is non-differentiable along the binding direction; the implementation falls back to unbiased sampling on NaN/Inf gradients (`fallback_on_grad_failure=True` default), counting the event in diagnostics. Smoke runs show roughly one fallback per 12-step rollout on the bio_ode tasks.
 
-The bigger limitation is conceptual: the gradient $\\nabla\_{\\bar{u}_t} \\rho$ assumes all future actions equal $u_{\\mathrm{def}}$. This myopic assumption is benign for glucose-insulin (a single bolus mostly determines local glucose dynamics) and disastrous for the repressilator (where $u\_{t+1}, \\ldots, u_H$ jointly determine whether m1 stays high through the back of the horizon). The natural fix is a rollout-tree gradient probe — average $\\nabla\_{u_t} \\rho$ over a small set of LLM-prior future-action samples instead of the single default extrapolation. Pre-registered as future work.
+The bigger limitation is conceptual: the gradient $\\nabla\_{\\bar{u}_t} \\rho$ assumes all future actions equal $u_{\\mathrm{def}}$. This myopic assumption is benign for glucose-insulin (a single bolus mostly determines local glucose dynamics) and disastrous for the repressilator (where $u\_{t+1}, \\ldots, u_H$ jointly determine whether m1 stays high through the back of the horizon). The natural fix is a rollout-tree gradient probe. average $\\nabla\_{u_t} \\rho$ over a small set of LLM-prior future-action samples instead of the single default extrapolation. Pre-registered as future work.
 
 Bias scale is also uncalibrated: $b\_{t,k}$ has units of $\\lambda \\cdot \\rho$ while logits $z_t$ are in nats. A norm-matching schedule that keeps $|b|_\\infty \\le \\alpha |z|_\\infty$ is the natural fix; the current implementation uses a fixed scalar $\\lambda$.
 

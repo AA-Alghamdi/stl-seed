@@ -20,7 +20,7 @@ operator ``Always[a, b]`` the time-of-min is ``argmin_{t in [a, b]} rho_t``;
 for ``Eventually[a, b]`` we report the time at which the rho is *highest*
 within the window (the satisfaction point), not the lowest, because for
 reachability the witness is the maximum-rho time. (For a violated
-``Eventually`` — i.e., one whose max is negative — the witness is still
+``Eventually``. i.e., one whose max is negative. the witness is still
 the max-rho time, since that's the closest the trajectory came to
 satisfying the reachability.)
 
@@ -100,7 +100,7 @@ def _localize(
         idx = int(jnp.argmin(masked))
         rho = float(masked[idx])
         t = float(times[idx])
-        # Return the Always node itself as the "witness subformula" — the
+        # Return the Always node itself as the "witness subformula". the
         # agent prompt formats it as "G_[a,b] (...) violated at t=... by ...".
         return node, rho, t
 

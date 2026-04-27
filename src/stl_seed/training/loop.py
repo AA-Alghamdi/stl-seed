@@ -42,7 +42,7 @@ def get_backend(name: Literal["mlx", "bnb", "mock_bnb"]) -> TrainingBackend:
     The ``"mock_bnb"`` value is the Phase-2 dry-run validation backend
     (:class:`stl_seed.training.backends.mock.MockBNBBackend`). It
     impersonates the bnb backend's surface contract but does no actual
-    training — used by ``scripts/validate_phase2_pipeline.py`` to
+    training. used by ``scripts/validate_phase2_pipeline.py`` to
     exercise the full sweep + eval + analysis pipeline without spending
     GPU time.
     """
@@ -145,7 +145,7 @@ def train_with_filter(
         One of ``"hard"``, ``"quantile"``, ``"continuous"``. Selects which
         filtered dataset variant to train on (see ``paper/theory.md`` §2).
     task:
-        Task family — one of ``"repressilator"``, ``"toggle"``, ``"mapk"``,
+        Task family. one of ``"repressilator"``, ``"toggle"``, ``"mapk"``,
         ``"glucose_insulin"``.
     model:
         HuggingFace model ID (e.g., ``"Qwen/Qwen3-0.6B-Instruct"``). This

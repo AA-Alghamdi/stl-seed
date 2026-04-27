@@ -21,7 +21,7 @@ This script does NOT:
 
 All of those are operator actions deliberately kept out of automation.
 ``--dry-run`` does everything except writing files and creating the
-tag — useful for previewing the bump and CHANGELOG before committing.
+tag. useful for previewing the bump and CHANGELOG before committing.
 
 
 Usage::
@@ -181,7 +181,7 @@ def commits_since(ref: str | None) -> list[tuple[str, str]]:
     """Return ``[(sha, subject), ...]`` for commits since ``ref``.
 
     If ``ref`` is None, returns the full history (used when the repo
-    has no prior release tag — typical for the v0.1.0 cut).
+    has no prior release tag. typical for the v0.1.0 cut).
     """
     rng = "HEAD" if ref is None else f"{ref}..HEAD"
     raw = _git("log", "--no-merges", "--pretty=format:%h%x09%s", rng, check=False)
@@ -261,7 +261,7 @@ def render_changelog(
 
     range_label = f"{prior_tag}..HEAD" if prior_tag else "initial release"
     lines: list[str] = []
-    lines.append(f"## v{new_version} — {today}")
+    lines.append(f"## v{new_version}. {today}")
     lines.append("")
     lines.append(f"_Range: {range_label} (n={len(commits)} commits)_")
     lines.append("")
@@ -350,7 +350,7 @@ def create_tag(new_version: Version, *, sign: bool, dry_run: bool) -> str:
     """Create an annotated git tag and return the tag name.
 
     Signed if ``sign`` is True (requires ``user.signingkey`` already
-    configured). The tag message is intentionally minimal — a one-line
+    configured). The tag message is intentionally minimal. a one-line
     summary suitable for `gh release create` to expand from CHANGELOG.
     """
     tag = f"v{new_version}"

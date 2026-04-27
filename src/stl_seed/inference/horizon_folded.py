@@ -11,7 +11,7 @@ glucose-insulin this works (a single insulin bolus mostly determines
 local glucose dynamics within ~30 min). On the repressilator it does
 not: ``G_[120,200] (m1 >= 250)`` requires *sustained* silencing of
 gene-3 across all 10 control steps, and the per-step gradient at any
-single ``u_t`` cannot point coherently toward this attractor — the
+single ``u_t`` cannot point coherently toward this attractor. the
 "future is the default action" assumption is wrong when the spec is a
 long-window conjunction in which all H actions matter jointly. See
 ``paper/cross_task_validation.md`` for the failure receipt.
@@ -32,17 +32,17 @@ Given an initial state ``x_0``, an STL spec ``phi``, and a horizon ``H``:
 1. **Initialise** an unconstrained latent ``z_0 in R^{H x m}`` from one
    of:
 
-   * ``init='zeros'``     — ``z_0 = 0`` so the post-sigmoid action is
+   * ``init='zeros'``    . ``z_0 = 0`` so the post-sigmoid action is
      the action-box centre.
-   * ``init='llm'``       — for each step ``t``, take the LLM logits
+   * ``init='llm'``      . for each step ``t``, take the LLM logits
      over the discrete vocabulary ``V``, form the preferred mean
      ``u_bar_t = sum_k softmax(z_t)_k * V_k``, then invert the sigmoid
      to recover the corresponding ``z_0_t`` (numerically clipped to
      ``[low + eps, high - eps]`` to avoid the logit blow-up at the
      endpoints).
-   * ``init='random'``    — i.i.d. ``Normal(0, 0.1)``, small enough that
+   * ``init='random'``   . i.i.d. ``Normal(0, 0.1)``, small enough that
      the post-sigmoid action stays near the centre.
-   * ``init='heuristic'`` — accept a user-provided ``(H, m)`` vector
+   * ``init='heuristic'``. accept a user-provided ``(H, m)`` vector
      and invert-sigmoid it (delegating "which action is a good warm
      start" to the caller; useful for unit tests with a known answer).
 
@@ -96,7 +96,7 @@ Compute cost
 ``sample()`` call. Compare with :class:`STLGradientGuidedSampler` which
 costs ``H`` × (1 fwd + 1 bwd) per call (one per step). At
 ``K_iters = 100`` and ``H = 10``, horizon-folding is ``10×`` more
-expensive — but each gradient step uses the *true* end-to-end
+expensive. but each gradient step uses the *true* end-to-end
 trajectory rather than a partial extrapolation, so each step's
 information content is qualitatively different.
 
@@ -109,20 +109,20 @@ Relationship to other samplers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * :class:`STLGradientGuidedSampler` (per-step myopic gradient on
-  partial trajectories) — A0 from the strategy ladder.
-* :class:`HorizonFoldedGradientSampler` (this class) — A1: full-horizon
+  partial trajectories). A0 from the strategy ladder.
+* :class:`HorizonFoldedGradientSampler` (this class). A1: full-horizon
   gradient on end-to-end trajectories; same backbone (autodiff through
   the STL evaluator and Diffrax solver), different decomposition.
-* :class:`HybridGradientBoNSampler` — orthogonal axis: BoN selection on
+* :class:`HybridGradientBoNSampler`. orthogonal axis: BoN selection on
   top of A0; could be re-applied on top of A1 (future work).
-* :class:`ContinuousBoNSampler` — matched-compute baseline if we treat
+* :class:`ContinuousBoNSampler`. matched-compute baseline if we treat
   ``K_iters`` as analogous to ``n_bon`` (each Adam step costs one
   forward + one backward; one BoN sample costs one forward).
 
 Limitations
 ~~~~~~~~~~~
 
-* **Continuous output** — the optimised ``u_{1:H}`` is a real-valued
+* **Continuous output**. the optimised ``u_{1:H}`` is a real-valued
   vector, not a vocabulary index. For the STL evaluation pipeline
   this is fine (the simulator clips to the action box and the
   evaluator never inspects the action sequence). For *training*
@@ -131,13 +131,13 @@ Limitations
   nearest-neighbour assignment in action space). The diagnostics
   expose the continuous control sequence and the per-step nearest
   vocabulary index for downstream consumers.
-* **Local optimum** — gradient ascent on a non-convex ``rho`` landscape
+* **Local optimum**. gradient ascent on a non-convex ``rho`` landscape
   can stall in a saddle / weak local maximum. The best-so-far guard
   protects against overshoot but not against local stalling. The
   ``init='llm'`` path partially mitigates by starting near the LLM's
   preferred mean. Future work: combine horizon-folding with multi-
   start (analogue of Hybrid×Folded).
-* **No discrete vocabulary structure used** — the sampler does not
+* **No discrete vocabulary structure used**. the sampler does not
   consume vocabulary directions ``V_k - u_bar`` the way A0 does. If a
   task has a strongly anisotropic vocabulary (some V_k are
   qualitatively different from the box centre), horizon-folding
@@ -241,7 +241,7 @@ def _sigmoid_reparam(
     box ``(low, high)^{H x m}``. Adam can therefore optimise ``z``
     unconstrained without ever violating the action bounds at the
     optimised point. The mapping is asymptotically saturating, which
-    means very large ``|z|`` produces vanishing gradients — the same
+    means very large ``|z|`` produces vanishing gradients. the same
     regularisation effect as a soft-clip penalty, paid at the boundary
     rather than as an extra loss term.
     """
@@ -462,7 +462,7 @@ class HorizonFoldedGradientSampler:
 
     Notes
     -----
-    The sampler is *not* an ``equinox.Module`` — it carries Python-
+    The sampler is *not* an ``equinox.Module``. it carries Python-
     level bookkeeping (the diagnostics record, the best-so-far guard).
     The inner gradient computation is JIT'd via
     ``jax.jit(jax.value_and_grad(...))`` and re-used across iterations.
@@ -652,7 +652,7 @@ class HorizonFoldedGradientSampler:
         for k in range(1, self.k_iters + 1):
             rho_v, grad_z = self._safe_value_and_grad(z, initial_state, key)
             if rho_v is None or grad_z is None:
-                # Numerical pathology — exit with the best-so-far guard.
+                # Numerical pathology. exit with the best-so-far guard.
                 if not self.fallback_on_grad_failure:
                     raise RuntimeError(
                         f"HorizonFoldedGradientSampler: NaN/Inf gradient at iter {k}"
@@ -698,7 +698,7 @@ class HorizonFoldedGradientSampler:
         # ---- 5. Final diagnostics. ----------------------------------------
         # Recompute rho on the canonical trajectory to make best_rho exact
         # (the in-loop rho is computed via the wrapped sim_fn; the canonical
-        # trajectory uses the simulator's full Trajectory contract — these
+        # trajectory uses the simulator's full Trajectory contract. these
         # agree numerically but we report the canonical value to keep
         # ``diag['final_rho']`` consistent with downstream STL evaluations).
         canonical_rho = float(self._compiled_spec(traj.states, traj.times))
@@ -763,7 +763,7 @@ class HorizonFoldedGradientSampler:
 
         Returns ``(None, None)`` on numerical pathology, letting the
         caller decide whether to raise or fall back. We do *not* swallow
-        Python exceptions other than the JAX numerical ones — a real
+        Python exceptions other than the JAX numerical ones. a real
         type / shape error in the inner closure should propagate.
         """
         try:

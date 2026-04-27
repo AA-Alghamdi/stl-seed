@@ -239,7 +239,7 @@ def test_wasserstein_unequal_lengths_cdf_form() -> None:
     Five samples at 0 vs. one sample at 1: support is {0, 1};
     F_a(x<0)=0, F_a(0<=x<1)=1, F_b(0<=x<1)=0. CDF gap is 1 over
     [0, 1), integral = 1. (We only sum over interior intervals so the
-    final atom contributes 0 — matches the discrete W1.)
+    final atom contributes 0. matches the discrete W1.)
     """
     a = np.zeros(5)
     b = np.ones(1)
@@ -304,12 +304,12 @@ def test_trace_overlap_identical() -> None:
 
 
 # ---------------------------------------------------------------------------
-# auto_tune — synthetic
+# auto_tune. synthetic
 # ---------------------------------------------------------------------------
 
 
 class _DeterministicPolicy:
-    """Emit a constant action vector — useful to drive the simulator into
+    """Emit a constant action vector. useful to drive the simulator into
     a known regime so we can engineer a known-best threshold."""
 
     def __init__(self, value: float, action_dim: int) -> None:
@@ -321,7 +321,7 @@ class _DeterministicPolicy:
 
 
 class _TargetedSilence:
-    """Silence one gene channel — used in synthetic auto-tune test."""
+    """Silence one gene channel. used in synthetic auto-tune test."""
 
     def __init__(self, channel: int, action_dim: int = 3):
         self.channel = channel
@@ -341,13 +341,13 @@ def test_auto_tune_synthetic_recovers_expected_threshold() -> None:
     codebase are always conjunctions of >= 2 clauses, so the
     *min*-across-clauses operator makes rho a piecewise-linear function
     of T whose non-linearity creates threshold-sensitive
-    discriminability — this test exercises that regime.
+    discriminability. this test exercises that regime.
 
     Construction:
 
-    * Tunable clause: ``Eventually(p1 > T_peak)`` — favours the policy
+    * Tunable clause: ``Eventually(p1 > T_peak)``. favours the policy
       that drives p1 high.
-    * Fixed clause: ``Always(p2 < SAFE)`` — pins the *upper* end of
+    * Fixed clause: ``Always(p2 < SAFE)``. pins the *upper* end of
       ``rho_high`` so increasing T_peak past p1_high's max stops
       improving discriminability (the safety clause becomes binding).
 
@@ -450,10 +450,10 @@ def test_auto_tune_metric_translation_invariance_documented() -> None:
         discriminability_metric="wasserstein",
         key=jax.random.key(0),
     )
-    # All metric values must be (almost) equal — translation invariance.
+    # All metric values must be (almost) equal. translation invariance.
     metric_vals = result.search_results["metric_aggregated"].values
     assert np.ptp(metric_vals) < 1e-3, (
-        f"single-clause spec broke translation invariance — metric values "
+        f"single-clause spec broke translation invariance. metric values "
         f"vary by {np.ptp(metric_vals):.6g}, expected ~0. Sweep:\n"
         f"{result.search_results}"
     )
@@ -501,7 +501,7 @@ def test_auto_tune_rejects_single_policy() -> None:
 
 
 # ---------------------------------------------------------------------------
-# auto_tune — real glucose-insulin spec
+# auto_tune. real glucose-insulin spec
 # ---------------------------------------------------------------------------
 
 
@@ -540,12 +540,12 @@ def test_auto_tune_real_glucose_insulin_recovers_meaningful_threshold() -> None:
         key=jax.random.key(0),
     )
     assert isinstance(result, AutoTuneResult)
-    # Metric must be strictly positive — random and PID *should* differ.
+    # Metric must be strictly positive. random and PID *should* differ.
     assert result.best_metric_value > 0.0
     # Best threshold must be one of the candidates.
     chosen = result.best_thresholds["G_below_180"]
     assert chosen in {140.0, 160.0, 180.0, 200.0, 220.0, 250.0}
-    # The best metric must beat the *minimum* over the sweep — i.e., the
+    # The best metric must beat the *minimum* over the sweep. i.e., the
     # auto-tuner is doing something better than picking the worst.
     metric_col = result.search_results["metric_aggregated"]
     assert result.best_metric_value > metric_col.min()

@@ -1,4 +1,4 @@
-"""Example 02 — Generate a corpus and filter by STL robustness.
+"""Example 02. Generate a corpus and filter by STL robustness.
 
 50 glucose-insulin trajectories under a 50/50 random+heuristic policy
 mix, scored under the ADA 2024 Time-in-Range spec, then compared
@@ -94,7 +94,7 @@ def main() -> int:
     print()
 
     # 4. Apply each filter. We catch FilterError defensively because all
-    # three filters raise if the kept subset is below `min_kept` — the
+    # three filters raise if the kept subset is below `min_kept`. the
     # contract is "no silent fallback" per paper/theory.md FM2.
     print("Filter comparison")
     spec_filter_pairs = [

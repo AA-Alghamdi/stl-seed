@@ -232,7 +232,7 @@ class _GlucoseSimAdapter:
     signature ``simulate(initial_state, control_sequence, meal_schedule,
     params)``. Uses an empty meal schedule (no exogenous glucose load) so the
     Bergman model integrates from the basal state under the agent's insulin
-    sequence — the right contract for this validation since the agent's job
+    sequence. the right contract for this validation since the agent's job
     is to keep glucose in band.
     """
 
@@ -246,7 +246,7 @@ class _GlucoseSimAdapter:
 
     def simulate(self, initial_state: Any, control_sequence: Any, key: Any) -> Any:
         # GlucoseInsulinSimulator.simulate(initial_state, control_sequence,
-        # meal_schedule, params, key=...) — note key is keyword-only in some
+        # meal_schedule, params, key=...). note key is keyword-only in some
         # versions; pass positionally + keyword to stay compatible.
         return self._sim.simulate(
             initial_state,
@@ -279,7 +279,7 @@ def _build_registries(task_family: str) -> tuple[dict[str, Any], dict[str, Any],
     # eval harness's :class:`SimulatorProtocol` calls
     # ``simulate(initial_state, control_sequence, key)``. We wrap each
     # simulator in :class:`_SimWithDefaultParams` so the missing ``params``
-    # is supplied from the literature-default class constructor — keeping
+    # is supplied from the literature-default class constructor. keeping
     # the harness call shape unchanged.
     if task_family.startswith("bio_ode."):
         from stl_seed.tasks.bio_ode import (  # noqa: PLC0415

@@ -210,7 +210,7 @@ class BNBBackend:
             raise
         wall = time.time() - wall_start
 
-        # 8. Save LoRA adapters only (NOT the merged base — keeps artifact small).
+        # 8. Save LoRA adapters only (NOT the merged base. keeps artifact small).
         adapter_dir = output_dir / "adapter"
         trainer.model.save_pretrained(adapter_dir)
         tokenizer.save_pretrained(adapter_dir)

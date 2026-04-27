@@ -2,12 +2,12 @@
 
 Currently provides:
 
-* :class:`PAVProcessRewardModel` — Process Advantage Verifier
+* :class:`PAVProcessRewardModel`. Process Advantage Verifier
   (Setlur et al. 2024, arXiv:2410.08146): a small MLP trained to predict
-  per-step "advantage" — the change in expected success probability before
-  vs. after a step — from per-step Monte-Carlo continuation labels.
+  per-step "advantage". the change in expected success probability before
+  vs. after a step. from per-step Monte-Carlo continuation labels.
 
-* :func:`compare_pav_vs_stl` — empirical apples-to-apples comparison
+* :func:`compare_pav_vs_stl`. empirical apples-to-apples comparison
   on a held-out trajectory split: predictive AUC vs. terminal success,
   Spearman correlation, sample-efficiency curve, and training cost.
 

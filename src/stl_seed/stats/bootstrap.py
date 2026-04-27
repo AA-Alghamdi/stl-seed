@@ -2,7 +2,7 @@
 
 Three CI methods are exposed via the ``method`` keyword:
 
-* ``"bca"`` — bias-corrected and accelerated [Efron 1987,
+* ``"bca"``. bias-corrected and accelerated [Efron 1987,
   DOI:10.1080/01621459.1987.10478410]. Preferred default. Adjusts the
   percentile endpoints with a bias correction ``z_0`` (computed from the
   fraction of bootstrap statistics below the point estimate) and an
@@ -10,11 +10,11 @@ Three CI methods are exposed via the ``method`` keyword:
   second-order accurate; corrects the percentile method's failure on
   skewed statistics.
 
-* ``"percentile"`` — naive empirical-quantile interval [Efron 1979,
+* ``"percentile"``. naive empirical-quantile interval [Efron 1979,
   DOI:10.1214/aos/1176344552]. First-order accurate; assumes the
   bootstrap distribution is roughly symmetric around the true value.
 
-* ``"basic"`` — pivotal interval ``(2θ̂ − q_{1-α/2}, 2θ̂ − q_{α/2})``.
+* ``"basic"``. pivotal interval ``(2θ̂ − q_{1-α/2}, 2θ̂ − q_{α/2})``.
   Useful when the bootstrap distribution is not centred at the point
   estimate.
 
@@ -166,7 +166,7 @@ def _bca_endpoints(
     num = float(np.sum(diffs**3))
     den = 6.0 * (float(np.sum(diffs**2)) ** 1.5)
     if den == 0.0 or not math.isfinite(num / den):
-        # Degenerate jackknife (e.g., all-equal sample) — back off to percentile
+        # Degenerate jackknife (e.g., all-equal sample). back off to percentile
         return _percentile_endpoints(boot_stats, ci)
     a_hat = num / den
 
@@ -371,7 +371,7 @@ def bootstrap_proportion_ci(
     Resamples a synthetic 0/1 array of length ``n`` with the observed
     success count. For paper-grade proportion CIs the closed-form
     Wilson interval (``scipy.stats.binomtest(...).proportion_ci(method=
-    "wilson")``) is generally preferred — see ``BootstrapCI.method`` for
+    "wilson")``) is generally preferred. see ``BootstrapCI.method`` for
     a ``"wilson"`` route which is provided as a one-liner via
     ``proportion_wilson_ci``. The bootstrap implementation here is
     primarily for consistency with the rest of the API and for cases

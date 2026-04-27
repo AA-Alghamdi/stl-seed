@@ -130,7 +130,7 @@
 
     ## 5. Verdict
 
-    **YES — the locked design (3x3x2x25x5x8 = 36000 trials) is adequately powered to detect Delta_A>=0.080 and Delta_b>=0.100 at the global pooled scale.**
+    **YES. the locked design (3x3x2x25x5x8 = 36000 trials) is adequately powered to detect Delta_A>=0.080 and Delta_b>=0.100 at the global pooled scale.**
 
     Per-criterion breakdown:
 

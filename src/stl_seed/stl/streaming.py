@@ -15,10 +15,10 @@ operator over interval ``[a, b]`` we partition into three cases:
       from this operator.
     * ``a <= t_now < b``: the operator is partially observed. For
       ``Always[a, b] phi``, the streaming rho is the minimum of phi over
-      ``[a, t_now]`` — a *lower bound* on the eventual rho because the
+      ``[a, t_now]``. a *lower bound* on the eventual rho because the
       true rho is the minimum over the full ``[a, b]`` and adding more
       samples can only decrease the min. For ``Eventually[a, b] phi``,
-      streaming rho is the maximum over ``[a, t_now]`` — also a lower
+      streaming rho is the maximum over ``[a, t_now]``. also a lower
       bound (more samples can only increase the max, so the value-so-far
       is below the eventual value).
     * ``a > t_now``: the operator's interval has not started; return

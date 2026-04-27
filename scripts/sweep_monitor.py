@@ -8,7 +8,7 @@ running cost burn-down against the registered $25 cap.
 
 Two backends, in priority order:
 
-  1. **HuggingFace Hub** — when the sweep was launched with
+  1. **HuggingFace Hub**. when the sweep was launched with
      ``hf_hub.enabled=true``, each finished cell pushes a LoRA adapter
      to ``<repo_org>/<repo_prefix>-<cell_id>``. This monitor lists the
      org's repos that match the prefix and treats the presence of an
@@ -16,7 +16,7 @@ Two backends, in priority order:
      Survives spot-interruption: HF Hub is the only ground truth a
      local M5 Pro can poll without an SSH tunnel into the pod.
 
-  2. **Local file system** — falls back to ``runs/canonical/sweep_log.csv``
+  2. **Local file system**. falls back to ``runs/canonical/sweep_log.csv``
      and ``runs/canonical/<cell_id>/done.flag`` (written by
      ``scripts/run_canonical_sweep.py``). This is the path during early
      Phase 2 when HF push is still disabled, *or* when the user is
@@ -65,7 +65,7 @@ _SWEEP_LOG_NAME = "sweep_log.csv"
 
 # Per-model expected wall-clock minutes. Source: configs/model/qwen3_*.yaml
 # (`expected_minutes_per_cell`). Inlined here to keep this script free of
-# Hydra / OmegaConf imports — the monitor must work on a stripped clone
+# Hydra / OmegaConf imports. the monitor must work on a stripped clone
 # without the heavy dependency stack.
 _MODEL_MINUTES: dict[str, int] = {
     "qwen3_0.6b": 18,
@@ -221,7 +221,7 @@ def _read_sweep_log(runs_dir: Path) -> dict[str, dict[str, str]]:
 
     Returns an empty dict if the log does not exist yet (sweep hasn't
     started). Robust to a partially-written tail row (csv.DictReader
-    silently drops malformed rows mid-stream — we accept that to avoid
+    silently drops malformed rows mid-stream. we accept that to avoid
     crashing the dashboard during a live append).
     """
     log_path = runs_dir / _SWEEP_LOG_NAME
@@ -366,7 +366,7 @@ def poll_hf_hub(
             )
             if has_adapter:
                 s.status = _STATUS_COMPLETED
-                # No reliable wall-clock from HF — estimate from the prior.
+                # No reliable wall-clock from HF. estimate from the prior.
                 s.cost_usd = expected_dollars(cell, dollars_per_hour)
                 s.note = repo_id
             else:
@@ -562,7 +562,7 @@ def take_snapshot(
     if fs_snap is not None:
         return fs_snap
 
-    # Nothing observable — return all-PENDING so the dashboard renders
+    # Nothing observable. return all-PENDING so the dashboard renders
     # the locked 18-cell enumeration anyway.
     return SweepSnapshot(
         cells=[CellStatus(cell=c) for c in enumerate_canonical_cells()],
@@ -636,7 +636,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.runs_dir.exists():
         backend_label.append(f"FS ({args.runs_dir})")
     if not backend_label:
-        backend_label.append("none — locked enumeration only")
+        backend_label.append("none. locked enumeration only")
     label = " + ".join(backend_label)
 
     if args.once:

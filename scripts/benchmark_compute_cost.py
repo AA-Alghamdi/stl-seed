@@ -9,22 +9,22 @@ cost-per-capability framing in the bitsandbytes / k-bit line of work.
 Quantities measured per (task, sampler) cell across N seeds
 -----------------------------------------------------------
 
-* ``wall_clock_s_cold``     — wall-clock of seed 0 (includes JIT trace).
-* ``wall_clock_s_warm``     — mean wall-clock over seeds 1..N-1 (post
+* ``wall_clock_s_cold``    . wall-clock of seed 0 (includes JIT trace).
+* ``wall_clock_s_warm``    . mean wall-clock over seeds 1..N-1 (post
   JIT). For samplers without a JIT path, equals the ``cold`` value
   modulo measurement noise.
-* ``peak_rss_delta_mb``     — peak resident-set-size delta during the
+* ``peak_rss_delta_mb``    . peak resident-set-size delta during the
   warm sample call, measured via ``psutil.Process().memory_info().rss``
   taken before and after with a JAX block_until_ready barrier in between.
   Coarse upper bound on additional working memory; JAX preallocation
   means absolute RSS is dominated by the device pool.
-* ``mean_rho``, ``std_rho`` — over all N seeds.
-* ``sat_frac``              — fraction with ``rho > 0`` (Donzé-Maler).
-* ``n_simulator_calls_proxy`` — *analytical* count of ODE integrations
+* ``mean_rho``, ``std_rho``. over all N seeds.
+* ``sat_frac``             . fraction with ``rho > 0`` (Donzé-Maler).
+* ``n_simulator_calls_proxy``. *analytical* count of ODE integrations
   needed by the sampler at its configured hyperparameters. Documented in
   :data:`_SIM_CALL_FORMULA`. This is a structural proxy, not a runtime
   counter (no in-source counter exists on the sampler classes).
-* ``time_to_target_s``      — projected wall-clock to first satisfy
+* ``time_to_target_s``     . projected wall-clock to first satisfy
   ``mean_rho >= TARGET_RHO``. For samplers whose mean already clears the
   target, equals ``wall_clock_s_warm``; otherwise reported as ``inf``.
 
@@ -39,13 +39,13 @@ plotted in bold.
 Outputs
 -------
 
-* ``runs/cost_benchmark/results.parquet`` — long-form one-row-per-cell
+* ``runs/cost_benchmark/results.parquet``. long-form one-row-per-cell
   table with all measured columns plus the per-seed individual rows
   preserved in ``runs/cost_benchmark/per_seed.parquet`` for downstream
   bootstrap CIs.
-* ``paper/figures/compute_cost_pareto.png`` — Pareto plot, x = warm
+* ``paper/figures/compute_cost_pareto.png``. Pareto plot, x = warm
   wall-clock (log), y = mean rho with SEM error bars; frontier in bold.
-* ``paper/compute_cost_results.md`` — auto-generated technical writeup
+* ``paper/compute_cost_results.md``. auto-generated technical writeup
   with headline numbers.
 
 -------------
@@ -671,7 +671,7 @@ def _block_until_ready(sample_result) -> None:
         if x is not None and hasattr(x, "block_until_ready"):
             x.block_until_ready()
     # Diagnostics may contain stray arrays (e.g. all_rho lists with JAX
-    # scalars). We don't deep-walk them — final_rho is a Python float
+    # scalars). We don't deep-walk them. final_rho is a Python float
     # and that's the only field the harness consumes downstream.
 
 

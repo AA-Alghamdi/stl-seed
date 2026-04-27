@@ -1,7 +1,7 @@
-"""A15 — MLX QLoRA smoke test on Qwen3-0.6B (Subphase 1.4 HARD CHECKPOINT).
+"""A15. MLX QLoRA smoke test on Qwen3-0.6B (Subphase 1.4 HARD CHECKPOINT).
 
 Goal: prove the SFT training loop works end-to-end on M5 Pro / 48 GB.
-NOT a convergence run — 50 iterations, rank-8 LoRA on q/v projections only.
+NOT a convergence run. 50 iterations, rank-8 LoRA on q/v projections only.
 
 Pass criteria (gates the hard checkpoint):
   (a) Training runs without crash.
@@ -35,11 +35,11 @@ Pipeline:
 
 Why we bypass `MLXBackend`:
   mlx_lm 0.31.3 changed `TrainingArgs` (no `learning_rate`, no
-  `lr_schedule`, no `seed`, no `warmup_steps` — schedule lives on the
+  `lr_schedule`, no `seed`, no `warmup_steps`. schedule lives on the
   optimizer; seed on `iterate_batches`) and `train()`'s signature (no
   `tokenizer` argument; the tokenizer is consumed by the dataset wrapper
   instead). The wrapper at `src/stl_seed/training/backends/mlx.py`
-  expects the pre-0.20 API and will need a follow-up patch — we file
+  expects the pre-0.20 API and will need a follow-up patch. we file
   that as a Phase-2 followup at the bottom of the report.
 
 tasks,training}` plus mlx / mlx_lm / numpy / pyarrow / rich / re / json.
@@ -98,7 +98,7 @@ _LORA_TARGETS = ["self_attn.q_proj", "self_attn.v_proj"]
 
 # mlx-community ships pre-converted MLX-format weights; bf16 variant retains
 # full precision (we do not need 4-bit for a 0.6B smoke test on 48GB unified
-# memory). The non-bf16 variants are quantized — fine to LoRA on top of, but
+# memory). The non-bf16 variants are quantized. fine to LoRA on top of, but
 # we want maximum gradient signal at this tiny scale.
 _MODEL_ID = "mlx-community/Qwen3-0.6B-bf16"
 
@@ -106,7 +106,7 @@ _MODEL_ID = "mlx-community/Qwen3-0.6B-bf16"
 _SPEC_KEY = "glucose_insulin.tir.easy"
 _TASK_NAME = "glucose_insulin"
 
-# Wall-clock guard — abort if training exceeds this budget.
+# Wall-clock guard. abort if training exceeds this budget.
 _WALL_CLOCK_BUDGET_S = 600.0
 
 console = Console()
@@ -311,7 +311,7 @@ def _run_mlx_training(
     print_trainable_parameters(model)
 
     # Build chat dataset (mlx_lm tokenizes via apply_chat_template; we do not
-    # mask the prompt — the entire conversation is loss-bearing, matching
+    # mask the prompt. the entire conversation is loss-bearing, matching
     # SERA's chat-template / per-message-train convention with all-true mask
     # for this 0.6B smoke test).
     samples_list = []
@@ -364,7 +364,7 @@ def _run_mlx_training(
             training_callback=callback,
         )
     except Exception:
-        # Per CLAUDE.md: never silently swallow training failures.
+        # Per project rules: never silently swallow training failures.
         console.print_exception()
         raise
     t_train_end = time.perf_counter()
@@ -700,7 +700,7 @@ def _write_report(
     ckpt_size = _bytes_under(_RUNS_DIR)
 
     lines: list[str] = []
-    lines.append("# A15 — MLX QLoRA smoke test report")
+    lines.append("# A15. MLX QLoRA smoke test report")
     lines.append("")
     lines.append("**Date:** 2026-04-24")
     lines.append(
@@ -787,7 +787,7 @@ def _write_report(
         first_action_str = (
             ",".join(f"{x:.4e}" for x in r.first_action_values[:3])
             if r.first_action_values
-            else "—"
+            else ","
         )
         lines.append(f"| {i} | {'Y' if r.parses else 'N'} | {r.n_blocks} | {first_action_str} |")
     lines.append("")
@@ -851,7 +851,7 @@ def _write_report(
 def main() -> int:
     console.print(
         Panel.fit(
-            "A15 — MLX QLoRA smoke test on Qwen3-0.6B-bf16\n"
+            "A15. MLX QLoRA smoke test on Qwen3-0.6B-bf16\n"
             f"Model: {_MODEL_ID}\n"
             f"Iters: {_ITERS}  | batch×accum: {_BATCH_SIZE}×{_GRAD_ACCUM}  | "
             f"LoRA rank/alpha: {_LORA_RANK}/{_LORA_ALPHA}  | targets: {_LORA_TARGETS}",
@@ -865,7 +865,7 @@ def main() -> int:
     setup_start = time.perf_counter()
 
     # 1) Build dataset.
-    console.rule("[bold]Step 1 — Build SFT dataset")
+    console.rule("[bold]Step 1. Build SFT dataset")
     rng = np.random.default_rng(_SEED)
     samples = _load_filtered_glucose_dataset(_N_TOTAL, rng)
     console.print(f"  built {len(samples)} chat samples; example user-turn preview:")
@@ -880,7 +880,7 @@ def main() -> int:
     setup_seconds = time.perf_counter() - setup_start
 
     # 2) Train.
-    console.rule("[bold]Step 2 — MLX QLoRA fine-tuning")
+    console.rule("[bold]Step 2. MLX QLoRA fine-tuning")
     issues: list[str] = []
     followups: list[str] = []
     try:
@@ -918,13 +918,13 @@ def main() -> int:
         issues.append(f"Training exceeded {_WALL_CLOCK_BUDGET_S:.0f}s budget (took {wall:.1f}s)")
 
     # 3) Loss-decrease check.
-    console.rule("[bold]Step 3 — Loss decrease verification")
+    console.rule("[bold]Step 3. Loss decrease verification")
     decreased, decrease_diag = _loss_decrease_check(callback)
     _print_loss_table(callback)
     console.print(f"  loss decreased: {decreased}  diag: {decrease_diag}")
 
     # 4) Held-out parse evaluation.
-    console.rule("[bold]Step 4 — Held-out parse evaluation")
+    console.rule("[bold]Step 4. Held-out parse evaluation")
     parse_results = _heldout_eval(held_samples, _RUNS_DIR)
     n_parse = sum(1 for r in parse_results if r.parses)
     console.print(f"  parse-success rate: {n_parse}/{len(parse_results)}")
@@ -960,7 +960,7 @@ def main() -> int:
     )
     followups.append(
         "RunPod canonical training (Phase 2) uses the bnb backend, not MLX, "
-        "so the MLX wrapper bug above does not block Phase 2 — but A16 (the "
+        "so the MLX wrapper bug above does not block Phase 2. but A16 (the "
         "next subphase 1.4 agent) should validate the bnb path with the "
         "same dataset shape produced here."
     )

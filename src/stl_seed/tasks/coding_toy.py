@@ -17,7 +17,7 @@ Major scope cuts vs. the design doc
 
 3. **State / measurement vector.** The design specifies six channels
    (test_pass_rate, lint, type, ast_parse, new_imports, patch_size). This
-   module uses one channel — ``test_pass_rate ∈ [0, 1]``.
+   module uses one channel. ``test_pass_rate ∈ [0, 1]``.
 
 4. **Simulator backend.** The design recommends a sandboxed subprocess on
    each candidate ``c_h``. This module ships a *direct-evaluation* backend:
@@ -38,7 +38,7 @@ What still works honestly
 * The simulator returns a duck-typed object with ``states`` and ``times``
   fields, so ``stl_seed.stl.evaluator.compile_spec`` can score it without
   modification. The verifier-fidelity term ``R_spec - R_verifier`` collapses
-  to the same Donze-Maler floor as in the bio-ODE family — that part of the
+  to the same Donze-Maler floor as in the bio-ODE family. that part of the
   design's claim ports correctly even with the hand-coded simulator.
 * The ``do_nothing`` action is genuinely a no-op (matches the design's
   ``null_op`` slot), so a "wait" policy is in the action space.
@@ -205,14 +205,14 @@ class CodingTrajectory:
 def simulate(task: CodingTask, edit_sequence: tuple[str, ...]) -> CodingTrajectory:
     """Apply ``edit_sequence`` step-by-step to ``task.initial_state``.
 
-    On any exception in ``apply_edit`` or ``score``, the offending step's
-    ``test_pass_rate`` is sentinelled to ``0`` and ``n_apply_failures`` is
-    incremented. The current code state is *not* advanced on a failed apply
-    — it is held over, mirroring the bio-ODE NaN-guard convention of "do not
-    let one corrupt step contaminate downstream samples".
+     On any exception in ``apply_edit`` or ``score``, the offending step's
+     ``test_pass_rate`` is sentinelled to ``0`` and ``n_apply_failures`` is
+     incremented. The current code state is *not* advanced on a failed apply
+    . it is held over, mirroring the bio-ODE NaN-guard convention of "do not
+     let one corrupt step contaminate downstream samples".
 
-    Returns a trajectory with `T = len(edit_sequence) + 1` rows, including
-    the initial-state measurement at t = 0.
+     Returns a trajectory with `T = len(edit_sequence) + 1` rows, including
+     the initial-state measurement at t = 0.
     """
 
     H = len(edit_sequence)

@@ -2,9 +2,9 @@
 
 Three `FilterCondition` implementations from `paper/theory.md` §2:
 
-* `HardFilter`        — keep ρ > threshold; weights = 1.0
-* `QuantileFilter`    — keep top-K%        ; weights = 1.0
-* `ContinuousWeightedFilter` — keep all     ; weights = N · softmax(ρ / β)
+* `HardFilter`       . keep ρ > threshold; weights = 1.0
+* `QuantileFilter`   . keep top-K%        ; weights = 1.0
+* `ContinuousWeightedFilter`. keep all     ; weights = N · softmax(ρ / β)
 
 Plus `build_sft_dataset(...)` in `dataset.py` that converts a filtered
 trajectory list + weights into a HuggingFace `Dataset`.

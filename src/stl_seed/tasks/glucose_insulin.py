@@ -61,7 +61,7 @@ from jaxtyping import Array, Float, PRNGKeyArray
 from stl_seed.tasks._trajectory import TrajectoryMeta
 
 # -----------------------------------------------------------------------------
-# Unit conventions (read carefully — mismatched units are the #1 source of
+# Unit conventions (read carefully. mismatched units are the #1 source of
 # bugs in this model class).
 # -----------------------------------------------------------------------------
 #   G : plasma glucose concentration         [mg/dL]
@@ -124,7 +124,7 @@ class BergmanParams(eqx.Module):
     # [Bergman 1979] normal-subject mean ≈ 0.0123 1/min.
     p2: Float[Array, ""] = eqx.field(
         converter=jnp.asarray, default=0.0123
-    )  # 1/min  [Bergman 1979 Table — normal subject]
+    )  # 1/min  [Bergman 1979 Table. normal subject]
 
     # p3: insulin-action gain, i.e., rate at which (I - Ib) drives X up
     # (1 / (microU/mL * min^2)). Combined with p2, the steady-state
@@ -392,7 +392,7 @@ class GlucoseInsulinSimulator(eqx.Module):
         """Integrate the Bergman model forward over [0, horizon_min].
 
         Args:
-            initial_state: (G0, X0, I0) — typically (Gb, 0, Ib).
+            initial_state: (G0, X0, I0). typically (Gb, 0, Ib).
             control_sequence: shape (H,), insulin infusion in U/h, will be
                 clipped to [U_INSULIN_MIN_U_PER_H, U_INSULIN_MAX_U_PER_H].
             meal_schedule: MealSchedule of (onset_min, carb_mg) events.
@@ -400,8 +400,8 @@ class GlucoseInsulinSimulator(eqx.Module):
             key: PRNG key (currently unused; reserved for stochastic extensions).
 
         Returns:
-            trajectory: shape (n_save_points, 3) — G, X, I at uniform times.
-            times: shape (n_save_points,) — sample times in min.
+            trajectory: shape (n_save_points, 3). G, X, I at uniform times.
+            times: shape (n_save_points,). sample times in min.
             meta: TrajectoryMeta with NaN-replacement count and solver result.
         """
         del key  # currently unused; kept for API stability under future noise

@@ -29,7 +29,7 @@ Coverage target on `src/`: 80% line.
 bash scripts/REDACTED.sh
 ```
 
-Two grep patterns gate the merge — forbidden strings (§F.1) and forbidden imports (§F.5). Both must return zero hits.
+Two grep patterns gate the merge. forbidden strings (§F.1) and forbidden imports (§F.5). Both must return zero hits.
 
 ## Branches and commits
 
@@ -45,7 +45,7 @@ Branch from `main`. Imperative-mood commit titles ≤ 72 chars. No force-push to
 
 ## Adding an STL spec
 
-Specs live under `src/stl_seed/specs/`, one file per family. The conjunction-only fragment (`Always`, `Eventually`, `And`, predicate-level `Negation`) is mandatory per firewall §C.1 — no top-level disjunction, no implication, no `Until`. Every numerical threshold cites a textbook, paper, or biological/clinical database inline. Predicates use the lambda convention `lambda traj, t, c=CHANNEL, th=THRESHOLD: ...`; the STL evaluator's introspection path keys off `fn.__defaults__`.
+Specs live under `src/stl_seed/specs/`, one file per family. The conjunction-only fragment (`Always`, `Eventually`, `And`, predicate-level `Negation`) is mandatory per firewall §C.1. no top-level disjunction, no implication, no `Until`. Every numerical threshold cites a textbook, paper, or biological/clinical database inline. Predicates use the lambda convention `lambda traj, t, c=CHANNEL, th=THRESHOLD: ...`; the STL evaluator's introspection path keys off `fn.__defaults__`.
 
 ## Issues
 

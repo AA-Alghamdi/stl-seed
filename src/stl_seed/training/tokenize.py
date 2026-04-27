@@ -2,9 +2,9 @@
 
 A :class:`stl_seed.tasks._trajectory.Trajectory` carries
 
-* ``states: Float[Array, "T n"]`` — per-save-time state vector
-* ``actions: Float[Array, "H m"]`` — piecewise-constant action sequence
-* ``times: Float[Array, " T"]`` — save-time grid
+* ``states: Float[Array, "T n"]``. per-save-time state vector
+* ``actions: Float[Array, "H m"]``. piecewise-constant action sequence
+* ``times: Float[Array, " T"]``. save-time grid
 
 For SFT we serialize a trajectory into one (system, user, assistant)
 conversation where:
@@ -25,7 +25,7 @@ emits the same structure at inference time.
 The state samples used in the assistant message are taken from
 ``trajectory.states`` at the control-step boundaries (every
 ``T // H`` save-time index). When ``T`` is not an integer multiple of
-``H``, we use the nearest-rounded index — this is the same convention
+``H``, we use the nearest-rounded index. this is the same convention
 used by the simulator's piecewise-constant action discretization.
 
 The function returns plain text. Tokenization is delegated to the
@@ -104,9 +104,9 @@ def serialize_assistant_turn(
     Parameters
     ----------
     states:
-        Array of shape ``(H, n)`` — one state observation per control step.
+        Array of shape ``(H, n)``. one state observation per control step.
     actions:
-        Array of shape ``(H, m)`` — one action per control step.
+        Array of shape ``(H, m)``. one action per control step.
 
     Returns
     -------
@@ -236,7 +236,7 @@ def format_prompt_for_eval(
     """Render the (system + user) eval-time prompt for a single rollout.
 
     Mirrors the (system, user) halves of :func:`format_trajectory_as_text`
-    but without the assistant turn — the model is expected to *generate*
+    but without the assistant turn. the model is expected to *generate*
     the assistant turn at inference time. The resulting text is what the
     bnb / mlx generation pipelines see as the prompt.
 
@@ -263,7 +263,7 @@ def format_prompt_for_eval(
     Returns
     -------
     A single string formatted exactly like
-    ``format_trajectory_as_text(...)["system"] + "\\n\\n" + ["user"]`` —
+    ``format_trajectory_as_text(...)["system"] + "\\n\\n" + ["user"]`` ,
     the agent sees the same prompt at training and eval time.
     """
     arr = np.asarray(initial_state)
@@ -323,7 +323,7 @@ def parse_action_sequence(text: str) -> np.ndarray:
     * Raises ``ValueError`` if zero ``<action>`` blocks are found, so the
       eval harness's exception path (catch + record NaN) fires cleanly.
     * Raises ``ValueError`` if action vectors have inconsistent dimension
-      across blocks — silent shape coercion would mask a real model bug.
+      across blocks. silent shape coercion would mask a real model bug.
 
     Returns
     -------
@@ -358,14 +358,14 @@ def trajectory_to_record(
 
     Output columns:
 
-    * ``messages`` — chat-format list of role/content dicts (TRL-friendly).
-    * ``prompt`` — concatenated system + user (for backends that prefer
+    * ``messages``. chat-format list of role/content dicts (TRL-friendly).
+    * ``prompt``. concatenated system + user (for backends that prefer
       flat prompt + completion).
-    * ``completion`` — assistant turn (plain text).
-    * ``weight`` — per-sample SFT loss weight (1.0 for hard/quantile,
+    * ``completion``. assistant turn (plain text).
+    * ``weight``. per-sample SFT loss weight (1.0 for hard/quantile,
       ``softmax(ρ/β)`` for the continuous filter; carried through by
       the bnb collator and the mlx custom-loss closure).
-    * ``task`` — task family name (carried for diagnostics / per-task eval).
+    * ``task``. task family name (carried for diagnostics / per-task eval).
     """
     conv = format_trajectory_as_text(trajectory, spec, task_name)
     return {

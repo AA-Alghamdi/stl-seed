@@ -34,7 +34,7 @@ Setting ``STL_SEED_USE_MOCK_BACKEND=1`` in the environment causes the
 sweep runner to instantiate :class:`~stl_seed.training.backends.mock.MockBNBBackend`
 in place of the real :class:`BNBBackend` for every cell. The mock writes
 artifacts in the same on-disk layout as the real path but does no actual
-training — used by ``scripts/validate_phase2_pipeline.py`` to exercise
+training. used by ``scripts/validate_phase2_pipeline.py`` to exercise
 the whole pipeline (sweep + eval + analysis) without spending RunPod
 GPU time. The substitution happens inside ``run_cell`` via
 ``stl_seed.training.loop.train_with_filter``'s lazy backend dispatch
@@ -238,7 +238,7 @@ def resolve_data_root(task_cfg_name: str) -> tuple[Path | None, str]:
     The ``(path, source)`` tuple is what the dry-run summary surfaces, so
     the user can see WHICH source the sweep would consume before
     spending GPU time. Returning ``Path`` (not ``TrajectoryStore``) keeps
-    this helper free of heavy imports — the cell-side training driver
+    this helper free of heavy imports. the cell-side training driver
     (`stl_seed.training.loop`) is responsible for the actual load.
     """
     family = _task_to_family(task_cfg_name)
@@ -266,7 +266,7 @@ def resolve_data_root(task_cfg_name: str) -> tuple[Path | None, str]:
                 # rather than crash the dry-run forecast.
                 pass
 
-    # 3. No prior data — caller must regenerate inside the cell.
+    # 3. No prior data. caller must regenerate inside the cell.
     return None, "regenerate"
 
 
@@ -576,7 +576,7 @@ def run_cell(cell: Cell, dry_run: bool = False) -> CellResult:
     except Exception as exc:  # noqa: BLE001
         end_iso = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         elapsed = time.perf_counter() - t0
-        # Per CLAUDE.md: do not silently swallow training failures.
+        # Per project rules: do not silently swallow training failures.
         console.print_exception()
         return CellResult(
             cell_id=cell.cell_id,

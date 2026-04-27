@@ -1,8 +1,8 @@
-"""Cardiac action potential task family — FitzHugh-Nagumo (FHN) reduction.
+"""Cardiac action potential task family. FitzHugh-Nagumo (FHN) reduction.
 
 This module adds a fifth task family to ``stl-seed``: a 2-state cardiac
 excitable-membrane model on the *millisecond* time-scale (the other four
-families — repressilator, toggle, MAPK, glucose-insulin — all live on the
+families. repressilator, toggle, MAPK, glucose-insulin. all live on the
 *minute* time-scale of gene expression and metabolism). The point of
 adding a kHz-bandwidth task is to demonstrate that the SERA-style soft-
 filtered SFT pipeline and the inference samplers built on top of it

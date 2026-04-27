@@ -445,7 +445,7 @@ def main() -> int:
 
     summaries: list[dict[str, Any]] = []
     args.output_jsonl.parent.mkdir(parents=True, exist_ok=True)
-    # Append-only JSONL artifact per CLAUDE.md "results files are
+    # Append-only JSONL artifact per project rules "results files are
     # append-only artifacts -- never rewrite them".
     with args.output_jsonl.open("a") as fh:
         for cfg in task_family_configs():

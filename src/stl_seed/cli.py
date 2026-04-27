@@ -2,9 +2,9 @@
 
 Subcommands:
 
-* ``stl-seed version`` — print the package version.
-* ``stl-seed demo`` — placeholder for an end-to-end demo (P1.3).
-* ``stl-seed sample`` — run inference-time decoding under the chosen
+* ``stl-seed version``. print the package version.
+* ``stl-seed demo``. placeholder for an end-to-end demo (P1.3).
+* ``stl-seed sample``. run inference-time decoding under the chosen
   sampler (Subphase 2.x: gradient-guided sampling).
 """
 

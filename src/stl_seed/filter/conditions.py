@@ -13,10 +13,10 @@ Filter contract (locked, `paper/architecture.md` §"Filter condition interface")
         ) -> tuple[list[Trajectory], jt.Float[jt.Array, " N_kept"]]: ...
 
 The returned weights satisfy:
-* HardFilter / QuantileFilter: w_i ≡ 1.0 — uniform-weight SFT on a kept
+* HardFilter / QuantileFilter: w_i ≡ 1.0. uniform-weight SFT on a kept
   subset.
 * ContinuousWeightedFilter: w_i = N_total · softmax(ρ_i / β)_i; the N
-  rescaling matches the H1-aligned "unbiased gradient" property — the
+  rescaling matches the H1-aligned "unbiased gradient" property. the
   expected per-trajectory weight is 1.0 (so the optimizer's effective
   learning rate matches hard/quantile when the spread of ρ is small).
   See `paper/theory.md` §2 stage 4 derivation.
@@ -95,7 +95,7 @@ class HardFilter:
         if kept_idx.size < self.min_kept:
             raise FilterError(
                 f"HardFilter (threshold={self.rho_threshold}) kept "
-                f"{kept_idx.size} of {rho_np.size} trajectories — below "
+                f"{kept_idx.size} of {rho_np.size} trajectories. below "
                 f"min_kept={self.min_kept}. ρ summary: "
                 f"min={rho_np.min():.4f}, median={np.median(rho_np):.4f}, "
                 f"max={rho_np.max():.4f}."
@@ -113,7 +113,7 @@ class HardFilter:
 class QuantileFilter:
     """Keep the top `top_k_pct`% of trajectories by ρ. Weights uniform 1.0.
 
-    The top-K cut is taken on the *full* corpus regardless of sign — i.e.
+    The top-K cut is taken on the *full* corpus regardless of sign. i.e.
     even if ρ < 0 throughout, the top quartile is still selected (this
     matches `paper/theory.md` §2 D_quant which uses the empirical top
     quartile, not the positive subset).

@@ -33,7 +33,7 @@ def test_cli_no_args_shows_help() -> None:
     """``no_args_is_help=True`` -> invoking with no args prints help and exits."""
     result = runner.invoke(app, [])
     # Typer with no_args_is_help returns a non-zero exit code (typically 2)
-    # but should print the help text — verify it didn't crash with a stack trace.
+    # but should print the help text. verify it didn't crash with a stack trace.
     assert "Usage" in result.stdout or "version" in result.stdout
 
 

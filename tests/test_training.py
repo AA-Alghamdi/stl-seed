@@ -9,12 +9,12 @@ Coverage:
 * ``MLXBackend`` and ``BNBBackend`` instantiate cleanly on any platform
   (no native imports happen until ``train`` is called).
 * Calling ``MLXBackend.train`` on a non-Apple-Silicon host raises a clear
-  ``ImportError`` — never crashes with a low-level mlx import error.
+  ``ImportError``. never crashes with a low-level mlx import error.
 * Calling ``BNBBackend.train`` on a non-CUDA host raises a clear
-  ``ImportError`` — never crashes with a low-level bnb error.
+  ``ImportError``. never crashes with a low-level bnb error.
 * :func:`train_with_filter` dispatches to the correct backend by name.
 
-No actual SFT runs in CI — that is gated behind ``@pytest.mark.mlx`` /
+No actual SFT runs in CI. that is gated behind ``@pytest.mark.mlx`` /
 ``@pytest.mark.cuda``.
 """
 
@@ -73,7 +73,6 @@ def _make_trajectory(T: int = 10, n: int = 3, H: int = 5, m: int = 2) -> Traject
 
 
 class TestTrainingConfigDefaults:
-
     def test_lora_rank_matches_sera_qlora(self):
         assert TrainingConfig().lora_rank == 32
 
@@ -131,7 +130,7 @@ class TestTrainingConfigDefaults:
             "self_attn.o_proj",
         }.issubset(targets)
         assert {"mlp.gate_proj", "mlp.up_proj", "mlp.down_proj"}.issubset(targets)
-        # Defaults must NOT contain bare names — they would trigger the
+        # Defaults must NOT contain bare names. they would trigger the
         # MLX naming-convention warning emitted in __post_init__.
         for t in targets:
             assert "." in t, f"default target {t!r} is bare; would no-op under MLX"

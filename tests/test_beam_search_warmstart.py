@@ -3,32 +3,32 @@
 Test plan
 ---------
 
-B1. ``test_beam_search_runs_glucose_insulin_no_crash`` — sampler runs
+B1. ``test_beam_search_runs_glucose_insulin_no_crash``. sampler runs
     end-to-end on the glucose-insulin TIR easy spec, returns a well-formed
     Trajectory and diagnostics dict.
-B2. ``test_beam_search_finds_known_solution`` — synthetic 2-step problem
+B2. ``test_beam_search_finds_known_solution``. synthetic 2-step problem
     where one specific action sequence satisfies a hand-built spec; both
     ``beam_size=1`` (greedy) and ``beam_size=4`` should find it. Verifies
     that the per-step expansion + top-B selection logic works.
-B3. ``test_beam_search_recovers_repressilator_solution`` — with the canonical
+B3. ``test_beam_search_recovers_repressilator_solution``. with the canonical
     pilot IC, vocabulary including the silence-3 corner ``(0, 0, 1)``, and
     the default ``tail_strategy='repeat_candidate'``, beam search finds
     ``rho > 0`` on ``bio_ode.repressilator.easy``. This is the headline
     falsification of the negative result documented in
     ``paper/cross_task_validation.md``: the gradient sampler fails on this
     setup; structural search succeeds.
-B4. ``test_beam_search_protocol_compliance`` — sampler satisfies the
+B4. ``test_beam_search_protocol_compliance``. sampler satisfies the
     runtime-checkable :class:`Sampler` Protocol.
-B5. ``test_beam_search_diagnostics_well_formed`` — every diagnostic field
+B5. ``test_beam_search_diagnostics_well_formed``. every diagnostic field
     has the expected shape, type, and value range.
-B6. ``test_beam_search_invalid_args_raise`` — invalid hyperparameters
+B6. ``test_beam_search_invalid_args_raise``. invalid hyperparameters
     raise :class:`ValueError` at construction.
-B7. ``test_beam_search_tail_strategy_default_vs_repeat`` — the
+B7. ``test_beam_search_tail_strategy_default_vs_repeat``. the
     ``'repeat_candidate'`` strategy strictly dominates ``'default'`` on
     the repressilator (the headline negative result of the latter is
     documented in ``paper/cross_task_validation.md``; this test re-asserts
     that the two strategies yield different beams).
-B8. ``test_beam_search_gradient_refinement_no_regression`` — with refinement
+B8. ``test_beam_search_gradient_refinement_no_regression``. with refinement
     enabled, the final rho is >= the pure-beam endpoint (refinement can
     never make things worse because we keep the discrete winner if
     refinement does not improve it).
@@ -63,8 +63,8 @@ from stl_seed.tasks.glucose_insulin import (
 )
 
 # ---------------------------------------------------------------------------
-# Synthetic LLM (the beam sampler ignores LLM logits — beam selection is
-# driven by full-rho lookahead — but the protocol still requires one).
+# Synthetic LLM (the beam sampler ignores LLM logits. beam selection is
+# driven by full-rho lookahead. but the protocol still requires one).
 # ---------------------------------------------------------------------------
 
 
@@ -290,7 +290,7 @@ def test_beam_search_diagnostics_well_formed(gi_setup) -> None:
     assert 0 <= diag["refine_iters_run"] <= 5
     # Streaming-rho is a sequence of finite-or-+/-inf values; we only
     # assert the elements are not NaN (inf is allowed by streaming
-    # semantics — see stl_seed.stl.streaming module docstring).
+    # semantics. see stl_seed.stl.streaming module docstring).
     assert all(not np.isnan(v) for v in diag["streaming_rho_top1_at_step"])
 
 

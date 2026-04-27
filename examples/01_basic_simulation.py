@@ -1,4 +1,4 @@
-"""Example 01 — Glucose-insulin simulation + STL robustness.
+"""Example 01. Glucose-insulin simulation + STL robustness.
 
 Three open-loop schedules (zero infusion, constant 1.5 U/h, fasting
 baseline) on the Bergman 1979 + Dalla Man 2007 model, each scored under

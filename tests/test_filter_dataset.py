@@ -123,7 +123,7 @@ def test_build_sft_dataset_metadata_missing_keys_uses_synthetic_defaults(
     pytest.importorskip("datasets")
     trajs = [_toy_trajectory(seed=0)]
     weights = np.array([1.0])
-    metadata = [{}]  # empty dict — formatter must fall back to synthetic id
+    metadata = [{}]  # empty dict. formatter must fall back to synthetic id
     ds = build_sft_dataset(trajs, weights, metadata=metadata, task="toggle", spec_text="...")
     assert ds["trajectory_id"] == ["traj_0000"]
     assert ds["spec_key"] == ["toggle"]

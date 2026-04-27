@@ -29,13 +29,13 @@ uv run python examples/03_mlx_training_minimal.py  # MLX QLoRA, ~1-2 min
 | `Policy`          | `(state, spec, history, key) -> action`                  | `src/stl_seed/generation/policies.py` |
 | `FilterCondition` | `filter(trajectories, rhos) -> (kept, weights)`          | `src/stl_seed/filter/conditions.py`   |
 
-Four task families ship today: glucose-insulin (Bergman 1979 + Dalla Man 2007), repressilator (Elowitz & Leibler 2000), toggle (Gardner-Cantor-Collins 2000), MAPK (reduced Huang-Ferrell 1996 / Markevich 2004). Three filter conditions: `HardFilter`, `QuantileFilter`, `ContinuousWeightedFilter` — all raise `FilterError` rather than silently degrade.
+Four task families ship today: glucose-insulin (Bergman 1979 + Dalla Man 2007), repressilator (Elowitz & Leibler 2000), toggle (Gardner-Cantor-Collins 2000), MAPK (reduced Huang-Ferrell 1996 / Markevich 2004). Three filter conditions: `HardFilter`, `QuantileFilter`, `ContinuousWeightedFilter`. all raise `FilterError` rather than silently degrade.
 
 The full per-module API surface is documented in the source docstrings; `tests/test_stl_evaluator.py` is the most pedagogical entry point for the STL evaluator (it builds tiny ASTs by hand and asserts Donzé-Maler equalities one node at a time).
 
 ## Reading `rho`
 
-`rho > 0`: trajectory satisfies `spec` with margin `rho` (in the spec's natural units — mg/dL for glucose specs, monomers/cell for repressilator). `rho < 0`: violation with margin `|rho|`. `rho == 0`: boundary. The Donzé-Maler space-robustness is the smallest predicate-level signed margin over the spec's temporal intervals.
+`rho > 0`: trajectory satisfies `spec` with margin `rho` (in the spec's natural units. mg/dL for glucose specs, monomers/cell for repressilator). `rho < 0`: violation with margin `|rho|`. `rho == 0`: boundary. The Donzé-Maler space-robustness is the smallest predicate-level signed margin over the spec's temporal intervals.
 
 ## Where to read next
 
@@ -47,6 +47,6 @@ The full per-module API surface is documented in the source docstrings; `tests/t
 
 ## Gotchas
 
-- `GlucoseInsulinSimulator.simulate(...)` returns `(states, times, meta)`, not a `Trajectory` pytree — the runner adapter wraps it. The bio_ode simulators DO return `Trajectory` directly. Asymmetry is intentional and documented.
+- `GlucoseInsulinSimulator.simulate(...)` returns `(states, times, meta)`, not a `Trajectory` pytree. the runner adapter wraps it. The bio_ode simulators DO return `Trajectory` directly. Asymmetry is intentional and documented.
 - Glucose-insulin actions are `(H,)` insulin rates in U/h; bio_ode actions are `(H, m)` dimensionless inducer fractions in `[0, 1]`. Simulators clip on entry.
-- `MLXModelPolicy` is Apple Silicon only — raises `RuntimeError` at construction time on other hosts. On Linux/CUDA use `BNBBackend`.
+- `MLXModelPolicy` is Apple Silicon only. raises `RuntimeError` at construction time on other hosts. On Linux/CUDA use `BNBBackend`.

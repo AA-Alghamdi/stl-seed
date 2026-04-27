@@ -1,4 +1,4 @@
-# Coding-Agent Toy Cell — Spike Results
+# Coding-Agent Toy Cell. Spike Results
 
 Author: Abdullah AlGhamdi. Date: 2026-04-26. Status: 12-minute spike.
 
@@ -10,9 +10,9 @@ Every line below is honest about what shipped and what did not.
 
 Three files, all `shipped and works`:
 
-- `src/stl_seed/tasks/coding_toy.py` — toy simulator with five hand-coded buggy-function tasks. Returns a duck-typed trajectory (`states` shape `(T, 1)`, `times` shape `(T,)`) compatible with the existing STL evaluator. Sentinel-on-exception policy mirrors the bio-ODE NaN guard. Self-test passes (`python src/stl_seed/tasks/coding_toy.py` → "OK: 5 tasks pass needed_actions self-test").
-- `src/stl_seed/specs/coding_specs.py` — registers `coding.fix.easy` with formula `F_[0, 6] (test_pass_rate > 0.5)`. The spec uses the same `Eventually + Predicate` form as `bio_ode` specs and respects the firewall §C.1 conjunction-only convention.
-- `scripts/coding_toy_demo.py` — runs `standard` (uniform-random) and `beam_search_warmstart` (`B=4`, no gradient refinement) against `TINY_TASKS`, prints per-task rho.
+- `src/stl_seed/tasks/coding_toy.py`. toy simulator with five hand-coded buggy-function tasks. Returns a duck-typed trajectory (`states` shape `(T, 1)`, `times` shape `(T,)`) compatible with the existing STL evaluator. Sentinel-on-exception policy mirrors the bio-ODE NaN guard. Self-test passes (`python src/stl_seed/tasks/coding_toy.py` → "OK: 5 tasks pass needed_actions self-test").
+- `src/stl_seed/specs/coding_specs.py`. registers `coding.fix.easy` with formula `F_[0, 6] (test_pass_rate > 0.5)`. The spec uses the same `Eventually + Predicate` form as `bio_ode` specs and respects the firewall §C.1 conjunction-only convention.
+- `scripts/coding_toy_demo.py`. runs `standard` (uniform-random) and `beam_search_warmstart` (`B=4`, no gradient refinement) against `TINY_TASKS`, prints per-task rho.
 
 The script exits cleanly. The integration with `stl_seed.stl.evaluator.evaluate_robustness` is the real path; the rho numbers below come out of the same Donze-Maler evaluator that scores the bio-ODE trajectories.
 
@@ -52,13 +52,13 @@ Spec: `coding.fix.easy` formula: `F_[0, 6] (test_pass_rate > 0.5)` Horizon: 6 st
 | `toy.parse_and_normalize.two_bugs` | standard (uniform) |    +0.1667 |   +0.5000 |      2/5 |
 | `toy.parse_and_normalize.two_bugs` | beam_search (B=4)  |    +0.5000 |   +0.5000 |      0/1 |
 
-Beam-search's recovered fix sequence on the two-bug task is `(add_check, fix_typo, do_nothing, ..., do_nothing)` — both required edits, then idle out the rest of the horizon. The trailing `do_nothing` calls confirm the design's `null_op` slot is doing its job in the vocabulary.
+Beam-search's recovered fix sequence on the two-bug task is `(add_check, fix_typo, do_nothing, ..., do_nothing)`. both required edits, then idle out the rest of the horizon. The trailing `do_nothing` calls confirm the design's `null_op` slot is doing its job in the vocabulary.
 
 Standard-sampler `rho < 0` happens at the 1-5 to 2-5 rate per task. The gap is structural: with `K = 5` and a single-fix task the chance of emitting the unique fix action at *some* step in `H = 6` is `1 - (4/5)^6 ≈ 0.738`. Empirically we see ~0.6-0.8 success rates per task, consistent with the analytic floor.
 
 ## 4. Comparison to bio_ode behavior
 
-The methodology gap the design names — *standard* (no verifier feedback) versus *beam-search-warmstart* (discrete search over a vocabulary that provably contains the satisfier) — **reproduces in the toy coding cell**.
+The methodology gap the design names. *standard* (no verifier feedback) versus *beam-search-warmstart* (discrete search over a vocabulary that provably contains the satisfier). **reproduces in the toy coding cell**.
 
 | Axis                     | bio_ode.repressilator.easy                  | coding.fix.easy (toy)                                 |
 | ------------------------ | ------------------------------------------- | ----------------------------------------------------- |
@@ -69,7 +69,7 @@ The methodology gap the design names — *standard* (no verifier feedback) versu
 
 The bio_ode story is "continuous samplers (gradient, CMA-ES, hybrid) saturate on cliff-geometry rho with a single satisfying corner; switch to vocabulary-enumeration beam search". The toy coding story is the same algebraic shape ported to a `K = 5` discrete vocabulary: standard random sampling's success probability is `1 - (1 - p_fix)^H` and is bounded below 1, while beam-search at any `B ≥ 1` is exhaustive in width-1 and can never miss. This is the same structural-search-vs-continuous-search distinction my prior memory entry names.
 
-What the toy cell does **not** reproduce is the failure mode that needed beam-search in the first place on bio_ode — non-convex rho landscapes with multi-step coordination requirements (`G_[120,200]` clauses where all downstream actions must cooperate). The easy spec is a single `Eventually` over a single channel; it has no analog of repressilator's sustained-high requirement. To reproduce the *interesting* part of the bio_ode finding the cell would need at minimum the medium spec from the design doc, with its `G_[H/2, H] (test_pass_rate >= 0.8)` sustained-pass clause. That is `stubbed for future`.
+What the toy cell does **not** reproduce is the failure mode that needed beam-search in the first place on bio_ode. non-convex rho landscapes with multi-step coordination requirements (`G_[120,200]` clauses where all downstream actions must cooperate). The easy spec is a single `Eventually` over a single channel; it has no analog of repressilator's sustained-high requirement. To reproduce the *interesting* part of the bio_ode finding the cell would need at minimum the medium spec from the design doc, with its `G_[H/2, H] (test_pass_rate >= 0.8)` sustained-pass clause. That is `stubbed for future`.
 
 ## 5. What would need to extend this to HumanEval
 
