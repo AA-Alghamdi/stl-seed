@@ -1,6 +1,6 @@
 [project]
 name = "stl-seed"
-version = "0.0.1"
+version = "0.1.0"
 description = "Soft-verified SFT for scientific control: STL robustness as a formal process verifier on small open-weights LLMs"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -10,6 +10,7 @@ authors = [
 ]
 keywords = ["llm", "stl", "formal-methods", "scientific-agents", "qlora", "bitsandbytes"]
 classifiers = [
+    "Development Status :: 4 - Beta",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -78,6 +79,7 @@ stl-seed = "stl_seed.cli:app"
 Homepage = "https://github.com/AA-Alghamdi/stl-seed"
 Repository = "https://github.com/AA-Alghamdi/stl-seed"
 Issues = "https://github.com/AA-Alghamdi/stl-seed/issues"
+Documentation = "https://github.com/AA-Alghamdi/stl-seed"
 
 [build-system]
 requires = ["hatchling"]
@@ -85,6 +87,14 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/stl_seed"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/stl_seed",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
 
 [tool.ruff]
 line-length = 100
