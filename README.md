@@ -70,6 +70,13 @@ python scripts/run_canonical_sweep.py --confirm
 
 The 4B-and-up scaling question past Qwen3-4B is past M5 Pro memory and past my available compute. The honest framing of this artifact: inference-time methodology shipped + falsified; training-time SERA-mimic ready to run, gated on a small RunPod budget.
 
+## Theory and follow-up work
+
+- **Landscape-conditioning theorem** ([`paper/landscape_theorem.md`](paper/landscape_theorem.md)). A formal characterization of when gradient guidance reaches the satisfying set vs when it must defer to discrete enumeration. Two regimes: a smooth regime (Polyak-Łojasiewicz alignment + directional vocabulary coverage) where gradient guidance hits $S\_+$ in $O(LT/(\\lambda \\cos\\theta\_\\text{cov}\\, \\eta\_\\star))$ rollouts; a narrow-attractor regime (cliff condition + thin satisfying tube around the lattice) where gradient guidance is exponentially small in $H$ and beam-search-warmstart finds the satisfying corner in $H \\cdot B \\cdot K$ simulator forwards. Predicts the empirical asymmetry between glucose-insulin (regime I) and repressilator / toggle / MAPK (regime II + III).
+- **Quantization × verifier × model-size sweep** ([`paper/quant_size_results.md`](paper/quant_size_results.md), pending; sweep running locally as of 2026-04-26 on M5 Pro). Five Qwen3 variants (0.6B/1.7B × bf16/4bit/8bit) × four hard tasks × three seeds × two samplers. Tests whether the Day-1 methodology gap survives NF4 quantization (Dettmers' bitsandbytes lineage) and whether it shrinks with the SERA-saturation transition at 1.7B.
+- **Coding-agent task-cell design** ([`paper/coding_task_design.md`](paper/coding_task_design.md)). Bridges the STL-as-soft-verifier framework from biomolecular ODE control to the SERA-native coding-agent domain. HumanEval-mutated dataset, factored patch vocabulary $V\_\\text{op} \\times V\_\\text{loc}$ ($|V|=390$), six-channel state vector (test-pass-rate, lint, type, AST-parse, new-imports, patch-size), three STL specs of varying difficulty. Deliberately excludes the gradient-guided / hybrid / cmaes_gradient samplers because the simulator is non-differentiable; that exclusion is itself the finding (structural distinction between simulator types).
+- **Venue targets** ([`paper/venue_targets.md`](paper/venue_targets.md)). Top three: ICML 2026 FMAI workshop (deadline 2026-05-08), NeurIPS 2026 Datasets & Benchmarks (full paper 2026-05-06), ICML 2026 SCALE late-breaking track. All three explicitly invite Phase-1-only inference-time-compute / verification work.
+
 ## Citation
 
 ```bibtex
