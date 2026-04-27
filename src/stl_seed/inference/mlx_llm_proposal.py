@@ -108,7 +108,7 @@ _MODEL_ALIASES: dict[str, str] = {
 
 
 # Cache loaded models keyed by model_id so multiple MLXLLMProposal
-# instances within one process (e.g. one per task) re-use the same
+# instances within one process (e.g. one per task) reuse the same
 # weights. Each Qwen3-1.7B-bf16 is ~3.4 GB on disk; loading it five
 # times per script run would be wasteful and slow.
 _MODEL_CACHE: dict[str, tuple[Any, Any]] = {}
@@ -238,12 +238,29 @@ class MLXLLMProposal:
         ``add_generation_prompt=True`` and only inflates the prompt-
         token count. Kept as a parameter so future Qwen3 variants whose
         chat template requires it can flip the default.
+    chunk_size:
+        Number of vocabulary candidates to score in a single batched
+        forward pass. The full ``(K, prompt_len + max_cand_len - 1)``
+        batch becomes ``ceil(K / chunk_size)`` smaller batches and the
+        per-call activation footprint drops by ``K / chunk_size``. The
+        memory bottleneck is the log-softmax tensor of shape
+        ``(B, T, |vocab|)`` (~|vocab|=151936 for Qwen3) which at
+        ``K=125``, ``T=400``, fp32 = 32 GB and exceeds Metal's 30 GB
+        single-buffer limit on a 48 GB unified-memory M-series GPU
+        (observed on a 48 GB M5 Pro with Qwen3-0.6B + repressilator
+        ``K=125`` vocabulary). Default ``16`` keeps each chunk under
+        ~4 GB which fits with headroom for the prompt-cache and the
+        downstream JAX simulator's own allocations. Smaller chunks
+        increase the per-call wall-clock by the sequential-overhead
+        factor; ``16`` was empirically the sweet spot on M5 Pro.
+        Set explicitly to ``K`` to recover the original single-pass
+        behaviour (only safe for small ``K`` or large GPU memory).
 
     Notes
     -----
     The action-vocabulary text representations are pre-tokenized in
-    ``__init__`` (~K tokenizer calls) so per-call cost is bounded by one
-    batched forward pass through the model.
+    ``__init__`` (~K tokenizer calls) so per-call cost is bounded by
+    ``ceil(K / chunk_size)`` batched forward passes through the model.
 
     The proposal is **stateful** in that the chat-template prompt is
     cached as token IDs after first construction. It is *not* stateful
@@ -265,6 +282,7 @@ class MLXLLMProposal:
         model_id: str = "qwen3-1.7b",
         sampling_temperature: float = 1.0,
         enable_thinking: bool = False,
+        chunk_size: int = 16,
     ) -> None:
         V = np.asarray(action_vocabulary, dtype=np.float64)
         if V.ndim != 2:
@@ -290,6 +308,9 @@ class MLXLLMProposal:
         self.model_id = _resolve_model_id(model_id)
         self.sampling_temperature = float(sampling_temperature)
         self.enable_thinking = bool(enable_thinking)
+        if chunk_size < 1:
+            raise ValueError(f"chunk_size must be >= 1; got {chunk_size}")
+        self.chunk_size = int(chunk_size)
 
         # Lazy-load model + tokenizer.
         self._model, self._tokenizer = _load_model(self.model_id)
@@ -382,10 +403,20 @@ class MLXLLMProposal:
     ) -> np.ndarray:
         """Score the K candidates by teacher-forced log-probability.
 
-        Build a ``(K, prompt_len + max_cand_len - 1)`` int32 batch where
+        Builds a ``(K, prompt_len + max_cand_len - 1)`` int32 batch where
         each row is ``prompt_tokens + cand_tokens[k][:-1]`` padded with
-        ``self._pad_id``. Run one forward pass; for each candidate
-        accumulate log-prob over its token positions.
+        ``self._pad_id``, but **runs the forward pass in chunks of
+        ``self.chunk_size``** along the candidate axis. The reason: the
+        log-softmax tensor of shape ``(K, T, |vocab|)`` for Qwen3
+        (``|vocab|=151936``) at ``K=125``, ``T=400``, fp32 is
+        ``125 * 400 * 151936 * 4 B = 30.4 GB``, which exceeds Metal's
+        per-buffer ceiling on a 48 GB-unified-memory M5 Pro. Chunked over
+        ``chunk_size=16`` the per-pass footprint is ~3.9 GB which fits
+        with headroom for the prompt-cache and the JAX-side simulator
+        allocations. Wall-clock cost per call is multiplied by
+        ``ceil(K / chunk_size)`` of small forward passes, but each pass
+        amortises the fixed per-call overhead of mlx's prefill kernel,
+        so the slowdown is sub-linear in practice.
         """
         # Lazy import again so the file is importable on non-Apple platforms.
         import mlx.core as mx
@@ -397,32 +428,49 @@ class MLXLLMProposal:
         # candidate token (we predict the last token from the second-to-
         # last position's logits).
         total_len = plen + max_cand_len - 1
+
+        # Pre-build the full (K, T) int32 matrix on the CPU. Each chunk
+        # is then sliced from this matrix and copied into an mlx array.
         batch_np = np.full((self.K, total_len), self._pad_id, dtype=np.int32)
         for k, ct in enumerate(self._cand_token_seqs):
             batch_np[k, :plen] = prompt_tokens
             if len(ct) > 1:
                 batch_np[k, plen : plen + len(ct) - 1] = ct[:-1]
-        batch = mx.array(batch_np)
-        logits = self._model(batch)
-        # log-softmax over vocab; (K, T, V). Cast to float32 explicitly:
-        # mlx_lm models return bf16 logits which numpy.asarray cannot
-        # parse via the PEP-3118 buffer protocol (RuntimeError "Item size
-        # 2 for PEP 3118 buffer format string B does not match the dtype
-        # B item size 1"). The .astype(mx.float32) materialises a fresh
-        # float32 array that NumPy *can* zero-copy view.
-        log_softmax = nn.log_softmax(logits.astype(mx.float32), axis=-1)
-        mx.eval(log_softmax)
-        # We need log_softmax[k, plen-1+i, ct[i]] for each i in [0, len(ct)).
-        # Materialize to NumPy for the per-candidate accumulation; the per-
-        # token gather is K * max_cand_len ~ a few hundred lookups, cheap.
-        ls_np = np.asarray(log_softmax)
+
         scores = np.zeros(self.K, dtype=np.float64)
-        for k, ct in enumerate(self._cand_token_seqs):
-            s = 0.0
-            for i, tok in enumerate(ct):
-                pos = plen - 1 + i
-                s += float(ls_np[k, pos, int(tok)])
-            scores[k] = s
+
+        # Iterate chunks of size ``self.chunk_size`` along the K axis. For
+        # K=125, chunk_size=16, this is 8 chunks (last chunk has 13).
+        for start in range(0, self.K, self.chunk_size):
+            stop = min(start + self.chunk_size, self.K)
+            chunk_batch_np = batch_np[start:stop]
+            chunk = mx.array(chunk_batch_np)
+            chunk_logits = self._model(chunk)
+            # log-softmax over vocab; (b, T, V). Cast to float32 explicitly:
+            # mlx_lm models return bf16 logits which numpy.asarray cannot
+            # parse via the PEP-3118 buffer protocol (RuntimeError "Item
+            # size 2 for PEP 3118 buffer format string B does not match
+            # the dtype B item size 1"). The .astype(mx.float32)
+            # materialises a fresh float32 array that NumPy *can* zero-copy
+            # view.
+            chunk_ls = nn.log_softmax(chunk_logits.astype(mx.float32), axis=-1)
+            mx.eval(chunk_ls)
+            # We need chunk_ls[i, plen-1+j, ct[start+i][j]] for each j.
+            # Materialise to NumPy for the per-candidate accumulation; the
+            # per-token gather is chunk_size * max_cand_len ~ a few dozen
+            # lookups, cheap.
+            ls_np = np.asarray(chunk_ls)
+            for offset, k in enumerate(range(start, stop)):
+                ct = self._cand_token_seqs[k]
+                s = 0.0
+                for i, tok in enumerate(ct):
+                    pos = plen - 1 + i
+                    s += float(ls_np[offset, pos, int(tok)])
+                scores[k] = s
+            # Free the per-chunk activations as eagerly as we can. mlx
+            # tracks lifetimes via Python refcounting, so dropping our
+            # references lets the next chunk reuse the freed buffers.
+            del chunk, chunk_logits, chunk_ls, ls_np
         return scores
 
     # ----------------------------------------------------------------- public
@@ -465,9 +513,7 @@ class MLXLLMProposal:
         if history_np.ndim != 2:
             raise ValueError(f"history must be 2-D (T_hist, m); got shape {history_np.shape}")
         if history_np.shape[1] != self.m:
-            raise ValueError(
-                f"history action dim {history_np.shape[1]} != vocabulary m={self.m}"
-            )
+            raise ValueError(f"history action dim {history_np.shape[1]} != vocabulary m={self.m}")
 
         # If the state changed (silent IC swap), rebuild the cached prompt.
         if not np.allclose(state_np, self._initial_state, rtol=1e-6, atol=1e-6):
@@ -532,8 +578,7 @@ _TASK_NAME_CANONICAL: dict[str, str] = {
 def _canonical_task_name(task: str) -> str:
     if task not in _TASK_NAME_CANONICAL:
         raise KeyError(
-            f"Unknown task family {task!r}; expected one of "
-            f"{sorted(_TASK_NAME_CANONICAL.keys())}."
+            f"Unknown task family {task!r}; expected one of {sorted(_TASK_NAME_CANONICAL.keys())}."
         )
     return _TASK_NAME_CANONICAL[task]
 
