@@ -1,0 +1,41 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      - name: Install lint tools
+        run: |
+          uv venv .lint-venv --python 3.11
+          uv pip install --python .lint-venv/bin/python ruff==0.15.12 pre-commit==4.0.1
+
+      - name: Ruff check
+        run: .lint-venv/bin/ruff check src tests
+
+      - name: Ruff format check
+        run: .lint-venv/bin/ruff format --check src tests
+
+      - name: Pre-commit (all files)
+        run: .lint-venv/bin/pre-commit run --all-files --show-diff-on-failure

@@ -1,0 +1,161 @@
+[project]
+name = "stl-seed"
+version = "0.1.0"
+description = "Soft-verified SFT for scientific control: STL robustness as a formal process verifier on small open-weights LLMs"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11,<3.13"
+authors = [
+    { name = "Abdullah AlGhamdi", email = "alghamdi@berkeley.edu" },
+]
+keywords = ["llm", "stl", "formal-methods", "scientific-agents", "qlora", "bitsandbytes"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # Core scientific stack
+    "numpy>=1.26,<3.0",
+    "scipy>=1.12",
+    "matplotlib>=3.8",
+    "pandas>=2.2",
+    # ODE simulation (JAX-native, runs on Apple Silicon Metal + CUDA)
+    "jax>=0.4.30,<0.7",
+    "jaxlib>=0.4.30,<0.7",
+    "diffrax>=0.6,<0.8",
+    "equinox>=0.11",
+    "jaxtyping>=0.2.30",
+    # LLM scaffolding
+    "transformers>=4.45",
+    "datasets>=3.0",
+    "accelerate>=1.0",
+    "peft>=0.13",
+    "tokenizers>=0.20",
+    # Statistics / Bayesian inference
+    "numpyro>=0.16,<0.20",
+    "arviz>=0.20",
+    # Configuration + CLI
+    "hydra-core>=1.3",
+    "typer>=0.13",
+    "rich>=13.9",
+    # I/O
+    "pyyaml>=6.0",
+    "huggingface-hub>=0.26",
+]
+
+[project.optional-dependencies]
+# Apple Silicon backend (M-series GPUs via MLX)
+mlx = [
+    "mlx>=0.20",
+    "mlx-lm>=0.20",
+]
+# CUDA backend (NVIDIA via bitsandbytes + TRL)
+# NOTE: install bnb only on Linux/CUDA hosts (RunPod). Will fail on macOS — that is intentional.
+cuda = [
+    "bitsandbytes>=0.44",
+    "trl>=0.12",
+]
+# Development
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "hypothesis>=6.100",
+    "ruff>=0.7",
+    "pyright>=1.1",
+    "pre-commit>=4.0",
+    "ipython>=8.28",
+    "jupyterlab>=4.2",
+]
+
+[project.scripts]
+stl-seed = "stl_seed.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/AA-Alghamdi/stl-seed"
+Repository = "https://github.com/AA-Alghamdi/stl-seed"
+Issues = "https://github.com/AA-Alghamdi/stl-seed/issues"
+Documentation = "https://github.com/AA-Alghamdi/stl-seed"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stl_seed"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/stl_seed",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "SIM"]
+ignore = [
+    "E501",  # line too long handled by formatter
+    "N803",  # arg name should be lowercase (we use ML conventions: X, N, A, etc.)
+    "N806",  # variable in function should be lowercase (same reason)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["F401", "F811", "F722"]  # tests use jaxtyping shape strings (F722) too
+"scripts/**" = ["E402"]  # allow late imports for path manipulation
+# jaxtyping uses string-literal shape annotations like Float[Array, " 3"] which
+# trip ruff's F722 "syntax error in forward annotation" check. The annotations
+# are valid jaxtyping; we silence F722 in modules that use it.
+"src/stl_seed/tasks/**" = ["F722", "N815"]  # protein/gene names use mixed case (n_AB, K_IPTG, etc.)
+"src/stl_seed/specs/**" = ["F722"]
+"src/stl_seed/stl/**" = ["F722"]  # STL evaluator uses jaxtyping shape strings throughout
+"src/stl_seed/generation/**" = ["F722"]  # policies/runner/store use jaxtyping shape strings
+"src/stl_seed/filter/**" = ["F722"]  # filter conditions use jaxtyping shape strings
+"src/stl_seed/inference/**" = ["F722"]  # gradient-guided sampler uses jaxtyping shape strings
+"src/stl_seed/analysis/**" = ["F722", "UP037"]  # adversary / decomposition use jaxtyping shape strings
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "slow: tests that take >5s (skip with '-m \"not slow\"')",
+    "gpu: tests requiring a GPU (skip with '-m \"not gpu\"')",
+    "cuda: tests requiring CUDA (skip on macOS)",
+    "mlx: tests requiring MLX (skip on non-Apple-Silicon)",
+]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+reportMissingImports = "warning"
+reportPrivateUsage = false
+
+[tool.bandit]
+# Security scanner config; consumed by pre-commit hook + ad-hoc bandit runs.
+# Skips justified inline; revisit if any of these become genuine concerns.
+# NOTE: pre-commit hook is pinned at bandit 1.7.10 (no B615/huggingface check).
+# Newer bandit versions add B615 (HF from_pretrained without revision pin); when
+# we bump the hook, add "B615" to this list — model IDs come from pinned configs
+# and reproducibility is enforced via uv.lock, not per-call revision args.
+exclude_dirs = ["tests", ".venv", "data", "runs"]
+skips = [
+    "B101",   # assert_used — we use assert in scientific code (sanity checks, not security)
+    "B311",   # standard pseudo-random — used for shuffles/seeds, not crypto
+    "B701",   # jinja2 autoescape=False — prompts.py renders LLM training prompts to
+              # plain text fed into a tokenizer; never returned to a browser, so XSS
+              # does not apply. Autoescape would corrupt the prompt characters.
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.0",
+]

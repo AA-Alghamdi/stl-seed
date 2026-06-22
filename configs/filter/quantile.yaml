@@ -1,0 +1,17 @@
+# Filter: quantile (top quartile by rho)
+#
+# References:
+#   src/stl_seed/filter/conditions.py::QuantileFilter
+#   paper/theory.md §2 Stage 3 (filter taxonomy)
+
+# @package filter
+name: quantile
+condition_class: QuantileFilter
+quantile: 0.25                         # paper/theory.md §2: top 25%
+min_kept: 10
+description: |
+  Retains the top ceil(0.25 * N_gen) trajectories by rho.
+  Uniform weight (w=1) per kept trajectory. Acts as a soft signal
+  insofar as some negative-rho trajectories may survive when the
+  generator is poor, but provides a bounded-support training set
+  even when the hard filter empties out.

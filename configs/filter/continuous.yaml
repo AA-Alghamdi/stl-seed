@@ -1,0 +1,18 @@
+# Filter: continuous (softmax-weighted)
+#
+# References:
+#   src/stl_seed/filter/conditions.py::ContinuousWeightedFilter
+#   paper/theory.md §2 Stage 3 (filter taxonomy)
+#   Setlur et al., PAV (arXiv:2410.08146) - per-batch std normalization rationale
+
+# @package filter
+name: continuous
+condition_class: ContinuousWeightedFilter
+beta_mode: per_batch_std               # paper/theory.md §2: beta = std({rho_i})
+min_kept: 1                            # never discards anything by construction
+description: |
+  Retains all trajectories with importance weight
+      w_i = softmax(rho_i / beta)_i,    beta = std({rho_i}).
+  Recovers hard filtering in the beta -> 0+ limit; the per-batch
+  std normalization is the PAV trick to keep softmax sharpness
+  unitless across reward scales.

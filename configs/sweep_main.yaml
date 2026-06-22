@@ -1,0 +1,57 @@
+# Phase-2 canonical sweep: 3 sizes x 3 filters x 2 task families = 18 cells.
+#
+# Why 2 task families (not 4): Phase 2 is the cleanest pair from the
+# implemented set. bio_ode.toggle and bio_ode.mapk are Phase-3 stretch
+# goals (paper/architecture.md "Phase 2 plan"). Running all 4 families
+# would give 36 cells at ~$25 budget, which is too tight; the 18-cell
+# version leaves headroom for spot interruptions and re-runs.
+#
+# Compose order:
+#   - default.yaml supplies all base values.
+#   - This file is loaded as the multirun head; the `hydra.sweeper.params`
+#     block below enumerates the 18 (model, filter, task) combinations
+#     via Hydra's BasicSweeper.
+#
+# Usage:
+#   uv run python scripts/run_canonical_sweep.py --config-name sweep_main \
+#       --max-cost-usd 25 --confirm
+#
+# References:
+#   paper/theory.md §1, §3   -- pre-registered 3x3x2 design
+#   paper/architecture.md    -- "Phase 2 plan: ~$15-25 budget"
+
+defaults:
+  - default
+  - _self_
+
+run:
+  name: sweep                          # overridden per-cell by the runner
+
+# Per-cell overrides applied by the multirun sweeper. Values must match
+# group/file basenames in configs/{model,filter,task}.
+sweep:
+  models:
+    - qwen3_0.6b
+    - qwen3_1.7b
+    - qwen3_4b
+  filters:
+    - hard
+    - quantile
+    - continuous
+  tasks:
+    - bio_ode_repressilator
+    - glucose_insulin
+  # Total cells = len(models) * len(filters) * len(tasks) = 3 * 3 * 2 = 18.
+
+# Cost ceiling override. The sweep runner's --max-cost-usd flag also
+# enforces this; the YAML value is the registered budget for audit.
+cost:
+  max_usd: 25.0
+
+hydra:
+  mode: MULTIRUN
+  sweeper:
+    params:
+      model: qwen3_0.6b,qwen3_1.7b,qwen3_4b
+      filter: hard,quantile,continuous
+      task: bio_ode_repressilator,glucose_insulin

@@ -1,0 +1,33 @@
+{
+  "delta_global_mean": 82.81991577148438,
+  "delta_global_ci95": [
+    35.219308662414555,
+    129.44442253112794
+  ],
+  "p_delta_positive": 0.9995,
+  "n_divergences": 0,
+  "rhat": {
+    "delta": 1.0004653930664062,
+    "delta_global": 0.9997001886367798,
+    "mu": 1.0010178089141846,
+    "mu_global": 0.9995914697647095,
+    "sigma_delta": 0.9998673796653748,
+    "sigma_eps": 1.001340389251709,
+    "sigma_mu": 0.9999358654022217
+  },
+  "min_ess": {
+    "delta": 4118.966796875,
+    "delta_global": 4774.22802734375,
+    "mu": 4093.8251953125,
+    "mu_global": 4867.80078125,
+    "sigma_delta": 4767.267578125,
+    "sigma_eps": 2177.59423828125,
+    "sigma_mu": 4415.458984375
+  },
+  "converged": true,
+  "n_cells_ci_crosses_zero": 11,
+  "n_cells_shrunk": 8,
+  "sigma_delta_post_mean": 109.07434844970703,
+  "sigma_eps_post_mean": 10.593019485473633,
+  "sigma_mu_post_mean": 102.2836685180664
+}
